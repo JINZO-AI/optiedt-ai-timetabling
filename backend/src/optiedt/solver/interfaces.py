@@ -10,7 +10,9 @@ See docs/constraint-model.md.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
+
+from ortools.sat.python import cp_model
 
 from optiedt.domain.entities import (
     Candidate,
@@ -22,6 +24,14 @@ from optiedt.domain.entities import (
     WeightProfile,
 )
 from optiedt.domain.instance import Instance
+
+if TYPE_CHECKING:
+    # Deferred: variables.py imports SolverInput from this module, so a
+    # top-level import here would be circular. Safe as a type-only import
+    # because every annotation in this file is a lazy string (see the
+    # __future__ import above) - Protocol.apply() never evaluates Variables
+    # at runtime, only mypy needs to resolve it.
+    from optiedt.solver.variables import Variables
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,7 +114,7 @@ class ConstraintBuilder(Protocol):
     @property
     def carries_assumption_literal(self) -> bool: ...
 
-    def apply(self, model: object, variables: object, instance: object) -> None: ...
+    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None: ...
 
 
 class Solver(Protocol):
