@@ -95,8 +95,8 @@ class TeacherRank(StrEnum):
 
 
 class ConstraintKind(StrEnum):
-    HARD = "HARD"  # H1–H12: must hold in every accepted timetable
-    SOFT = "SOFT"  # S2–S10: violation adds a penalty to the cost
+    HARD = "HARD"  # H1..H12: must hold in every accepted timetable
+    SOFT = "SOFT"  # S2..S10: violation adds a penalty to the cost
 
 
 class RunState(StrEnum):

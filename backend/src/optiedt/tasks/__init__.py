@@ -1,2 +1,1 @@
-"""Background run executor. In-process, not behind a broker (ADR-005).
-"""
+"""Background run executor. In-process, not behind a broker (ADR-005)."""

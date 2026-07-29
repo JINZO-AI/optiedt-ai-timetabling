@@ -21,8 +21,8 @@ from typing import Literal, Protocol
 from optiedt.domain.entities import (
     Candidate,
     ConstraintCode,
-    Run,
     RoomId,
+    Run,
     SessionId,
     SlotIndex,
 )

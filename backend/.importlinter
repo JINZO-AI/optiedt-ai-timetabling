@@ -9,6 +9,9 @@
 
 [importlinter]
 root_package = optiedt
+# Required because domain-is-pure forbids external packages (fastapi,
+# sqlalchemy, ortools) and not just internal ones.
+include_external_packages = True
 
 # ── Invariant 1 ────────────────────────────────────────────────────
 # "No component of the analysis layer may add, move or remove a

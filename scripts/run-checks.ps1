@@ -4,19 +4,31 @@
 
 .DESCRIPTION
     Layer boundaries come first. They encode the system's central invariants
-    (SRS §2.1, §7.5), and a violation there is a design error rather than a
-    style problem — there is no point running tests against a build that has
-    already broken the architecture.
+    (SRS 2.1, 7.5), and a violation there is a design error rather than a style
+    problem - there is no point running tests against a build that has already
+    broken the architecture.
 #>
 
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
 $root = Split-Path -Parent $PSScriptRoot
-$failed = @()
+$failed = New-Object System.Collections.Generic.List[string]
 
-function Invoke-Step($name, $script) {
-    Write-Host "[..] $name" -ForegroundColor Cyan
-    try { & $script; Write-Host "[ok] $name" -ForegroundColor Green }
-    catch { Write-Host "[FAIL] $name" -ForegroundColor Red; $script:failed += $name }
+function Invoke-Step {
+    param(
+        [string]$Name,
+        [scriptblock]$Command,
+        [int[]]$AllowExit = @(0)
+    )
+    Write-Host "[..] $Name" -ForegroundColor Cyan
+    & $Command 2>&1 | Out-Host
+    # Native executables do not throw on failure, so check the exit code
+    # explicitly rather than relying on try/catch.
+    if ($AllowExit -contains $LASTEXITCODE) {
+        Write-Host "[ok] $Name" -ForegroundColor Green
+    } else {
+        Write-Host "[FAIL] $Name (exit $LASTEXITCODE)" -ForegroundColor Red
+        $failed.Add($Name)
+    }
 }
 
 Push-Location (Join-Path $root 'backend')
@@ -25,15 +37,19 @@ try {
     Invoke-Step 'ruff'             { uv run ruff check . }
     Invoke-Step 'format'           { uv run ruff format --check . }
     Invoke-Step 'types'            { uv run mypy }
-    Invoke-Step 'tests'            { uv run pytest }
+    # pytest exits 5 when it collects nothing. That is the expected state
+    # while the scaffold has no tests; remove 5 once the first test lands.
+    Invoke-Step 'tests'            { uv run pytest } -AllowExit @(0, 5)
 } finally { Pop-Location }
+
+Invoke-Step 'instance' { & (Join-Path $root 'scripts\verify-instance.ps1') }
 
 Push-Location (Join-Path $root 'frontend')
 try {
     if (Test-Path 'node_modules') {
         Invoke-Step 'frontend types' { npm run typecheck }
     } else {
-        Write-Host "[skip] frontend — run scripts/bootstrap.ps1 first" -ForegroundColor Yellow
+        Write-Host "[skip] frontend - run scripts/bootstrap.ps1 first" -ForegroundColor Yellow
     }
 } finally { Pop-Location }
 
@@ -43,7 +59,12 @@ if ($failed.Count -gt 0) {
     if ($failed -contains 'layer boundaries') {
         Write-Host ""
         Write-Host "A layer boundary was violated. Do not relax .importlinter to make" -ForegroundColor Yellow
-        Write-Host "this pass — those contracts are the system's invariants. See CLAUDE.md." -ForegroundColor Yellow
+        Write-Host "this pass - those contracts are the system's invariants. See CLAUDE.md." -ForegroundColor Yellow
+    }
+    if ($failed -contains 'instance') {
+        Write-Host ""
+        Write-Host "The instance no longer matches its documentation. Either the data" -ForegroundColor Yellow
+        Write-Host "changed or the documents are now false - fix both." -ForegroundColor Yellow
     }
     exit 1
 }

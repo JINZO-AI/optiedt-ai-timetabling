@@ -84,7 +84,9 @@ class AssistantAdapter(Protocol):
 class ContextBuilder(Protocol):
     """Selects, from the run, only the figures needed to answer."""
 
-    def build(self, kind: RequestKind, run_id: str, question: str | None = None) -> ContextPayload: ...
+    def build(
+        self, kind: RequestKind, run_id: str, question: str | None = None
+    ) -> ContextPayload: ...
 
 
 class AnswerVerifier(Protocol):

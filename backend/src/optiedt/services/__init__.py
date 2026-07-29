@@ -1,2 +1,1 @@
-"""Use cases: run lifecycle, comparison, publication.
-"""
+"""Use cases: run lifecycle, comparison, publication."""

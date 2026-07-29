@@ -98,7 +98,7 @@ its decomposition, and validation on the published instances.
 | **Objective encoding** | Auxiliary variables absent from the size estimate; second unknown after C-7 | 5 days budgeted to Phase 2 |
 | **Deterministic-time calibration unmeasured** | The user-facing time limit is a guess | Calibrate in Phase 2, record below |
 | **Exam multi-room assignment** (R-6) | Breaks a shared `room[s]` abstraction | Keep it out of shared solver code from the start |
-| **`uv` is not installed on this machine** | `scripts/bootstrap.ps1` will stop at the prerequisite check | Install from https://docs.astral.sh/uv/ — the only missing tool; node, docker and git are present |
+| ~~`uv` not installed~~ | — | **Resolved.** uv 0.12.0 installed; the whole toolchain runs |
 | **Kaggle `students.csv` holds personal data** | 3,000 rows with names, emails, phones, addresses | Never load it beyond `student_id` + enrolment; never let such a field reach the assistant context |
 | **C-12 × C-5 interaction** | If S5 measures zero, the teacher-favouring profile differs by S3 alone, candidates converge, and the "three candidates" acceptance test fails for an invisible reason | Resolve C-12 before Phase 3 |
 
@@ -124,6 +124,9 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 
 | Measurement | Value | Taken on | Notes |
 |---|---|---|---|
+| **Toolchain** | **all green** | 2026-07-29 | 6/6 layer contracts kept · ruff clean · mypy strict clean on 20 files · frontend `tsc` clean · instance verified |
+| **Python** | **3.14.2** | 2026-07-29 | Resolved by uv 0.12.0 |
+| **OR-Tools CP-SAT imports and solves** | **yes** | 2026-07-29 | On Python 3.14. `max_deterministic_time` **is accepted by the solver parameters** — ADR-011 is implementable, not just plausible |
 | Deterministic time → wall clock, reference instance | *not yet measured* | — | Machine-dependent. Needed before any time limit is meaningful |
 | First valid timetable | *not yet measured* | — | Target < 60 s, an estimate not a guarantee |
 | Portfolio of 3 candidates | *not yet measured* | — | Target < 5 min |
