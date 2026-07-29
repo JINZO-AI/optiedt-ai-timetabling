@@ -21,6 +21,7 @@ from optiedt.domain.entities import (
     SlotIndex,
     WeightProfile,
 )
+from optiedt.domain.instance import Instance
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,7 +33,7 @@ class SolverInput:
     solver is ASKED to do, never what a solver call is ALLOWED to return.
     """
 
-    instance: object
+    instance: Instance
     profile: WeightProfile
     seed: int
     deterministic_budget: float

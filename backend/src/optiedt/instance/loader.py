@@ -57,7 +57,7 @@ def _rows(path: Path, filename: str) -> list[dict[str, str]]:
 
 
 def _flag(value: str) -> bool:
-    """"0"/"1" (also "false"/"true") -> bool."""
+    """ "0"/"1" (also "false"/"true") -> bool."""
     return value.strip().lower() in {"1", "true"}
 
 
@@ -68,7 +68,7 @@ def _optional(value: str) -> str | None:
 
 
 def _semester(value: str) -> int:
-    """"S2" -> 2. See module docstring: the CSVs encode a string code,
+    """ "S2" -> 2. See module docstring: the CSVs encode a string code,
     the domain entities declare an int."""
     v = value.strip()
     return int(v[1:]) if v and v[0] in "Ss" else int(v)
