@@ -1,0 +1,45 @@
+teacher_id,first_name,last_name,department,rank,max_hours_per_week,email
+T001,Amine,Ben Salah,Mathematiques,Professeur,9,amine.salah@fac.tn
+T002,Sonia,Trabelsi,Informatique,Professeur,9,sonia.trabelsi@fac.tn
+T003,Karim,Gharbi,Mathematiques,Professeur,9,karim.gharbi@fac.tn
+T004,Ines,Ferchichi,Mathematiques,Professeur,9,ines.ferchichi@fac.tn
+T005,Mehdi,Bouazizi,Informatique,Professeur,9,mehdi.bouazizi@fac.tn
+T006,Rania,Jelassi,Informatique,Professeur,9,rania.jelassi@fac.tn
+T007,Youssef,Khelifi,Mathematiques,Professeur,9,youssef.khelifi@fac.tn
+T008,Leila,Mansour,Mathematiques,Maitre de Conferences,12,leila.mansour@fac.tn
+T009,Nabil,Hamdi,Mathematiques,Maitre de Conferences,12,nabil.hamdi@fac.tn
+T010,Hela,Zouari,Informatique,Maitre de Conferences,12,hela.zouari@fac.tn
+T011,Slim,Chaabane,Informatique,Maitre de Conferences,12,slim.chaabane@fac.tn
+T012,Amira,Nasri,Mathematiques,Maitre de Conferences,12,amira.nasri@fac.tn
+T013,Wassim,Sassi,Informatique,Maitre de Conferences,12,wassim.sassi@fac.tn
+T014,Dorra,Rekik,Informatique,Maitre de Conferences,12,dorra.rekik@fac.tn
+T015,Fares,Ayari,Mathematiques,Maitre de Conferences,12,fares.ayari@fac.tn
+T016,Nour,Belhadj,Informatique,Maitre de Conferences,12,nour.belhadj@fac.tn
+T017,Bilel,Dridi,Mathematiques,Maitre de Conferences,12,bilel.dridi@fac.tn
+T018,Sarra,Guesmi,Mathematiques,Maitre de Conferences,12,sarra.guesmi@fac.tn
+T019,Anis,Hammami,Mathematiques,Maitre Assistant,18,anis.hammami@fac.tn
+T020,Maha,Kacem,Informatique,Maitre Assistant,18,maha.kacem@fac.tn
+T021,Skander,Laabidi,Mathematiques,Maitre Assistant,18,skander.laabidi@fac.tn
+T022,Rim,Mejri,Informatique,Maitre Assistant,18,rim.mejri@fac.tn
+T023,Tarek,Ouni,Mathematiques,Maitre Assistant,18,tarek.ouni@fac.tn
+T024,Olfa,Riahi,Informatique,Maitre Assistant,18,olfa.riahi@fac.tn
+T025,Hatem,Saidi,Mathematiques,Maitre Assistant,18,hatem.saidi@fac.tn
+T026,Asma,Tlili,Mathematiques,Maitre Assistant,18,asma.tlili@fac.tn
+T027,Ghazi,Ammar,Informatique,Maitre Assistant,18,ghazi.ammar@fac.tn
+T028,Emna,Baccouche,Informatique,Maitre Assistant,18,emna.baccouche@fac.tn
+T029,Wael,Cherni,Informatique,Maitre Assistant,18,wael.cherni@fac.tn
+T030,Mariem,Douik,Informatique,Maitre Assistant,18,mariem.douik@fac.tn
+T031,Zied,Essid,Mathematiques,Maitre Assistant,18,zied.essid@fac.tn
+T032,Sana,Fakhfakh,Informatique,Assistant,24,sana.fakhfakh@fac.tn
+T033,Aymen,Gabsi,Informatique,Assistant,24,aymen.gabsi@fac.tn
+T034,Ikram,Hlaoui,Informatique,Assistant,24,ikram.hlaoui@fac.tn
+T035,Marwen,Jaziri,Mathematiques,Assistant,24,marwen.jaziri@fac.tn
+T036,Sabrine,Karray,Mathematiques,Assistant,24,sabrine.karray@fac.tn
+T037,Oussama,Loukil,Mathematiques,Assistant,24,oussama.loukil@fac.tn
+T038,Yosra,Msakni,Mathematiques,Assistant,24,yosra.msakni@fac.tn
+T039,Hamza,Naifar,Informatique,Assistant,24,hamza.naifar@fac.tn
+T040,Feriel,Oueslati,Mathematiques,Assistant,24,feriel.oueslati@fac.tn
+T041,Chaker,Rahmouni,Mathematiques,Assistant,24,chaker.rahmouni@fac.tn
+T042,Nadia,Selmi,Informatique,Assistant,24,nadia.selmi@fac.tn
+T043,Firas,Toumi,Mathematiques,Assistant,24,firas.toumi@fac.tn
+T044,Roua,Werghi,Informatique,Assistant,24,roua.werghi@fac.tn

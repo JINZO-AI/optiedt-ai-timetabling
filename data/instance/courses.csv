@@ -1,0 +1,33 @@
+course_id,code,title,department,programme_id,level,semester,credits
+1,INFOL1-01,Compilation L1,Informatique,1,L1,S2,5
+2,INFOL1-02,Systemes d'exploitation L1,Informatique,1,L1,S2,5
+3,INFOL1-03,Architecture L1,Informatique,1,L1,S2,3
+4,INFOL1-04,Systemes d'exploitation L1,Informatique,1,L1,S2,4
+5,INFOL1-05,Programmation web L1,Informatique,1,L1,S2,4
+6,INFOL1-06,Systemes repartis L1,Informatique,1,L1,S2,5
+7,INFOL2-01,Architecture L2,Informatique,1,L2,S2,5
+8,INFOL2-02,Reseaux L2,Informatique,1,L2,S2,5
+9,INFOL2-03,Algebre L2,Informatique,1,L2,S2,3
+10,INFOL2-04,Reseaux L2,Informatique,1,L2,S2,3
+11,INFOL2-05,Securite L2,Informatique,1,L2,S2,4
+12,INFOL2-06,Programmation web L2,Informatique,1,L2,S2,4
+13,INFOL3-01,Base de donnees L3,Informatique,1,L3,S2,3
+14,INFOL3-02,Systemes repartis L3,Informatique,1,L3,S2,5
+15,INFOL3-03,Systemes repartis L3,Informatique,1,L3,S2,5
+16,INFOL3-04,Algebre L3,Informatique,1,L3,S2,3
+17,INFOL3-05,IA L3,Informatique,1,L3,S2,4
+18,MATHL1-01,Programmation web L1,Mathematiques,2,L1,S2,5
+19,MATHL1-02,Genie logiciel L1,Mathematiques,2,L1,S2,3
+20,MATHL1-03,Analyse L1,Mathematiques,2,L1,S2,3
+21,MATHL1-04,Reseaux L1,Mathematiques,2,L1,S2,5
+22,MATHL1-05,Probabilites L1,Mathematiques,2,L1,S2,5
+23,MATHL2-01,Analyse L2,Mathematiques,2,L2,S2,5
+24,MATHL2-02,Compilation L2,Mathematiques,2,L2,S2,4
+25,MATHL2-03,Systemes repartis L2,Mathematiques,2,L2,S2,5
+26,MATHL2-04,Programmation web L2,Mathematiques,2,L2,S2,4
+27,MATHL2-05,Reseaux L2,Mathematiques,2,L2,S2,3
+28,MINFOM1-01,Probabilites M1,Informatique,3,M1,S2,4
+29,MINFOM1-02,Base de donnees M1,Informatique,3,M1,S2,3
+30,MINFOM1-03,Statistiques M1,Informatique,3,M1,S2,3
+31,MINFOM1-04,Systemes d'exploitation M1,Informatique,3,M1,S2,5
+32,MINFOM1-05,Systemes d'exploitation M1,Informatique,3,M1,S2,5

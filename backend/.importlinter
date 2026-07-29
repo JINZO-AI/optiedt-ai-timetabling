@@ -1,0 +1,92 @@
+# Layer boundaries — the system's central invariants, enforced.
+#
+# The specification states these as requirements, not descriptions
+# (SRS §2.1, §7.5). A requirement that lives only in prose decays.
+# Run:  uv run lint-imports
+#
+# If a change requires relaxing a contract here, the change is wrong.
+# Bring it to the technical lead before editing this file.
+
+[importlinter]
+root_package = optiedt
+
+# ── Invariant 1 ────────────────────────────────────────────────────
+# "No component of the analysis layer may add, move or remove a
+#  session."  (SRS §2.1)
+#
+# This is what makes an analysis bug produce a wrong ORDER instead of
+# an invalid TIMETABLE. It only holds while this contract does.
+[importlinter:contract:analysis-cannot-reach-the-solver]
+name = Analysis layer must not import the solver
+type = forbidden
+source_modules =
+    optiedt.analysis
+forbidden_modules =
+    optiedt.solver
+
+# The analysis layer receives candidates as plain data and returns
+# numbers. Reaching the database would let it read — or write —
+# state it has no business touching, and would make it untestable
+# without a database. (PPM §5.7)
+[importlinter:contract:analysis-cannot-reach-the-database]
+name = Analysis layer must not import the persistence layer
+type = forbidden
+source_modules =
+    optiedt.analysis
+forbidden_modules =
+    optiedt.db
+
+# ── Invariant 4 ────────────────────────────────────────────────────
+# "It does not receive the database. It receives a payload built by
+#  the application."  (CdC §4.5)
+[importlinter:contract:assistant-cannot-reach-the-database]
+name = Assistant must not import the persistence layer
+type = forbidden
+source_modules =
+    optiedt.assistant
+forbidden_modules =
+    optiedt.db
+
+# The assistant returns text. It must never be able to invoke a solve
+# or reach a placement directly.
+[importlinter:contract:assistant-cannot-reach-the-solver]
+name = Assistant must not import the solver
+type = forbidden
+source_modules =
+    optiedt.assistant
+forbidden_modules =
+    optiedt.solver
+
+# ── Stage 1 independence ───────────────────────────────────────────
+# The pre-analysis exists to answer "is this instance solvable?"
+# WITHOUT a solver. At 95% laboratory occupancy it is the only way to
+# tell a modelling regression from a genuinely infeasible instance.
+# If it could call the solver, it would stop being that instrument.
+[importlinter:contract:preanalysis-needs-no-solver]
+name = Pre-analysis must not import the solver
+type = forbidden
+source_modules =
+    optiedt.preanalysis
+forbidden_modules =
+    optiedt.solver
+
+# ── Purity of the domain ───────────────────────────────────────────
+# The domain is imported by the solver, the analysis layer and the
+# ORM alike. A framework import here leaks into all three.
+[importlinter:contract:domain-is-pure]
+name = Domain layer must not import frameworks or infrastructure
+type = forbidden
+source_modules =
+    optiedt.domain
+forbidden_modules =
+    optiedt.api
+    optiedt.db
+    optiedt.solver
+    optiedt.analysis
+    optiedt.services
+    optiedt.assistant
+    optiedt.recommendations
+    optiedt.tasks
+    fastapi
+    sqlalchemy
+    ortools

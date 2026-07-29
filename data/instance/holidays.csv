@@ -1,0 +1,19 @@
+holiday_id,holiday_date,label,is_islamic,is_approximate,blocks_scheduling
+1,2025-10-15,Fete de l'Evacuation,0,0,1
+2,2025-12-17,Fete de la Revolution et de la Jeunesse,0,0,1
+3,2026-01-01,Jour de l'An,0,0,1
+4,2026-02-18,Ramadan (debut - mode horaire decale),1,1,1
+5,2026-03-19,Ramadan (fin approx.),1,1,1
+6,2026-03-20,Aid el-Fitr,1,1,1
+7,2026-03-21,Aid el-Fitr (2e jour),1,1,1
+8,2026-03-22,Aid el-Fitr (3e jour),1,1,1
+9,2026-03-20,Fete de l'Independance,0,0,1
+10,2026-04-09,Fete des Martyrs,0,0,1
+11,2026-05-01,Fete du Travail,0,0,1
+12,2026-05-27,Aid el-Idha,1,1,1
+13,2026-05-28,Aid el-Idha (2e jour),1,1,1
+14,2026-05-29,Aid el-Idha (3e jour),1,1,1
+15,2026-06-16,Ras el am el-Hejri (Nouvel an musulman),1,1,1
+16,2026-07-25,Fete de la Republique,0,0,1
+17,2026-08-13,Fete de la Femme,0,0,1
+18,2026-08-25,Aid el-Mouled,1,1,1

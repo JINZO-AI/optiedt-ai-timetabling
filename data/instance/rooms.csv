@@ -1,0 +1,21 @@
+room_id,building,code,capacity,room_type,has_projector,has_computers
+1,Bloc A,Amphi A,250,Amphi,1,0
+2,Bloc A,Amphi B,150,Amphi,1,0
+3,Bloc B,S01,30,Salle,1,0
+4,Bloc B,S02,30,Salle,1,0
+5,Bloc B,S03,40,Salle,1,0
+6,Bloc B,S04,35,Salle,1,0
+7,Bloc B,S05,35,Salle,1,0
+8,Bloc B,S06,35,Salle,1,0
+9,Bloc B,S07,30,Salle,1,0
+10,Bloc B,S08,30,Salle,1,0
+11,Bloc B,S09,45,Salle,1,0
+12,Bloc B,S10,30,Salle,1,0
+13,Bloc C,LabInfo1,20,Lab_Info,1,1
+14,Bloc C,LabInfo2,20,Lab_Info,1,1
+15,Bloc C,LabInfo3,20,Lab_Info,1,1
+16,Bloc C,LabInfo4,20,Lab_Info,1,1
+17,Bloc C,LabInfo5,20,Lab_Info,1,1
+18,Bloc C,LabInfo6,20,Lab_Info,1,1
+19,Bloc C,LabSci1,24,Lab_Sciences,1,0
+20,Bloc C,LabSci2,24,Lab_Sciences,1,0

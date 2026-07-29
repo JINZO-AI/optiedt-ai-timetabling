@@ -1,0 +1,26 @@
+# Line-ending normalisation.
+#
+# Development happens on Windows; the server and the solver run on Linux.
+# Without this, every file churns on checkout and diffs fill with invisible
+# line-ending changes.
+
+* text=auto eol=lf
+
+# PowerShell must keep CRLF — some hosts fail on LF-only scripts.
+*.ps1   text eol=crlf
+*.psm1  text eol=crlf
+*.cmd   text eol=crlf
+*.bat   text eol=crlf
+
+# Binary — never touched, never diffed as text.
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.xlsx  binary
+*.exe   binary
+
+# Instance and benchmark data: LF, and diffed as text so a change to a
+# generated CSV is reviewable line by line.
+*.csv   text eol=lf
+*.ctt   text eol=lf
+*.xml   text eol=lf

@@ -1,0 +1,63 @@
+[project]
+name = "optiedt"
+version = "0.1.0"
+description = "AI-assisted generation, ranking and explanation of university timetables"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "sqlalchemy>=2.0",
+    "alembic>=1.14",
+    "psycopg[binary]>=3.2",
+    "ortools>=9.11",
+    "numpy>=2.1",
+    "scikit-learn>=1.5",       # increment 2 only: weight fitting (ADR-002)
+    "httpx>=0.27",             # assistant adapter; no provider SDK on purpose
+    "python-jose[cryptography]>=3.3",
+    "passlib[bcrypt]>=1.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "hypothesis>=6.115",       # the four analysis-layer properties
+    "import-linter>=2.1",      # invariant 1 — see .importlinter
+    "ruff>=0.7",
+    "mypy>=1.13",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/optiedt"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# Scaffold: interface definitions have no bodies yet.
+"src/optiedt/**/__init__.py" = ["F401"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["optiedt"]
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "solver: requires the CP-SAT solver; must fix a seed and a deterministic budget (ADR-011)",
+    "acceptance: verifies a requirement against its acceptance criterion",
+]

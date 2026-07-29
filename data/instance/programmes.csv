@@ -1,0 +1,4 @@
+programme_id,code,label,degree_cycle,department
+1,INFO,Licence Informatique,L,Informatique
+2,MATH,Licence Mathematiques,L,Mathematiques
+3,MINFO,Master Informatique,M,Informatique

@@ -1,0 +1,12 @@
+key,value
+periods_per_day,5
+days_per_week,6
+slot_formula,t = day_index*periods_per_day + period_index
+friday_afternoon_closed,false
+saturday_afternoon_closed,true
+academic_year,2025-2026
+semester,S2
+ramadan_start,2026-02-18
+ramadan_end,2026-03-19
+ramadan_shift_minutes,60
+period_minutes,90

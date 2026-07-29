@@ -1,0 +1,26 @@
+# Development stack.
+#
+# PostgreSQL only. The API and frontend run natively for reload speed, and the
+# solver shares the API's process by design (ADR-004) — there is no separate
+# solver service to start.
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: optiedt-postgres
+    environment:
+      POSTGRES_USER: optiedt
+      POSTGRES_PASSWORD: optiedt
+      POSTGRES_DB: optiedt
+    ports:
+      - "5432:5432"
+    volumes:
+      - optiedt-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U optiedt -d optiedt"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  optiedt-pgdata:
