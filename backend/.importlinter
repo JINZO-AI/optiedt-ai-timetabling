@@ -93,3 +93,23 @@ forbidden_modules =
     fastapi
     sqlalchemy
     ortools
+
+# ── The instance loader is a leaf ──────────────────────────────────
+# Reads the 13 CSVs into domain objects and nothing else. Everything
+# else (solver, preanalysis, later analysis) is meant to depend on
+# this, not the other way round — if it could reach the solver it
+# would stop being a plain data-loading utility usable by all of them.
+[importlinter:contract:instance-loader-is-a-leaf]
+name = Instance loader must not import decision or application layers
+type = forbidden
+source_modules =
+    optiedt.instance
+forbidden_modules =
+    optiedt.solver
+    optiedt.analysis
+    optiedt.recommendations
+    optiedt.assistant
+    optiedt.services
+    optiedt.tasks
+    optiedt.api
+    optiedt.db

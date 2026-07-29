@@ -223,17 +223,25 @@ __marimo__/
 # commit (GitHub Python template) and is deliberately unmodified.
 # ─────────────────────────────────────────────────────────────
 
-# ⚠️ Un-ignore the reference instance.
+# ⚠️ Un-ignore every directory literally named "instance".
 #
 # Line 65 above is "instance/" from the stock GitHub Python template, where it
-# means Flask's instance folder. A bare pattern matches at ANY depth, so it also
-# swallows data/instance/ — the 13 CSVs the application actually runs on.
+# means Flask's instance folder. This project is FastAPI, not Flask — that
+# rule protects nothing here and has already cost real time twice: it first
+# silently swallowed data/instance/ (the 13 CSVs the application runs on), and
+# then swallowed backend/src/optiedt/instance/ (the package that loads them)
+# the moment that package was created, on 2026-07-30.
 #
-# That failure is silent and expensive: a fresh clone gets no data and no
-# explanation. The directory must be re-included before its contents can be,
-# because git will not descend into an excluded directory.
-!data/instance/
-!data/instance/**
+# Patching one path at a time is how it keeps happening. The general fix: any
+# directory named exactly "instance", anywhere in this repo, is un-ignored.
+# Nothing here is a real Flask instance folder, so there is nothing this
+# should ever hide.
+!**/instance/
+!**/instance/**
+# The broad re-include above also resurrects __pycache__ if it exists inside
+# an instance/ directory (it does, under the new backend package). Re-exclude
+# it explicitly rather than let compiled bytecode slip into a commit.
+**/instance/**/__pycache__/
 
 # Secrets and local configuration
 .env
