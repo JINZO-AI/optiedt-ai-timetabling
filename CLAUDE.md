@@ -1,4 +1,6 @@
-# CLAUDE.md — how to work on OptiEDT
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 **OptiEDT** generates, ranks and explains weekly university timetables for a Tunisian public faculty
 under the LMD system. CP-SAT places the sessions; an exact weighted sum ranks the results; a language
@@ -9,25 +11,24 @@ supervisor, not the working reference. Everything you need to write correct code
 
 ---
 
-## Read this first, in this order
+## Read this first
 
 | Order | File | Why |
 |---|---|---|
-| 1 | `docs/status.md` | Where the project actually is. What is done, next, blocked |
-| 2 | This file, section "The seven invariants" | What you may never break |
+| 1 | `docs/status.md` | Where the project actually is. Done, next, blocked |
+| 2 | "The seven invariants" below | What you may never break |
 | 3 | `docs/open-questions.md` | What is **not** decided. Do not silently pick an answer |
-| 4 | The `docs/` file for your area | See the map below |
 
-Everything else is on demand:
+Then, on demand:
 
-| If you are working on | Read |
+| Working on | Read |
 |---|---|
 | Anything structural | `docs/architecture.md` |
 | Entities, database, migrations | `docs/domain-model.md` |
 | The CP-SAT model, constraints, diagnosis | `docs/constraint-model.md` |
 | Scores, ranking, contributions, dominance | `docs/scoring-and-explanation.md` |
 | Recommendations, regeneration, the assistant | `docs/ai-integration.md` |
-| The generator or the 13 instance files | `docs/data-and-instance.md` |
+| The generator or the instance files | `docs/data-and-instance.md` |
 | Tests | `docs/testing-strategy.md` |
 | "Is FR-N built?" | `docs/requirements-traceability.md` |
 | "Why was X chosen?" | `docs/decisions/` (ADRs) |
@@ -37,123 +38,178 @@ is a gap in `docs/` — fix the gap, then continue.
 
 ---
 
-## The seven invariants
+## Architecture
 
-These are not style preferences. Each one is a stated requirement in the specification, and breaking
-any of them is a correctness bug, not a code-review comment.
+### The one idea everything follows from
 
-1. **The analysis layer may not import the solver.** `optiedt.analysis` must never reach
-   `optiedt.solver`. This is what makes an analysis bug produce a wrong *order* instead of an invalid
-   *timetable*. Enforced by `backend/.importlinter` in CI — if you find yourself wanting this import,
-   the design is wrong, not the lint rule.
+Two decisions of **different natures**, kept strictly apart:
 
-2. **Nothing outside the solver ever writes a placement.** Not the analysis layer, not the
-   recommendation module, not the assistant, not a user. A session gets a slot and a room from CP-SAT
-   or not at all.
+| | Decision | Cost of an error | Method |
+|---|---|---|---|
+| 1 | Which session → which slot + room | An unpublishable timetable | CP-SAT, correct by construction |
+| 2 | Which valid timetable is better | A worse ranking, still usable | Weighted sum, exact and hand-recomputable |
 
-3. **A recommendation is one of exactly three actions.** `weight_delta`, `lock_session`,
-   `exclude_slot`. A fourth action is a type error, not a feature. Accepting one launches a **new run
-   through the same solver** with one input changed — never an edit to an existing timetable.
+Methods that **guarantee** go on decision 1. Methods that **estimate** go on decision 2. The language
+model is admitted only because it touches neither. When a change seems to require blurring that line,
+the change is wrong.
 
-4. **The assistant never receives a database connection, and never produces a figure.** It gets a
-   built context payload and returns text. Every number in its answer must already appear in that
-   context, or the answer is discarded and the computed form is shown instead.
+### Layers, and the edges that must not exist
 
-5. **Everything works with the assistant switched off.** Generation, scoring, ranking, comparison,
-   regeneration and publication are all available in degraded mode. Only text disappears.
+```
+React ──HTTPS/JSON/token──► FastAPI ──► PostgreSQL
+                               │
+        ┌──────────────────────┼───────────────────────┐
+        ▼                      ▼                       ▼
+  preanalysis/            solver/                  analysis/
+  5 arithmetic checks     CP-SAT — the ONLY        sub-scores, ranking,
+  NO solver               thing that places        decomposition, dominance
+                          a session                NO solver · NO placement
+                               ▲                       │
+                               └──── recommendations/ ─┘
+                                     writes a weight, a lock,
+                                     an exclusion — never a placement
 
-6. **A candidate is immutable once recorded.** Its sub-scores describe its content; editing it would
-   make them describe something that no longer exists. A regenerated timetable is a *new* candidate
-   under a *new* run.
+  assistant/  context payload in → text out.  NO database.  NO figure of its own.
+```
 
-7. **Institutional calendar rules are configuration, never constraints.** A closed half-day sets
-   `slot.is_open = 0` and H9 removes it from every domain. A shortened-day window shifts *displayed*
-   hours only — the slot index never changes, so the model is untouched. Adding a CP-SAT constraint
-   for Ramadan or a closed Saturday is a bug. See ADR-003.
+| Package | Role | Depends on |
+|---|---|---|
+| `domain/` | Entities, enums. **Pure** — no I/O, ORM or framework | — |
+| `core/` · `db/` · `api/` · `services/` | Config/security · ORM · routers+RBAC · use cases | `domain` |
+| `preanalysis/` | The five checks. Stage 1 of every run | `domain` |
+| `solver/` | Variables, constraints, objective, diagnosis | `domain` |
+| `analysis/` | Criteria, scoring, ranking, decomposition | `domain` |
+| `recommendations/` | Closed catalogue, translation to solver input | `domain`, `analysis` |
+| `assistant/` | Adapter, context builder, answer verifier | `domain`, `analysis` |
+| `tasks/` | Background run executor | `services` |
+
+`preanalysis`, `recommendations` and `assistant` are separate packages **because they have different
+permissions**, not for tidiness — analysis may write nothing, recommendations may write exactly three
+fields, the assistant must be removable without affecting anything else.
+
+### The generation pipeline — three stages
+
+Stages 1 and 2 always run. **Stage 3 runs only when stage 2 returns `INFEASIBLE`.**
+
+1. **Pre-analysis** — five arithmetic checks, no solver. Distinguishes *this instance genuinely has no
+   solution* from *the model has a bug*. The reference instance sits at **95.2% computer-laboratory
+   occupancy (8 spare room-periods in the whole week)**, so at that saturation a modelling regression
+   surfaces as `INFEASIBLE`, not as a slow solve. **Run this first when debugging; you cannot tell the
+   two apart without it.**
+2. **Optimisation** — one solve per weight profile, sequential, carries the objective, all workers,
+   bounded by `max_deterministic_time` (ADR-011).
+3. **Diagnosis** — three properties imposed by CP-SAT itself, not choices: **a single worker**
+   (assumptions admit no parallelism), **no objective** (with one, the whole assumption set comes back
+   and the mechanism is useless), and the result is **sufficient, not minimal** — never present it as
+   the smallest conflict set.
+
+### Run lifecycle — asynchronous by necessity
+
+Solving takes minutes; no HTTP request is held open for it.
+
+```
+POST /runs → 202 {run_id}   → background task → poll GET /runs/{id}
+PENDING → PREANALYSIS → SOLVING → SCORING → COMPLETED
+                              └→ INFEASIBLE → DIAGNOSING → DIAGNOSED
+                              └→ FAILED
+```
+
+### Scoring — why linearity is load-bearing
+
+```
+n_i(k)  = 1 − (v_i(k) − min_i) / (max_i − min_i)     1 = best
+score(k)= 100 × Σ(w_i × n_i(k))
+score(A) − score(B) = 100 × Σ(w_i × (n_i(A) − n_i(B)))
+```
+
+That third line **is** the explanation feature: the contribution shown to the user is the score
+calculation read term by term, not an approximation of it. **Any change making the score non-linear
+destroys it** — a product term, a threshold or a max removes the reason the ranking is defensible.
+Bounds come from the *instance*, never from the candidates a run produced (ADR-009).
 
 ---
 
-## Two mechanisms make invariants 1 and 3 fail the build
+## The seven invariants
 
-Both are already configured. Do not weaken them to make a change compile.
+Each is a stated requirement in the specification. Breaking one is a correctness bug, not a
+code-review comment.
 
-- **`backend/.importlinter`** — forbids `analysis → solver`, `analysis → db`, `assistant → db`.
-  Runs in CI. Invariant 1.
-- **The recommendation union type** in `optiedt.recommendations` — the catalogue is
-  `WeightDelta | LockSession | ExcludeSlot`. Adding a fourth variant breaks type checking everywhere
-  the union is exhaustively matched. Invariant 3.
+1. **The analysis layer may not import the solver.** This is what makes an analysis bug produce a
+   wrong *order* instead of an invalid *timetable*. If you want this import, the design is wrong, not
+   the lint rule.
+2. **Nothing outside the solver ever writes a placement.** Not analysis, not recommendations, not the
+   assistant, not a user.
+3. **A recommendation is one of exactly three actions** — `weight_delta`, `lock_session`,
+   `exclude_slot`. Accepting one launches a **new run through the same solver** with one input
+   changed, never an edit.
+4. **The assistant never receives a database connection and never produces a figure.** Every number in
+   its answer must appear in the context it was given, or the answer is discarded.
+5. **Everything works with the assistant switched off.** Only text disappears.
+6. **A candidate is immutable once recorded.** A regenerated timetable is a *new* candidate under a
+   *new* run.
+7. **Institutional calendar rules are configuration, never constraints.** A closed half-day sets
+   `slot.is_open = 0` and H9 does the rest; a shortened-day window shifts *displayed* hours only.
+   Adding a CP-SAT constraint for Ramadan or a closed Saturday is a bug (ADR-003).
+
+**Invariants 1 and 3 fail the build.** `backend/.importlinter` forbids `analysis → solver`,
+`analysis → db`, `assistant → db`; the recommendation catalogue is a union type so a fourth variant is
+a type error. Both are verified to fire. **Do not weaken either to make a change compile.**
 
 ---
 
 ## Decided — do not reopen
 
-Read the ADR before arguing with any of these. Each records reasoning that already survived a review.
+Read the ADR before arguing with any of these.
 
 | ADR | Decision |
 |---|---|
-| 001 | CP-SAT, not metaheuristics / ILP / learning |
-| 002 | Weighted sum for ranking; dominance as a complement |
-| 003 | Calendar rules as configuration, not constraints |
-| 004 | One deployable unit, not microservices |
-| 005 | In-process background task, not a message broker |
-| 006 | The LLM does not place, score, or rank |
-| 007 | Closed 3-action recommendation catalogue |
+| 001–002 | CP-SAT for assignment · weighted sum for ranking, dominance as complement |
+| 003–005 | Calendar as configuration · one deployable unit · in-process background task |
+| 006–007 | The LLM does not place, score or rank · closed 3-action catalogue |
 | 008 | Generated instance; public sources given roles, never merged |
-| 009 | Normalisation bounds are **instance**-derived, stable across runs |
-| 010 | The assistant is committed to **increment 1** |
-| 011 | Solve under `max_deterministic_time`, not wall clock |
-
----
+| 009–011 | Instance-derived bounds · assistant in increment 1 · `max_deterministic_time` |
 
 ## Open — do not silently decide
 
-Full detail, with options and consequences, in `docs/open-questions.md`. The short version:
-
 | # | Open | Blocks |
 |---|---|---|
-| C-4 | The raw value `v_i` and the bounds of **all seven** soft criteria are undefined | Scoring, and everything downstream |
+| C-4 | `v_i` and the bounds of **all seven** soft criteria are undefined | Scoring, everything downstream |
 | C-7 | The `y[s][t]` channelling constraint for 2-period sessions is unwritten | The model |
-| C-12 | **S5 carries weight 0.20 and has no input data** — the schema has no "preferred" state | Scoring, the availability grid |
+| C-12 | **S5 carries weight 0.20 and has no input data** — no "preferred" state in the schema | Scoring, availability grid |
 | C-6 | Which of H2 / H11 get their own assumption literal | The diagnosis report |
 | C-5 | "At least three candidates" can fail when duplicates are removed | Acceptance tests |
 | C-9 | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Acceptance |
 
-⚠️ **C-12 and C-5 are the same bug waiting to happen.** The teacher-favouring profile is supposed to
-differ by raising S3 *and* S5. If S5 measures identically zero, that profile differs by S3 alone, two
-candidates may converge, duplicate removal drops one, and the "at least three candidates" acceptance
-test fails — for a reason nobody would look for, because the symptom is "the portfolio is boring" and
-the cause is a missing column.
+⚠️ **C-12 and C-5 are the same bug waiting to happen.** The teacher-favouring profile differs by
+raising S3 *and* S5. If S5 measures identically zero it differs by S3 alone, two candidates converge,
+duplicate removal drops one, and the three-candidate acceptance test fails — for a reason nobody would
+look for, because the symptom is "the portfolio is boring" and the cause is a missing column.
 
-**C-11 is resolved:** the reference instance exists in `data/instance/` and every documented figure
-verifies. Run `scripts/verify-instance.ps1`.
-
-If your work touches one of these, **resolve it explicitly in `docs/open-questions.md` first**, then
-implement. An assumption made in code and not written down is how this project acquires a defect that
-surfaces three weeks later.
+If your work touches one of these, **resolve it in `docs/open-questions.md` first**, then implement.
+An assumption made in code and never written down is how this project acquires a defect that surfaces
+three weeks later.
 
 ---
 
 ## Commands
 
-```bash
-scripts/bootstrap.ps1
-```
+Setup: `scripts/bootstrap.ps1` (checks prerequisites, installs both stacks, starts PostgreSQL).
 
-Then, from `backend/`:
-
-The toolchain is installed and green: 6/6 layer contracts, ruff, mypy strict on 20 files, and the
-frontend type-check all pass. Python 3.14.2, uv 0.12.0.
+From `backend/`:
 
 | Task | Command |
 |---|---|
-| Install / sync deps | `uv sync` |
+| Sync deps | `uv sync --all-extras` |
 | Run the API | `uv run uvicorn optiedt.api.main:app --reload` |
-| Tests | `uv run pytest` |
+| All tests | `uv run pytest` |
+| **One file** | `uv run pytest tests/unit/test_scoring.py` |
+| **One test** | `uv run pytest tests/unit/test_scoring.py::test_decomposition_is_exact` |
+| **By name** | `uv run pytest -k decomposition` |
 | Property tests only | `uv run pytest tests/property` |
-| Lint + format | `uv run ruff check . && uv run ruff format .` |
+| Skip solver tests | `uv run pytest -m "not solver"` |
+| Lint · format · types | `uv run ruff check . · uv run ruff format . · uv run mypy` |
 | **Layer boundaries** | `uv run lint-imports` |
-| New migration | `uv run alembic revision --autogenerate -m "..."` |
-| Apply migrations | `uv run alembic upgrade head` |
+| Migrations | `uv run alembic revision --autogenerate -m "..."` · `uv run alembic upgrade head` |
 
 From `frontend/`: `npm install`, `npm run dev`, `npm run build`, `npm run typecheck`.
 
@@ -167,41 +223,53 @@ From the root:
 | Reference archives status | `scripts/check-reference-data.ps1` |
 
 Run `verify-instance.ps1` after any change to `data/instance/` or the generator. It checks the
-instance against the figures the PDFs state as facts; a failure means either the instance changed or
-the documentation is now false.
+instance against figures the PDFs state as facts; a failure means either the data changed or the
+documentation is now false.
+
+**Any test that invokes the solver must fix the seed *and* use a deterministic budget.** A test bounded
+by wall clock passes on one machine and fails on another, and the failure looks like a solver bug.
+
+### Two traps that will waste your time
+
+- **`pytest` exits 5** while there are no tests. `run-checks.ps1` tolerates it; remove `5` from the
+  allowed list once the first test lands.
+- **`.gitignore` inherits GitHub's Python template**, which contains `instance/` (meaning Flask's
+  instance folder) and matches at any depth. It silently swallowed `data/instance/` — the whole
+  dataset. There is an explicit un-ignore for it, plus one for `/dataset/`. **Do not remove either**,
+  and check `git status` after adding data files.
 
 ---
 
 ## How to do the things you will actually be asked to do
 
-**Add a hard constraint.** Give it the next free `H` code — codes are permanent identifiers and are
-never reused. Add the row to `data/instance/constraint_catalogue.csv` with its XHSTT reference if one
-exists. Implement it in `optiedt/solver/constraints/`. Decide whether it gets its own assumption
-literal for the diagnosis run — **it should not if it overlaps another constraint** (see C-6, and
-`docs/constraint-model.md` on why redundant literals corrupt the conflict report).
+**Add a hard constraint.** Next free `H` code — codes are permanent, never reused. Add the row to
+`data/instance/constraint_catalogue.csv` with its XHSTT reference if one exists. Implement in
+`optiedt/solver/`. Decide whether it gets its own assumption literal — **it should not if it overlaps
+another constraint** (C-6: redundant literals make the conflict report name a rule the user cannot act
+on).
 
-**Add a soft criterion.** Give it the next free `S` code. **`S1`, `S8` and `S9` are retired and must
-never be reused.** Implement the `Criterion` Protocol — which requires `raw_value` *and* `bounds`
-together, deliberately, so a criterion cannot be half-defined. Add its default weight to the catalogue,
-and remember that profile weights are renormalised to sum to 1 before any score is computed.
+**Add a soft criterion.** Next free `S` code — **`S1`, `S8`, `S9` are retired and must never be
+reused.** Implement the `Criterion` Protocol, which requires `raw_value` *and* `bounds` together so a
+criterion cannot be half-defined. Add its default weight to the catalogue; profile weights are
+renormalised to sum to 1 before any score is computed.
 
 **Change a time limit.** It is a *deterministic* budget, not seconds (ADR-011). The wall-clock ceiling
-is a safety net for hangs, not the primary bound. The deterministic-to-wall-clock ratio is
-machine-dependent — check `docs/status.md` for the calibration measured on this machine.
+is a hang backstop, not the primary bound. The deterministic-to-wall-clock ratio is machine-dependent
+— see `docs/status.md`.
 
-**Touch the assistant.** Any change must preserve invariants 4 and 5. Verify degraded mode still works
-by switching the service off in config and confirming every other function is unaffected.
+**Touch the assistant.** Preserve invariants 4 and 5. Verify degraded mode by switching the service off
+in config and confirming every other function is unaffected.
 
 ---
 
 ## Conventions
 
-- **French domain terms keep their French names in code** — `Promotion`, `CM`/`TD`/`TP`. They are
-  precise LMD terms with no clean English equivalent, and translating them invites drift. The canonical
-  list is in `docs/domain-model.md`.
-- Python: `ruff` defaults, full type annotations, `from __future__ import annotations`.
-- Domain layer is pure — no I/O, no ORM, no framework imports.
-- Commits: imperative mood, reference the FR or ADR when one applies.
-- **Update `docs/status.md` when you finish a phase**, and
-  `docs/requirements-traceability.md` when you finish an FR. A stale status file is worse than none —
-  the next session trusts it.
+- **French domain vocabulary is kept verbatim in code**, matching the instance CSVs: `SessionType`
+  `CM`/`TD`/`TP`; `GroupLevel` `PROMO`/`TD`/`TP`; `RoomType` `Amphi`/`Salle`/`Lab_Info`/`Lab_Sciences`;
+  `TeacherRank` `Professeur`/`Maitre de Conferences`/`Maitre Assistant`/`Assistant` (unaccented, as the
+  files carry them). Translating these into English creates a mapping layer between the application and
+  its own data for no benefit.
+- Python 3.12+, full type annotations, `from __future__ import annotations`, `mypy` strict.
+- The domain layer is pure — no I/O, no ORM, no framework imports.
+- **Update `docs/status.md` when you finish a phase** and `docs/requirements-traceability.md` when you
+  finish an FR. A stale status file is worse than none, because the next session trusts it.
