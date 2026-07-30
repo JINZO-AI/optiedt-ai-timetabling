@@ -7,6 +7,17 @@ built?" without reading code.
 
 Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 
+**Where the project actually is: 1 of 25 requirements is under way, none is finished.** Phase 2 built
+the decision layer, which is the engine behind FR-3 and the precondition for FR-4, FR-5 and FR-8 — but
+a requirement is only `✓` once a user can reach it, and there is no API or interface yet. Do not read
+the run of `—` below as "nothing works": see [`docs/dashboard.md`](dashboard.md).
+
+**FR-3 is `WIP`, not `✓`, deliberately.** H1–H12 are implemented and demonstrated on the reference
+instance, with every hard constraint re-derived from the raw CSVs rather than trusted from CP-SAT's
+status (`backend/tests/integration/test_h1_h12.py`). What is missing is the path *to* it: no endpoint,
+no run record, no interface. H10 is also registered but dormant — `build_variables` refuses to run if
+any session is locked, which is safe only because the reference instance has none.
+
 ---
 
 ## Increment 1
@@ -15,7 +26,7 @@ Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 |---|---|---|---|---|---|
 | **FR-1** | Load and manage department data | Necessary | `api`, `db`, `services` | `acceptance/test_fr01` | — |
 | **FR-2** | Teacher declares availability on a weekly grid | Necessary | `api`, `db`; `features/availability` | `acceptance/test_fr02` | — |
-| **FR-3** | Generate a timetable respecting H1–H12 | Necessary | `solver` | `acceptance/test_fr03` | — |
+| **FR-3** | Generate a timetable respecting H1–H12 | Necessary | `solver` | `integration/test_h1_h12` ✓ | **WIP** |
 | **FR-4** | Improve quality criteria within a time limit | Necessary | `solver` — objective | `integration` | — |
 | **FR-5** | Produce several candidates, each scored out of 100 | Necessary | `analysis` — scoring | `acceptance/test_fr05` | — |
 | **FR-6** | Order candidates by score | Necessary | `analysis` — ranking | `property` | — |

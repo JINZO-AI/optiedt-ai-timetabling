@@ -15,6 +15,25 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 | **OPEN** | Not decided. Do not silently pick an answer |
 | **ERRATUM** | A document is wrong; replacement wording given |
 
+## Index — what is actually still open
+
+**Only four.** Everything else on this page is resolved and kept for its reasoning.
+
+| # | Still open | Blocks | Owner |
+|---|---|---|---|
+| **C-4** | `v_i` and `min_i`/`max_i` undefined for all seven soft criteria | **Phase 3, everything downstream** | Technical lead |
+| **C-12** | S5 carries weight 0.20 with no input data | Phase 3, Phase 4 grid | Technical lead |
+| **C-5** | "At least three candidates" can fail when duplicates are removed | Phase 6 acceptance | Lead + supervisor |
+| **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
+
+Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
+**C-8, C-11**. The sections below keep their full reasoning; headings say which is which.
+
+⚠️ The two Phase 3 blockers are **one bug waiting to happen**. If S5 measures identically zero (C-12),
+the teacher-favouring profile differs by S3 alone, two candidates converge, duplicate removal drops one,
+and the three-candidate acceptance test fails (C-5) — for a reason nobody would look for, because the
+symptom is "the portfolio is boring" and the cause is a missing column.
+
 ---
 
 ## RESOLVED
@@ -78,7 +97,11 @@ otherwise if the institution expects an approval step in the application.
 
 ---
 
-## OPEN
+## RAISED AFTER THE FIRST READING — four still open, four since resolved
+
+*Kept in discovery order rather than re-sorted, so cross-references from other documents and from
+commit messages still land on the right section. **Every heading states its own status** — trust the
+heading, and the index above, over the position on the page.*
 
 ### C-4 — The raw value of every soft criterion is undefined · **largest gap**
 
@@ -113,7 +136,7 @@ are obtained on the reference instance"; (b) retain duplicates and flag them as 
 **Blocks:** Phase 6 acceptance tests. **Owner:** technical lead, with the supervisor — it changes a
 delivered acceptance criterion.
 
-### C-6 — Redundant constraints corrupt the diagnosis report
+### C-6 — Redundant constraints corrupt the diagnosis report · **RESOLVED 2026-07-30 → four literals only**
 
 **H2 is subsumed by H12** (NoOverlap over the whole promotion→group→subgroup hierarchy already forbids
 what H2 forbids). **H11 is implied by H3** once `room[s]` is assigned, and duplicates pre-analysis check
@@ -123,10 +146,12 @@ Harmless for feasibility. **Not harmless for the diagnosis run**, whose entire v
 the user must change. Overlapping assumption literals let the solver return either, so the report can
 name a rule the user cannot act on.
 
-**Decide explicitly which of H2 and H11 are posted as propagation aids *without* their own assumption
-literal.** The mapping constraint → literal must be 1:1 and non-redundant.
-
-**Blocks:** Phase 5 diagnosis run. **Owner:** whoever builds the solver.
+**Decision: only H1, H3, H7 and H12 carry `carries_assumption_literal = True`** — and the reason is
+sharper than "avoid redundancy". Those four are the only constraints that are *posted objects at all*.
+H2 and H11 are subsumed, so there is no posting to attach a literal to; H4, H5, H6, H8, H9 and H10 are
+domain restrictions applied when the variable is constructed, so there is nothing posted either. The
+mapping constraint → literal is therefore 1:1 and non-redundant by construction rather than by
+convention. Implemented in `solver/constraints/`, not merely decided.
 
 ### C-7 — The `y[s][t]` channelling constraint · **RESOLVED 2026-07-30 → start-indicator encoding, built on demand**
 
@@ -350,87 +375,10 @@ would reintroduce exactly this failure inside the product.
 
 ---
 
-<details>
-<summary>Superseded analysis, kept because the measurements are real and the reasoning is instructive</summary>
+**The superseded analysis** - the original C-13 diagnosis, its measurement table and the three
+techniques tried against it - is archived in [`docs/history.md`](history.md). It is wrong, and kept
+only because the measurements are real and the reasoning error is instructive.
 
-### C-13 as originally recorded — Room-assignment symmetry makes H1–H12 hard to solve
-
-H1, H3, H7 and H12 were built, reviewed, and — after finding and fixing a real bug in H12's original
-grouping (see `docs/status.md`, 2026-07-30) — are believed correct: no test at any point has reproduced
-an instant, sub-second `INFEASIBLE`, which is the signature the project's own docs (R-2) associate with
-a modelling bug at this instance's occupancy. Instead, solving the combined model returns `UNKNOWN`
-after minutes of search — CP-SAT neither finds a feasible timetable nor proves there isn't one.
-
-Root cause, confirmed by inspecting the instance directly (no solver call needed): `Lab_Info` (6 rooms,
-95.2% occupancy) and `Lab_Sciences` (2 rooms, 85.7%) are **fully interchangeable room types** — every
-session needing that type gets *every* room of that type as a candidate (min candidate count equals max
-candidate count equals room count, for both). Full interchangeability at near-full capacity is the
-textbook hard case for generic CP/MIP search, because the solver has to distinguish between assignments
-that are actually equivalent. `Amphi` is also fully interchangeable (2/2) but only 57% occupied, so it
-isn't believed to be part of the difficulty. `Salle` is partially interchangeable (5–10 of 10 rooms,
-depending on group size) at 29% occupancy — plenty of slack, also not implicated.
-
-Three ways were identified to proceed:
-
-- **(a)** Accept a much larger deterministic budget (many minutes) as the current reality for a first
-  timetable, and revisit performance later. Lowest engineering risk; leaves the "<60s, an estimate"
-  target unmet for now and Phase 2's milestone unconfirmed for a long time.
-- **(b)** Add explicit symmetry-breaking constraints among interchangeable rooms of the same type (a
-  canonical ordering that prunes equivalent assignments). Keeps the current `assign[s,r]` +
-  optional-interval encoding; moderate risk of a new subtle bug written under time pressure.
-- **(c)** Reformulate room assignment for the fully-interchangeable types (`Amphi`, `Lab_Info`,
-  `Lab_Sciences`) as a `cumulative` constraint (simultaneous demand ≤ room count) instead of per-room
-  `NoOverlap` + `assign` booleans, and label the actual room afterward with a simple greedy sweep —
-  correct by construction (an interval-graph-colouring argument: if cumulative demand never exceeds
-  capacity, a per-room labelling always exists). Keep the existing encoding for `Salle`.
-
-**(c) was chosen and implemented 2026-07-30** (`solver/variables.py`'s `cumulative_room_types`,
-`solver/constraints/room_assignment.py`, `solver/engine.py`'s `_label_cumulative_rooms` - commit
-`480061e`). It is correct, unit-tested, and cut the room-assignment boolean count from thousands to 770
-(only `Salle` still uses `assign[s,r]`). **It did not resolve C-13 on its own**: at a matched 480s tuned
-budget, the reformulated model still returned `UNKNOWN`, with conflict count *higher* than the old
-encoding's at the same budget (405,301 vs. 29). The reformulation remains worth keeping - it is a real,
-verified improvement to the encoding - but the underlying search difficulty needs a different or
-additional lever.
-
-**A constructive greedy warm-start was also tried, 2026-07-30, and also did not resolve C-13**
-(`solver/warm_start.py`, commit `c18e963`). A most-constrained-variable-first (MRV) greedy, with bounded
-random restarts on failure, was measured standalone before wiring it in: MRV alone places only 26 of
-218 sessions before getting stuck; 3,000 random restarts plateau around 192/218 - a complete greedy
-placement was never found on any ordering tried. The best partial result (`WarmStart.covered`) was hinted
-to CP-SAT via `model.add_hint()` regardless, on the reasoning that CP-SAT is typically much faster at
-*verifying* a supplied candidate than at *finding* one from scratch. Measured against the same 480s
-tuned configuration used for the reformulation: conflicts=435,688 (vs. 405,301 without the hint) -
-essentially unchanged, still `UNKNOWN`. **The hint made no meaningful difference.**
-
-**Three independent, legitimate techniques - the cumulative reformulation, CP-SAT parameter tuning, and
-the constructive warm-start - have now been tried, individually and combined, and none resolved the
-underlying search difficulty within budgets up to 480s (8 minutes).** All three remain committed as
-real, correct improvements (the reformulation and the warm-start module are both independently useful
-and unit-tested), but none was the fix. This is no longer a "try the next idea" situation.
-
-**What's left, genuinely untested**, in rough order of promise:
-
-- A much larger budget (tens of minutes to hours) - only up to 480s has actually been tried.
-- Symmetry-breaking specifically on `Salle` (option (b), narrowed to the one remaining per-room type) -
-  considered unlikely to matter given its 29% occupancy, but not directly tested.
-- A more sophisticated warm-start construction (real backtracking, or a matching-based room assignment
-  rather than greedy first-fit) that might close more of the ~87% coverage ceiling reached so far -
-  though the fact the ~87%-covering hint barely helped is a discouraging sign for this direction.
-- Reconsidering the model more radically (additional redundant/implied constraints to aid propagation,
-  or a different global-constraint structure) - the largest investment of anything considered so far.
-
-A second, smaller finding from the same investigation: under `num_workers=0` (parallel search),
-`max_deterministic_time` did not tightly bound the search the way ADR-011 assumes for a single-worker
-budget — a run configured for 60s deterministic time consumed 247.98 deterministic-time units before
-the wall-clock ceiling actually stopped it. Doesn't undermine ADR-011's reproducibility argument, but
-the deterministic-time parameter cannot yet be trusted as the primary stopping mechanism in parallel
-mode without further calibration.
-
-**Blocks:** Task 11 (integration test) and therefore Phase 2's stated milestone ("a timetable without
-conflict on the instance"). **Owner:** technical lead.
-
-</details>
 
 **Still open from the superseded analysis, on its own merits:** the deterministic-time calibration in
 the last paragraph above. `max_deterministic_time` did not tightly bound parallel search, and that

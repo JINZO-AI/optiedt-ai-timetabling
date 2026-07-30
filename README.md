@@ -82,7 +82,9 @@ OpenAPI page **is** the API reference — there is no hand-written copy to fall 
 ## Repository layout
 
 ```
-docs/            Working documentation. Start at CLAUDE.md, then docs/status.md
+docs/            Working documentation. Start at CLAUDE.md, then docs/dashboard.md
+  dashboard.md     State, roadmap, open questions, next task — the handoff page
+  history.md       Session archive. Forensics only, not orientation
   specifications/  The three PDFs — the contract. Not the working reference
   decisions/       ADRs. Read before reopening a settled question
 backend/         FastAPI app, CP-SAT model, analysis layer
@@ -103,7 +105,13 @@ catalogued in `docs/open-questions.md` rather than resolved silently.
 
 ## Status
 
-Increment 1 of 2. See `docs/status.md` for the current phase and what is blocked.
+**Increment 1 of 2 · Phases 1–2 complete.** The decision layer is built: all twelve hard constraints
+are implemented and the reference instance produces a conflict-free timetable in about three seconds,
+with every constraint re-verified from the raw data rather than trusted from the solver's own status.
+Phase 3 — scoring, ranking and the portfolio — is next and is waiting on two specification decisions.
+
+**[`docs/dashboard.md`](docs/dashboard.md) is the one page that answers "where is this project".**
+`docs/status.md` holds the detail, `docs/open-questions.md` what is still undecided.
 
 ## Author
 

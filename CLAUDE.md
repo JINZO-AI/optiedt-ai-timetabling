@@ -13,11 +13,24 @@ supervisor, not the working reference. Everything you need to write correct code
 
 ## Read this first
 
+**The repository is the single source of truth. Never rely on a previous conversation** — if this file
+and your recollection disagree, this file wins, and if the code and the documentation disagree, that is
+a bug in the documentation to fix before continuing.
+
 | Order | File | Why |
 |---|---|---|
-| 1 | `docs/status.md` | Where the project actually is. Done, next, blocked |
+| 1 | **`docs/dashboard.md`** | **The handoff page.** State, progress, roadmap, open questions, risks, next task, and the brief for the current phase. Usually the only file you need before starting work |
 | 2 | "The seven invariants" below | What you may never break |
 | 3 | `docs/open-questions.md` | What is **not** decided. Do not silently pick an answer |
+| 4 | `docs/status.md` | Detail behind the dashboard: blockers, measurements, phases, acceptance criteria |
+
+`docs/history.md` is the session-by-session archive. **Do not read it to get oriented** — it is long
+and it contains superseded conclusions kept on purpose. Open it only to check what was already tried
+before repeating an experiment, or to understand why a past decision was taken.
+
+There is no `PROJECT_STATUS.md` and no `TODO.md`: `docs/dashboard.md` covers the first and
+`docs/status.md`'s "Next, in order" covers the second. Adding either would duplicate a file that is
+already authoritative, and duplicated status is how a project acquires two answers to one question.
 
 Then, on demand:
 
@@ -35,6 +48,10 @@ Then, on demand:
 
 **Never** open `docs/specifications/*.pdf` to answer a question. If the answer is not in `docs/`, that
 is a gap in `docs/` — fix the gap, then continue.
+
+Then pick up the current phase from the dashboard's brief. **If the next step is blocked on an open
+question, say so and stop rather than deciding it** — that is the one failure mode this project cannot
+absorb quietly.
 
 ---
 
@@ -174,21 +191,20 @@ Read the ADR before arguing with any of these.
 
 ## Open — do not silently decide
 
-| # | Open | Blocks |
-|---|---|---|
-| C-4 | `v_i` and the bounds of **all seven** soft criteria are undefined. **This is the current blocker** — Phase 2 is done and nothing further can be encoded without it | Scoring, everything downstream |
-| C-12 | **S5 carries weight 0.20 and has no input data** — no "preferred" state in the schema | Scoring, availability grid |
-| C-5 | "At least three candidates" can fail when duplicates are removed | Acceptance tests |
-| C-9 | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Acceptance |
+**Four questions are open; `docs/open-questions.md` is the authority and `docs/dashboard.md` carries the
+current summary.** They are not listed here, so that there is exactly one place to update when one is
+resolved. What belongs here is the rule, not the list:
 
-**C-6 is resolved and implemented**: only H1, H3, H7 and H12 carry `carries_assumption_literal = True`
-— the four constraints that are real CP-SAT postings.
+> If your work touches an open question, **resolve it in `docs/open-questions.md` first, with the
+> reason, then implement.** If it is not yours to decide, say so and stop. An assumption made in code
+> and never written down is how this project acquires a defect that surfaces three weeks later — and
+> C-13 is the proof: a plausible conclusion nobody tried to falsify cost three sessions of work.
 
-**C-7 is resolved and implemented**: `y[s][t]` means *occupies* `t`, channelled from start indicators
-`x[s,t₀]` in `solver/occupancy.py`. **It is built on demand, not by every solve** — it adds 10,048
-variables and costs the feasibility solve about 2.5×, so nothing pays for it until an objective reads
-it. Half of C-7 stays open under C-4: the objective's auxiliary variables cannot be counted until the
-criterion formulas exist.
+**Resolved, with the two operational facts worth carrying:** only H1, H3, H7 and H12 carry
+`carries_assumption_literal = True`, the four real CP-SAT postings (C-6). And `y[s][t]` means
+*occupies* `t`, channelled from start indicators in `solver/occupancy.py` — **built on demand, not by
+every solve**, because it adds 10,048 variables and costs the feasibility solve about 2.5× (C-7). Half
+of C-7 stays open under C-4: the objective's auxiliaries cannot be counted until the formulas exist.
 
 **C-13 is resolved, and how it was resolved matters more than the answer.** For three sessions it was
 recorded as "room-assignment symmetry makes the correct model hard to solve", and three legitimate
@@ -201,10 +217,8 @@ establish that a solution exists before treating it as a performance problem** �
 `INFEASIBLE` is evidence of a too-tight model, but its *absence* is not evidence of a sound instance.
 Full account in `docs/open-questions.md`.
 
-⚠️ **C-12 and C-5 are the same bug waiting to happen.** The teacher-favouring profile differs by
-raising S3 *and* S5. If S5 measures identically zero it differs by S3 alone, two candidates converge,
-duplicate removal drops one, and the three-candidate acceptance test fails — for a reason nobody would
-look for, because the symptom is "the portfolio is boring" and the cause is a missing column.
+(The C-12 × C-5 interaction — why those two must be resolved together — is stated once, in
+`docs/open-questions.md`, and summarised in `docs/dashboard.md`.)
 
 If your work touches one of these, **resolve it in `docs/open-questions.md` first**, then implement.
 An assumption made in code and never written down is how this project acquires a defect that surfaces
@@ -296,5 +310,7 @@ in config and confirming every other function is unaffected.
   its own data for no benefit.
 - Python 3.12+, full type annotations, `from __future__ import annotations`, `mypy` strict.
 - The domain layer is pure — no I/O, no ORM, no framework imports.
-- **Update `docs/status.md` when you finish a phase** and `docs/requirements-traceability.md` when you
-  finish an FR. A stale status file is worse than none, because the next session trusts it.
+- **Update `docs/dashboard.md` whenever the project state changes** — it is what the next session reads
+  first, so a stale dashboard is worse than none. Then `docs/status.md` when you finish a phase,
+  `docs/requirements-traceability.md` when you finish an FR, and `docs/open-questions.md` when one is
+  resolved. Long session narrative belongs in `docs/history.md`, not in `status.md`.
