@@ -220,7 +220,7 @@ column.
 
 ---
 
-### C-13 — Room-assignment symmetry makes H1–H12 hard to solve on the reference instance · **NEW, OPEN**
+### C-13 — Room-assignment symmetry makes H1–H12 hard to solve on the reference instance · **OPEN, option (c) tried and insufficient alone**
 
 H1, H3, H7 and H12 were built, reviewed, and — after finding and fixing a real bug in H12's original
 grouping (see `docs/status.md`, 2026-07-30) — are believed correct: no test at any point has reproduced
@@ -237,7 +237,7 @@ that are actually equivalent. `Amphi` is also fully interchangeable (2/2) but on
 isn't believed to be part of the difficulty. `Salle` is partially interchangeable (5–10 of 10 rooms,
 depending on group size) at 29% occupancy — plenty of slack, also not implicated.
 
-Three ways to proceed:
+Three ways were identified to proceed:
 
 - **(a)** Accept a much larger deterministic budget (many minutes) as the current reality for a first
   timetable, and revisit performance later. Lowest engineering risk; leaves the "<60s, an estimate"
@@ -249,9 +249,25 @@ Three ways to proceed:
   `Lab_Sciences`) as a `cumulative` constraint (simultaneous demand ≤ room count) instead of per-room
   `NoOverlap` + `assign` booleans, and label the actual room afterward with a simple greedy sweep —
   correct by construction (an interval-graph-colouring argument: if cumulative demand never exceeds
-  capacity, a per-room labelling always exists). Keep the existing encoding for `Salle`. Larger diff;
-  reverses a previously-approved design choice (`solver/variables.py`'s docstring on why `assign[s,r]`
-  was chosen over a plain `room[s]` integer).
+  capacity, a per-room labelling always exists). Keep the existing encoding for `Salle`.
+
+**(c) was chosen and implemented 2026-07-30** (`solver/variables.py`'s `cumulative_room_types`,
+`solver/constraints/room_assignment.py`, `solver/engine.py`'s `_label_cumulative_rooms` - commit
+`480061e`). It is correct, unit-tested, and cut the room-assignment boolean count from thousands to 770
+(only `Salle` still uses `assign[s,r]`). **It did not resolve C-13 on its own**: at a matched 480s tuned
+budget, the reformulated model still returned `UNKNOWN`, with conflict count *higher* than the old
+encoding's at the same budget (405,301 vs. 29). The reformulation remains worth keeping - it is a real,
+verified improvement to the encoding - but the underlying search difficulty needs a different or
+additional lever.
+
+**Not yet tried**, in rough order of promise:
+
+- A constructive greedy warm-start (list-scheduling heuristic, built by hand outside CP-SAT) fed to the
+  solver via `model.add_hint()`. CP-SAT is typically fast at verifying a supplied candidate even when
+  slow at finding one from scratch - untested this session.
+- A genuinely larger budget (tens of minutes) - only up to 480s has been tried.
+- Symmetry-breaking specifically on `Salle` (option (b), narrowed to the one remaining per-room type) -
+  considered unlikely to matter given its 29% occupancy, but not directly tested.
 
 A second, smaller finding from the same investigation: under `num_workers=0` (parallel search),
 `max_deterministic_time` did not tightly bound the search the way ADR-011 assumes for a single-worker

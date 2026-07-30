@@ -9,72 +9,55 @@ Keep this file current. A stale status file is worse than none, because the next
 
 ## ▶ Resume from here — copy this to continue
 
-> Resume OptiEDT Phase 2. Read `CLAUDE.md`, then `docs/status.md` in full (especially both "Session
-> log — 2026-07-30" entries), then `docs/open-questions.md` — do not open the PDFs.
+> Resume OptiEDT Phase 2. Read `CLAUDE.md`, then `docs/status.md` in full (all three "Session log —
+> 2026-07-30" entries), then `docs/open-questions.md`'s C-13 — do not open the PDFs.
 >
-> The loader, variables, and all 12 constraint builders — **including the H12 ancestor-lineage fix** —
-> are committed and green (commit `c1be462`; 23 tests, ruff, mypy, format, 7/7 import contracts, all
-> pass). `solver/engine.py` (`CpSatSolver.solve()`) is committed too. **Do not redo this work.**
+> The loader, variables, and all 12 constraint builders — including the H12 ancestor-lineage fix and
+> the C-13 cumulative-constraint reformulation — are committed and green (`c1be462`, `480061e`,
+> `8f22e2b`; 24 tests, ruff, mypy, format, 7/7 import contracts, all pass with solver-marked tests
+> excluded from the default fast path). The integration test is committed too
+> (`backend/tests/integration/test_h1_h12.py`, `@pytest.mark.solver`). **Do not redo any of this work.**
 >
-> **Task 11 is blocked on a real decision, not a bug.** The integration test exists on disk at
-> `backend/tests/integration/test_h1_h12.py` (**uncommitted** — do not commit it yet, see why below)
-> and independently re-verifies every placement against raw CSV data, not just CP-SAT's status. Running
-> it against the real instance does not resolve within a practical budget:
+> **Task 11 is still blocked, and the chosen fix (C-13 option 3, reformulate room assignment as a
+> cumulative constraint) did not resolve it on its own.** Measurements, most recent first:
 >
 > | Configuration | Budget | Result |
 > |---|---|---|
-> | H3+H7 alone (room assignment only, no teacher/hierarchy) | 200s wall | `UNKNOWN`, 78,824 conflicts |
-> | Full H1+H3+H7+H12, default parameters | 360s wall | `UNKNOWN`, 337,954 conflicts |
-> | Full H1+H3+H7+H12, `use_probing_search` + `keep_symmetry_in_presolve` | 480s wall | `UNKNOWN`, 29 conflicts, 2.29M branches |
+> | Cumulative reformulation, tuned, 480s | 480s wall | `UNKNOWN`, 405,301 conflicts, 2.42M branches |
+> | Cumulative reformulation, tuned, 180s | 180s wall | `UNKNOWN`, 96,020 conflicts, 1.28M branches |
+> | Cumulative reformulation, default parameters | 480s wall | `UNKNOWN` (via the integration test's own fixture) |
+> | Per-room encoding, tuned, 480s (pre-reformulation) | 480s wall | `UNKNOWN`, 29 conflicts, 2.29M branches |
+> | Per-room encoding, default parameters | 360s wall | `UNKNOWN`, 337,954 conflicts |
+> | Room assignment alone (H3+H7, no teacher/hierarchy), per-room | 200s wall | `UNKNOWN`, 78,824 conflicts |
 >
-> **This is a different signature from the H12 bug** (which returned `INFEASIBLE` in under a tenth of
-> a second). `UNKNOWN` after minutes of search, with conflict counts that *fall* as branch counts
-> explode, means CP-SAT has not found a feasible point and has not proven there is none — the search is
-> hard, not wrong. No subset of constraints, at any point in this investigation, has reproduced the
-> instant-`INFEASIBLE` signature that would indicate another modelling bug.
+> The reformulation is real and correct (cut the room-assignment boolean count from thousands to 770 -
+> only `Salle` still uses `assign[s,r]`; unit-tested; see `docs/constraint-model.md` and
+> `solver/engine.py`'s labeller), but it did **not** meaningfully close the gap at a comparable budget.
+> Two things are independently confirmed and should not be re-litigated:
 >
-> **Root cause, confirmed empirically**: `Lab_Info` (6 rooms, 95.2% occupancy) and `Lab_Sciences` (2
-> rooms, 85.7%) are **fully interchangeable room types** — every session needing that type gets *every*
-> room of that type as a candidate (confirmed: min candidate count == max candidate count == room count,
-> for both types; `Amphi` is the same, 2/2, but at only 57% occupancy it isn't tight enough to matter).
-> Full interchangeability at near-full capacity is the textbook hard case for generic CP/MIP search:
-> the solver has to distinguish between assignments that are actually equivalent, and its automatic
-> symmetry detection (`symmetry_level=2`, already the default) is not collapsing it. `Salle` is only
-> partially interchangeable (5–10 candidates depending on group size) but sits at 29% occupancy, so it
-> is not believed to be the bottleneck.
+> - **Pure time scheduling (H1+H12, no rooms at all) is fast** - confirmed `OPTIMAL` in the 2026-07-30
+>   session, before this investigation started. The difficulty is specifically in the room dimension.
+> - **No constraint subset, at any point across both sessions, has reproduced an instant `INFEASIBLE`.**
+>   Every result has been `UNKNOWN` after real search effort, never the sub-0.1s signature the H12 bug
+>   produced. This is still evidence of hardness, not of a remaining correctness bug.
 >
-> **A second, independent finding worth recording**: under `num_workers=0` (parallel),
-> `max_deterministic_time` did **not** tightly bound the search the way ADR-011 assumes for a
-> single-worker budget — runs configured for 60s and 480s deterministic time both ran well past that
-> before the *wall-clock* ceiling actually stopped them (e.g. `max_deterministic_time=60` consumed
-> 247.98 deterministic-time units over a 360s wall-clock run). This doesn't undermine ADR-011's
-> reproducibility argument, but it means the deterministic-time parameter cannot yet be trusted as the
-> primary stopping mechanism in parallel mode without further calibration — flagged, not yet resolved.
+> **What hasn't been tried yet, in rough order of promise:**
 >
-> **Three options exist for how to proceed, and this is a decision for the technical lead, not something
-> to silently pick** (per this project's own "if ambiguous, stop and ask" rule):
+> 1. **A constructive greedy warm-start fed via `model.add_hint()`.** Build one feasible assignment by
+>    hand (list-scheduling heuristic, outside CP-SAT) and hint it to the solver - CP-SAT is typically
+>    fast at *verifying* a supplied assignment even when it's slow at *finding* one from scratch. Not
+>    yet attempted this session.
+> 2. **A genuinely large budget** (tens of minutes, not ~8) to see if the search converges at all, in
+>    either direction, given enough time - only budgets up to 480s have been tried so far.
+> 3. **Symmetry-breaking on `Salle`** (the one remaining per-room-encoded type) in case its partial
+>    interchangeability (5-10 of 10 rooms) still contributes meaningfully - considered unlikely, since
+>    `Salle` sits at only 29% occupancy, but not directly tested in isolation.
 >
-> 1. **Accept a much larger deterministic budget** (many minutes) as the current reality for a first
->    conflict-free timetable, revisit performance later. Lowest engineering risk, but leaves Phase 2's
->    milestone unconfirmed for a long time and conflicts with the "<60s, an estimate" target.
-> 2. **Add explicit symmetry-breaking constraints** among interchangeable rooms of the same type (a
->    standard CP technique — e.g. canonical ordering so equivalent assignments are pruned). Keeps the
->    current `assign[s,r]` + optional-interval encoding, moderate risk of introducing a new subtle bug
->    under time pressure.
-> 3. **Reformulate room assignment for fully-interchangeable types** (`Amphi`, `Lab_Info`,
->    `Lab_Sciences`) as a `cumulative` constraint (simultaneous demand ≤ room count) instead of per-room
->    `NoOverlap` + `assign` booleans, and label the actual room afterward with a simple greedy sweep —
->    correct by construction (interval-graph colouring argument: if cumulative demand never exceeds
->    capacity, a per-room labelling always exists), and removes the symmetry rather than fighting it.
->    Keep the existing per-room encoding for `Salle`, which is not fully interchangeable. Larger diff,
->    reverses a previously-approved design choice (`variables.py`'s docstring notes the current
->    `assign[s,r]` design "was flagged and approved before implementation").
->
-> **Do not commit `test_h1_h12.py` as-is.** `scripts/run-checks.ps1` runs the whole `pytest` suite
-> unfiltered — a solver-marked test that takes 8+ minutes and still doesn't resolve would make every
-> future check run hang or fail. Either wait until a working configuration exists, or wire
-> `-m "not solver"` (already documented in `CLAUDE.md`, never actually plumbed into a script) into the
-> fast path first.
+> **A second, independent finding, still unresolved**: under `num_workers=0` (parallel),
+> `max_deterministic_time` does not tightly bound the search the way ADR-011 assumes for a
+> single-worker budget - configured limits have consistently been exceeded before the wall-clock
+> ceiling actually stops the run (e.g. a 60s deterministic budget consumed 247.98 deterministic-time
+> units over 360s wall-clock). Flagged, not yet calibrated.
 >
 > **Before running any solve with `num_workers=0`, be aware it will use every CPU core** and can make
 > even trivial shell commands stall for tens of seconds to minutes — budget for it, and always track
@@ -87,10 +70,10 @@ Keep this file current. A stale status file is worse than none, because the next
 
 | | |
 |---|---|
-| **Current phase** | Phase 2 — H1-H12 built, fixed and committed (`c1be462`); Phase 2's milestone ("a timetable without conflict on the instance") **not yet reached** — blocked on a room-assignment symmetry/performance decision, not a known bug |
-| **Next step** | Technical lead picks one of the three options above; then finish task 11 with that configuration |
+| **Current phase** | Phase 2 — H1-H12 built, fixed, reformulated per C-13 and committed (`c1be462`, `480061e`, `8f22e2b`); Phase 2's milestone ("a timetable without conflict on the instance") **still not reached** — the chosen reformulation was a real improvement but did not resolve it alone |
+| **Next step** | Technical lead picks the next lever (warm-start hint, larger budget, or something else — see "Resume from here") |
 | **Days used** | ~1.5 of 20. Phase 2 is budgeted 5 days |
-| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · 7 commits, all green |
+| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · 9 commits, all green |
 | **Blocked on** | A genuine engineering decision (see "Resume from here") — not an unresolved bug |
 
 ---
@@ -170,9 +153,54 @@ assignment encoding at near-full, fully-interchangeable capacity - an engineerin
 tradeoffs (see the three options above), not something to resolve by continuing to guess at parameters
 or budgets alone.
 
-**Left deliberately uncommitted**: `backend/tests/integration/test_h1_h12.py` (would make
-`scripts/run-checks.ps1` hang for 8+ minutes and still not pass) and this file. Everything else from
-today is committed.
+**Left deliberately uncommitted at this point**: `backend/tests/integration/test_h1_h12.py` (would have
+made `scripts/run-checks.ps1` hang for 8+ minutes and still not pass) and this file - both committed
+later, see the next log entry.
+
+Presented the finding to the technical lead with three options (accept a larger budget, add
+symmetry-breaking constraints, or reformulate room assignment for fully-interchangeable types as a
+cumulative constraint). **Chose option 3** (reformulate).
+
+---
+
+## Session log — 2026-07-30, continued again: implementing the C-13 reformulation
+
+Implemented the chosen option. `solver/variables.py` now computes `cumulative_room_types`: a room type
+qualifies only if *every* session needing it has *every* room of that type as a candidate (computed
+from the actual request, not hardcoded - a room excluded by an `exclude_slot` recommendation would
+correctly disqualify its whole type, falling back to the safer per-room encoding). On the reference
+instance this resolves to `{Amphi, Lab_Info, Lab_Sciences}` - `Salle` stays per-room, confirmed by a new
+unit test. `assign`/`room_interval` are now only built for non-cumulative-type sessions (770 pairs,
+down from thousands). `H3` (`room_assignment.py`) posts one `AddCumulative` per cumulative type instead
+of a `NoOverlap` per room; `H7` posts nothing at all for those sessions - "exactly one room" becomes a
+structural guarantee delivered by a new deterministic greedy labeller in `solver/engine.py`
+(`_label_cumulative_rooms`), not a posted constraint. The labeller is the classical left-edge
+interval-graph-colouring algorithm (sessions processed by solved start slot, ties broken by session id
+for reproducibility per ADR-011; each gets the first free room of its type in canonical order) - correct
+by construction, since interval graphs are perfect graphs and a colouring using exactly the peak
+simultaneous-demand number of colours always exists once `AddCumulative` has bounded that peak to the
+room count.
+
+Fixed one existing unit test that assumed every session gets an `assign` entry
+(`test_assign_variables_exist_only_for_candidate_pairs`) and added
+`test_fully_interchangeable_room_types_are_cumulative_encoded`. All 8 tests in
+`test_solver_variables.py` pass; ran the reformulated model through the same `run-checks.ps1` and it was
+green apart from `pytest` picking up the (still-failing) integration test - which surfaced a real gap:
+**`run-checks.ps1` ran the whole suite unfiltered**, so a slow solver-marked test would hang or fail
+every future fast check. Fixed by wiring `-m "not solver"` into the `tests` step, matching what
+`CLAUDE.md` already documented as the convention but nothing had actually wired in. Committed the
+reformulation (`480061e`) and, separately, the integration test itself (`8f22e2b`) - it's finished,
+correct work that will not silently start passing for the wrong reason once the underlying solve is
+fixed, since it already independently re-verifies every rule rather than trusting CP-SAT's status.
+
+**Measured the reformulated model against the same budgets used before, for a fair comparison** - see
+the table in "Resume from here" above. **The reformulation did not resolve the difficulty.** At a
+matched 480s tuned budget, conflict count went UP (405,301 vs. 29 for the old per-room encoding) while
+still returning `UNKNOWN`. The reformulation cut the room-assignment variable count by roughly 90% and
+is independently correct and worth keeping, but on its own it was not the fix. Two follow-on avenues are
+identified and not yet tried: a constructive greedy warm-start via `model.add_hint()`, and a genuinely
+larger budget (only up to 480s has been tested). Reporting back before spending more solver time on
+either, since both are new decisions in their own right.
 
 ---
 
