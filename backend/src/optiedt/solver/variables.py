@@ -99,15 +99,15 @@ class Variables:
     happened by the pair being absent from candidate_rooms."""
 
 
-def _open_slot_map(instance: Instance) -> dict[SlotIndex, bool]:
+def open_slot_map(instance: Instance) -> dict[SlotIndex, bool]:
     return {s.index: s.is_open for s in instance.slots}
 
 
-def _day_of(instance: Instance) -> dict[SlotIndex, int]:
+def day_of(instance: Instance) -> dict[SlotIndex, int]:
     return {s.index: s.day_index for s in instance.slots}
 
 
-def _unavailable_by_teacher(instance: Instance) -> dict[str, frozenset[SlotIndex]]:
+def unavailable_by_teacher(instance: Instance) -> dict[str, frozenset[SlotIndex]]:
     by_teacher: dict[str, set[SlotIndex]] = {}
     for a in instance.availability:
         if a.state is AvailabilityState.UNAVAILABLE:
@@ -115,7 +115,7 @@ def _unavailable_by_teacher(instance: Instance) -> dict[str, frozenset[SlotIndex
     return {t: frozenset(v) for t, v in by_teacher.items()}
 
 
-def _valid_starts(
+def valid_starts(
     session: Session,
     all_slot_indices: list[SlotIndex],
     is_open: dict[SlotIndex, bool],
@@ -145,7 +145,7 @@ def _valid_starts(
     return valid
 
 
-def _candidate_rooms(
+def candidate_rooms_for_session(
     session: Session,
     instance: Instance,
     group_size_by_id: dict[str, int],
@@ -228,9 +228,9 @@ def build_variables(model: cp_model.CpModel, request: SolverInput) -> Variables:
 
     instance = request.instance
     all_slots = sorted(s.index for s in instance.slots)
-    is_open = _open_slot_map(instance)
-    day_of = _day_of(instance)
-    unavailable_by_teacher = _unavailable_by_teacher(instance)
+    is_open = open_slot_map(instance)
+    day_by_slot = day_of(instance)
+    unavailable_by_teacher_map = unavailable_by_teacher(instance)
     group_size_by_id = {g.id: g.size for g in instance.groups}
 
     excluded_starts_by_session: dict[SessionId, set[SlotIndex]] = {}
@@ -249,18 +249,18 @@ def build_variables(model: cp_model.CpModel, request: SolverInput) -> Variables:
     # cumulative_room_types (below) can only be decided once every session's
     # candidate set is known.
     for session in instance.sessions:
-        unavailable = unavailable_by_teacher.get(session.teacher, frozenset())
+        unavailable = unavailable_by_teacher_map.get(session.teacher, frozenset())
         excluded_starts = frozenset(excluded_starts_by_session.get(session.id, ()))
-        valid_starts = _valid_starts(
-            session, all_slots, is_open, day_of, unavailable, excluded_starts
+        valid_start_slots = valid_starts(
+            session, all_slots, is_open, day_by_slot, unavailable, excluded_starts
         )
-        if not valid_starts:
+        if not valid_start_slots:
             raise ValueError(
                 f"session {session.id}: no valid start slot after H6/H8/H9 pruning "
                 f"(teacher {session.teacher}, duration {session.duration_periods}). "
                 "The pre-analysis should catch this before the solver is ever called."
             )
-        domain = cp_model.Domain.FromValues(valid_starts)
+        domain = cp_model.Domain.FromValues(valid_start_slots)
         start[session.id] = model.new_int_var_from_domain(domain, f"start[{session.id}]")
         interval[session.id] = model.new_interval_var(
             start[session.id],
@@ -270,7 +270,7 @@ def build_variables(model: cp_model.CpModel, request: SolverInput) -> Variables:
         )
 
         excluded_rooms = frozenset(excluded_rooms_by_session.get(session.id, ()))
-        rooms = _candidate_rooms(session, instance, group_size_by_id, excluded_rooms)
+        rooms = candidate_rooms_for_session(session, instance, group_size_by_id, excluded_rooms)
         if not rooms:
             raise ValueError(
                 f"session {session.id}: no candidate room after H4/H5 pruning "

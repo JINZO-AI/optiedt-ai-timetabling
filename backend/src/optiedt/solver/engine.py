@@ -34,6 +34,7 @@ from optiedt.domain.instance import Instance
 from optiedt.solver.constraints import ALL_HARD_CONSTRAINTS
 from optiedt.solver.interfaces import DiagnosisResult, SolverInput, SolverOutput
 from optiedt.solver.variables import Variables, build_variables
+from optiedt.solver.warm_start import build_warm_start
 
 _TERMINAL_STATUSES = (cp_model.OPTIMAL, cp_model.FEASIBLE, cp_model.INFEASIBLE)
 
@@ -105,18 +106,42 @@ def _label_cumulative_rooms(
     return labelled
 
 
+def _apply_warm_start(model: cp_model.CpModel, variables: Variables, request: SolverInput) -> None:
+    """Hints CP-SAT with a hand-built greedy placement (C-13,
+    docs/open-questions.md). CP-SAT is typically far faster at verifying a
+    supplied candidate than at finding one from scratch, and even a partial
+    hint (the greedy does not reach 100% coverage on the reference
+    instance - see warm_start.py) gives the search a real head start on the
+    sessions it does cover, leaving only the rest to actually search over.
+    """
+    warm_start = build_warm_start(request)
+    session_by_id = {s.id: s for s in request.instance.sessions}
+    for session_id in warm_start.covered:
+        session = session_by_id[session_id]
+        model.add_hint(variables.start[session_id], warm_start.start[session_id])
+        if session.required_room_type in variables.cumulative_room_types:
+            continue
+        chosen_room = warm_start.room[session_id]
+        for room_id in variables.candidate_rooms[session_id]:
+            model.add_hint(variables.assign[(session_id, room_id)], int(room_id == chosen_room))
+
+
 @dataclass(frozen=True, slots=True)
 class CpSatSolver:
     """The concrete Solver for the weekly model."""
 
     workers: int = 0
     wall_clock_ceiling_seconds: float = 900.0
+    use_warm_start: bool = True
 
     def solve(self, request: SolverInput) -> SolverOutput:
         model = cp_model.CpModel()
         variables = build_variables(model, request)
         for builder in ALL_HARD_CONSTRAINTS:
             builder.apply(model, variables, request.instance)
+
+        if self.use_warm_start:
+            _apply_warm_start(model, variables, request)
 
         solver = cp_model.CpSolver()
         solver.parameters.max_deterministic_time = request.deterministic_budget
