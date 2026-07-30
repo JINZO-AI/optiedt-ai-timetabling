@@ -17,15 +17,23 @@ two are independent proto fields and setting the wrong one would silently
 solve single-threaded while looking configured for parallelism. 0 means "use
 all cores," matching core.config.Settings.solver_workers's existing default.
 
-An objective is posted only when ``request.profile`` is not None (Phase 3):
-``build_occupancy`` and ``build_objective`` (solver/occupancy.py,
-solver/objective.py) are called first, so x[s,t0]/y[s,t] exist for the
-objective to read. A profile with every weight at zero still counts as "no
-objective" (``build_objective`` returns None and nothing is posted), which
-keeps that case identical to the Phase 2 feasibility-only solve. Existing
-callers that pass ``profile=None`` (feasibility-only, e.g. the Phase 2
-tests) are unaffected - occupancy is not built and ``SolverOutput.cost``
-stays 0, exactly as before.
+An objective is posted only when ``request.profile`` carries a criterion with
+usable weight (Phase 3). ``build_occupancy`` then runs first, so x[s,t0] and
+y[s,t] exist for ``build_objective`` to read (solver/occupancy.py,
+solver/objective.py).
+
+Both are gated on ``has_active_criteria``, not on ``profile is not None``:
+occupancy costs 10,048 variables and roughly 2.5x the solve time, so an
+all-zero-weight profile has to skip it to be genuinely equivalent to the
+Phase 2 feasibility solve rather than merely posting no objective while still
+paying for the accounting. Callers passing ``profile=None`` (feasibility-only,
+e.g. the Phase 2 tests) are unaffected - occupancy is not built and
+``SolverOutput.cost`` stays 0, exactly as before.
+
+``SolverOutput.cost`` is the CP-SAT objective value in scaled integer units
+(see solver/objective.py's _WEIGHT_SCALE) and is informational only. It is NOT
+the displayed score: the analysis layer recomputes every criterion
+independently from the returned placements, and nothing ranks on this field.
 """
 
 from __future__ import annotations
@@ -39,7 +47,7 @@ from optiedt.domain.enums import RoomType
 from optiedt.domain.instance import Instance
 from optiedt.solver.constraints import ALL_HARD_CONSTRAINTS
 from optiedt.solver.interfaces import DiagnosisResult, SolverInput, SolverOutput
-from optiedt.solver.objective import build_objective
+from optiedt.solver.objective import build_objective, has_active_criteria
 from optiedt.solver.occupancy import build_occupancy
 from optiedt.solver.variables import Variables, build_variables
 from optiedt.solver.warm_start import build_warm_start
@@ -157,8 +165,14 @@ class CpSatSolver:
         if self.use_warm_start:
             _apply_warm_start(model, variables, request)
 
+        # Gate on has_active_criteria(), NOT merely on profile is not None:
+        # build_occupancy() adds 10,048 variables and costs the solve about
+        # 2.5x (docs/constraint-model.md), so a profile whose weights are all
+        # zero must skip it entirely to stay equivalent to the Phase 2
+        # feasibility solve. Checking only build_objective()'s return value
+        # would be too late - occupancy would already have been built.
         objective_posted = False
-        if request.profile is not None:
+        if request.profile is not None and has_active_criteria(request.profile.weights):
             occupancy = build_occupancy(model, variables, request.instance)
             objective_posted = (
                 build_objective(

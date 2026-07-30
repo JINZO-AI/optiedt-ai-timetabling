@@ -19,6 +19,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 from optiedt.domain.entities import (
+    CourseId,
     GroupId,
     Room,
     RoomId,
@@ -60,6 +61,11 @@ class InstanceView:
     sessions_for_teacher: dict[TeacherId, tuple[SessionId, ...]]
     rooms_by_type: dict[RoomType, tuple[RoomId, ...]]
     open_slot_count: int
+    sessions_by_leaf_group_and_course: dict[tuple[GroupId, CourseId], tuple[SessionId, ...]]
+    """Ancestor-or-self sessions grouped by (leaf group, course) - S7's index.
+    Precomputed here rather than rebuilt inside S7SubjectSpread, which needs it
+    from both raw_value() and bounds() and would otherwise reconstruct it once
+    per criterion call, i.e. twice per candidate."""
 
 
 def _leaf_groups(instance: Instance) -> tuple[GroupId, ...]:
@@ -123,6 +129,11 @@ def build_instance_view(instance: Instance) -> InstanceView:
     for room in instance.rooms:
         rooms_by_type[room.type].append(room.id)
 
+    by_leaf_course: dict[tuple[GroupId, CourseId], list[SessionId]] = defaultdict(list)
+    for leaf, chain_sessions in sessions_for_leaf_group.items():
+        for sid in chain_sessions:
+            by_leaf_course[(leaf, session_by_id[sid].course)].append(sid)
+
     return InstanceView(
         session_by_id=session_by_id,
         room_by_id=room_by_id,
@@ -136,6 +147,7 @@ def build_instance_view(instance: Instance) -> InstanceView:
         sessions_for_teacher={t: tuple(v) for t, v in sessions_for_teacher.items()},
         rooms_by_type={t: tuple(v) for t, v in rooms_by_type.items()},
         open_slot_count=sum(1 for s in instance.slots if s.is_open),
+        sessions_by_leaf_group_and_course={k: tuple(v) for k, v in by_leaf_course.items()},
     )
 
 

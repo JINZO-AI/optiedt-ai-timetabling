@@ -44,13 +44,13 @@ Phase 6  Tests, documentation, presentation            ░░░░░░░░�
 | Area | State |
 |---|---|
 | **Architecture** | 🟢 Stable. Four layers, boundaries enforced by `import-linter` — **7/7 contracts kept**. No layer edge has been weakened |
-| **Solver** | 🟢 H1–H12 built and demonstrated correct. Reference instance solves in **2.8–3.3 s** (deterministic 0.13–0.21) across 7 seeds, all 218 sessions placed. C-7 accounting (`x[s,t₀]`, `y[s,t]`) built and tested, called on demand. `solver/objective.py` (new) encodes S2–S10 as CP-SAT expressions and is posted by `engine.py` whenever `request.profile is not None`; a real solve under the catalogue's default weights takes ~50 s wall / ~92 deterministic units on this machine (up from ~3 s / ~0.2 with no objective — the "live again once solves get long enough" risk below is now live) |
+| **Solver** | 🟢 H1–H12 built and demonstrated correct. Reference instance solves in **2.8–3.3 s** (deterministic 0.13–0.21) across 7 seeds, all 218 sessions placed. C-7 fully closed — accounting (`x[s,t₀]`, `y[s,t]`) built on demand, auxiliaries measured at **5,249**. `solver/objective.py` (new) encodes S2–S10 as CP-SAT expressions; `engine.py` posts it — and builds occupancy at all — only when a criterion carries weight, so an all-zero profile is genuinely equivalent to a feasibility solve. A real solve under catalogue weights takes ~49 s wall / ~84 deterministic units (up from ~3 s / ~0.2 with no objective — the calibration risk below is now live) |
 | **Objective** | 🟡 Encoded for S2–S5, S7, S10 in full; **S6 only for non-cumulative room types** (Salle) — cumulative types (Amphi, Lab_Info, Lab_Sciences) have no per-room CP-SAT variable to optimise against, only a post-hoc labeller (C-13). `analysis/criteria.py` still scores S6 correctly for every room after the fact |
 | **Analysis / scoring** | 🟢 Implemented and tested. `analysis/criteria.py` (7 criteria), `analysis/scoring.py` (`DefaultScorer`, `evaluate_candidate`), `analysis/ranking.py` (`DefaultRanker`: rank/decompose/dominance). All four properties pass (`tests/property/test_scoring_properties.py`). Not yet wired to a run/portfolio orchestration — that is `services/`, Phase 4–5 |
 | **API · frontend · persistence** | ⬜ Scaffold only. Phases 4–5. The solver reads CSVs through `optiedt.instance`; PostgreSQL is not needed until runs must survive a restart |
 | **Assistant** | ⬜ Scaffold only. Increment 1 (ADR-010), Phase 4+ |
 | **Validation** | 🟢 `scripts/run-checks.ps1` green: 7/7 contracts · ruff · format · mypy strict on 32 files · tests · instance verification · frontend `tsc` |
-| **Tests** | 🟢 **39 passing** (35 fast + 4 solver-marked). New: `tests/property/test_scoring_properties.py`, 5 hypothesis-based tests for the four analysis properties |
+| **Tests** | 🟢 **62 passing** (50 fast + 12 solver-marked). New this phase: `tests/property/test_scoring_properties.py` (9 hypothesis properties), `tests/unit/test_criteria.py` (the seven formulas against a hand-computable instance), `tests/integration/test_objective_matches_analysis.py` (**the cross-layer guard** — CP-SAT's objective value must equal the analysis layer's recomputation on the same placements) |
 | **Documentation** | 🟢 Current as of this commit. Session history archived to `docs/history.md` |
 
 ---
@@ -64,6 +64,7 @@ ever disagree, that file wins and this table is the bug. **Do not silently decid
 |---|---|---|---|
 | **C-5** | "At least three candidates" can fail when duplicates are removed | Phase 6 acceptance | Lead + supervisor |
 | **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
+| **C-14** | Dominance uses the strict reading ("improves on **every** criterion"); S10's zero weight makes ties common, so a genuinely worse candidate can go unflagged | Phase 4 comparison screen | Technical lead |
 
 **Resolved, do not reopen without new evidence:** C-1, C-2, C-3, C-6, C-7, C-8, C-11, C-13, **C-4, C-12**
 (2026-07-30 — formulas for all seven criteria; S5 via a labeled edge-of-day proxy, see

@@ -249,7 +249,7 @@ instance under the catalogue's default weights has not yet been measured and rec
 | Boolean `assign[s,r]` | 770 — `Salle` only; the other three types are cumulative-encoded |
 | Boolean `x[s,t₀]` start indicators | **4,720** measured — built on demand |
 | Boolean `y[s][t]` | **at most** 6,104, reduced by domain pruning to **5,328** measured — built on demand |
-| Objective auxiliaries | **unknown, and deliberately not guessed** — they follow from the criterion formulas, which are C-4. Order of magnitude for planning only: ~612 integers for first/last per group-day, ~1,530 booleans for a gap indicator per group-day-period |
+| Objective auxiliaries | **5,249 measured** under the catalogue default weights (2026-07-30, C-4 resolved). Per criterion in isolation: S3 2,376 · S4 1,628 · S2 1,620 · S7 984 · S5 218 · S6 7 · S10 0. The total is below their sum because S3 and S4 share one per-teacher-day occupancy layer. **Built only for criteria carrying weight** — an all-zero profile adds 0 |
 | Hard constraint families | 12 |
 | Quality criteria | 7, of which 6 with non-zero default weight |
 | Objectives | 1 per weight profile |

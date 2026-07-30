@@ -17,12 +17,13 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 
 ## Index — what is actually still open
 
-**Only two.** Everything else on this page is resolved and kept for its reasoning.
+**Three.** Everything else on this page is resolved and kept for its reasoning.
 
 | # | Still open | Blocks | Owner |
 |---|---|---|---|
 | **C-5** | "At least three candidates" can fail when duplicates are removed | Phase 6 acceptance | Lead + supervisor |
 | **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
+| **C-14** | Dominance uses the strict reading; S10's zero weight makes ties common | Phase 4 comparison screen | Technical lead |
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
 **C-8, C-11** · **C-4, C-12** (2026-07-30, implemented). The sections below keep their full reasoning;
@@ -147,11 +148,52 @@ plain `minimise Σ(weight_i × violations_i)` (no normalisation there — that s
 concept, computed after the fact for scoring and ranking). The same mathematical definition is
 therefore written twice, once per layer, by construction of the layer boundary, not by oversight.
 
+⚠️ **That duplication drew blood immediately, and the lesson is about units, not shape.** The first
+implementation of S6 was structurally correct in both layers and still wrong: `analysis/criteria.py`
+measured a sum of *fractions* (`occupied/28 − target`), `solver/objective.py` the same quantity in
+*periods*, which is `open_slot_count` = 28 times larger. Nothing failed, nothing looked odd — the
+solver simply priced S6 **28× above every other criterion** while the interface displayed the
+fractional scale, so "weight 0.10 on S6" meant two different things on either side of the boundary.
+Caught by review, not by a test. Fixed by scaling S6's objective weight by `1/(rooms_type ×
+open_slots)` and multiplying the deviation through by `rooms_type` to keep the target integral (the
+earlier `round()` turned a true target of 11.71 periods into 12, leaving a residual penalty even for a
+perfectly balanced assignment). Measured effect on the reference instance under catalogue weights:
+S2 19 → 2, S7 29 → 14, S6 1.77 → 1.53, overall score 83.6 → 85.5 — the distortion had been consuming
+search effort that belonged to the criteria actually carrying weight.
+
+**The guard that now exists:** `tests/integration/test_objective_matches_analysis.py` solves a tiny
+instance with one criterion at weight 1.0 and asserts the CP-SAT objective value equals the analysis
+layer's recomputation on the same placements. **Two implementations of one formula agreeing in shape is
+not evidence they agree in scale.** S6 is not covered by that test — on any instance where a room type
+is fully interchangeable it is cumulative-encoded and the objective posts no S6 term at all.
+
 **Superseded, kept for its original reasoning:** S2, S4, S6 "can partly inherit from the ITC-2007
 curriculum-based definitions" — true for S2, not for S4/S6 as explained above. S3, S5, S7, S10 remain
 project-specific with no published definition, now given one above (S5 via C-12).
 
 **Blocks:** Phase 3 scoring — now unblocked. **Owner:** technical lead, decided 2026-07-30.
+
+### C-14 — Dominance uses the strict reading, and S10's zero weight makes that bite · **NEW, OPEN (low urgency)**
+
+`docs/scoring-and-explanation.md` says "a candidate that another **improves on every criterion** is
+dominated". `analysis/ranking.py` implements exactly that: strict `>` on every criterion. The textbook
+Pareto rule is weaker — "at least as good on all, strictly better on at least one" — and the two differ
+precisely when two candidates **tie** on a criterion.
+
+That is not a hypothetical gap here. **S10 carries weight 0**, so nothing optimises for it, and ties on
+it are ordinary rather than rare. Under the strict rule a candidate beaten on six criteria and merely
+tied on S10 is reported as *not* dominated — which is the exact situation the dominance signal exists
+to surface ("the weights are concealing a compromise rather than expressing one").
+
+The implemented behaviour follows the written specification, is documented in `ranking.py`'s
+`dominance()` docstring, and is pinned by
+`tests/property/test_scoring_properties.py::test_a_candidate_tied_on_one_criterion_is_not_reported_dominated`
+so nobody "fixes" the `>` to `>=` without meaning to. **Changing it is a specification decision, not a
+keyboard one** — hence recorded rather than silently switched.
+
+**Blocks:** nothing today; dominance is reported, not acted on. Decide before the comparison screen
+(Phase 4) presents the signal to a user. **Owner:** technical lead, with the supervisor if the wording
+in the specification is to change.
 
 ### C-5 — "At least three candidates" can fail when duplicates are removed
 
@@ -232,23 +274,41 @@ called only when something needs the accounting. The Phase 2 feasibility solve d
 it does not pay for variables no constraint reads. This matters: that solve is measured at ~3 s and
 must not regress for an objective that does not exist yet.
 
-#### The auxiliary-variable question, answered honestly
+#### The auxiliary-variable question — **CLOSED 2026-07-30, measured**
 
-The original finding also observed that per-group-per-day first/last occupied period and reified gap
-indicators are absent from the model-size table, so the stated size is an underestimate. **That part
-cannot be closed here, and pretending otherwise would be inventing C-4.** How many auxiliaries the
-objective needs is a function of the criterion formulas, and *no soft criterion has a formula yet*.
+The original finding observed that per-group-per-day first/last occupied period and reified gap
+indicators were absent from the model-size table, so the stated size was an underestimate. It could not
+be closed while no soft criterion had a formula. **C-4 now supplies them, so the count is measured
+rather than estimated:**
 
-What can be stated now: the criteria are all expressible as linear functions over `x` and `y` plus
-per-(resource, day) auxiliaries, and the resource-day grid is fixed by the instance at **51 groups + 44
-teachers + 20 rooms, × 6 days**. So an objective needing first/last per group-day adds ~612 integers;
-one adding a gap indicator per group-day-period adds ~1,530 booleans. Those are order-of-magnitude
-figures for planning, not a specification. **The exact count follows C-4 and must be recorded when C-4
-is decided.**
+| Weights | Objective auxiliaries added |
+|---|---|
+| Catalogue defaults (S2–S7 non-zero, S10 = 0) | **5,249** |
+| S3 alone | 2,376 |
+| S4 alone | 1,628 |
+| S2 alone | 1,620 |
+| S7 alone | 984 |
+| S5 alone | 218 |
+| S6 alone | 7 |
+| S10 alone | 0 — reuses `y` directly, needs no new variable |
+| All weights zero | **0** |
 
-**Resolved:** the channelling, which is what blocked the model. **Still open under C-4:** the
-auxiliaries, because they follow from formulas that do not exist. **Owner of the remainder:** technical
-lead, before Phase 3.
+The catalogue total (5,249) is below the sum of the individual figures (6,833) because S3 and S4 share
+one per-teacher-day occupancy layer, built once when either carries weight.
+
+Two facts worth carrying beyond the numbers. **Auxiliaries are built only for criteria carrying
+weight**, so a profile that switches a criterion off pays nothing for it. And **`build_occupancy` is
+gated on the same condition** (`has_active_criteria`, `solver/engine.py`): an all-zero-weight profile
+skips the 10,048 accounting variables entirely and is genuinely equivalent to the Phase 2 feasibility
+solve, rather than merely posting no objective while still paying for the accounting — which is what
+an earlier revision of this phase did.
+
+The original planning estimates (~612 integers for first/last per group-day, ~1,530 booleans for a gap
+indicator per group-day-period) are superseded. They were the right order of magnitude but assumed a
+gap-indicator encoding; the implemented one derives idle from first/last and an occupancy count
+instead.
+
+**Resolved:** the channelling, and now the auxiliaries. **Nothing of C-7 remains open.**
 
 ### C-9 — Four requirements have no detailed specification
 

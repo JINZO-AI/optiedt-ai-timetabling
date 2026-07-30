@@ -35,7 +35,27 @@ def normalise(value: float, bounds: Bounds) -> float:
 
 def renormalised(weights: dict[ConstraintCode, float]) -> dict[ConstraintCode, float]:
     """Weights renormalised to sum to 1, which is what makes two runs'
-    scores comparable (docs/scoring-and-explanation.md)."""
+    scores comparable (docs/scoring-and-explanation.md).
+
+    Rejects negative weights rather than normalising them. Monotonicity -
+    "reducing violations of one criterion never lowers the score" - follows
+    from weight non-negativity and nothing else, so a negative weight does not
+    merely skew the ranking, it breaks a property the analysis layer is
+    property-tested on and the increment-2 weight fitting is required to
+    preserve. Failing loudly here is the only place that can catch it before
+    it becomes an inexplicable order.
+
+    An all-zero weight vector is returned unchanged (every score becomes 0);
+    that is degenerate but not incoherent, and it is what a profile that
+    switches every criterion off actually means.
+    """
+    negative = sorted(code for code, w in weights.items() if w < 0)
+    if negative:
+        raise ValueError(
+            f"negative weight(s) for {', '.join(negative)}: weights must be non-negative "
+            "(docs/scoring-and-explanation.md). A negative weight would reward the "
+            "violation it is meant to penalise, and breaks monotonicity."
+        )
     total = sum(weights.values())
     if total <= 0:
         return dict(weights)

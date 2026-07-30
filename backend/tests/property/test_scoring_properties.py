@@ -15,11 +15,13 @@ from __future__ import annotations
 
 import math
 
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from optiedt.analysis.interfaces import Bounds
 from optiedt.analysis.ranking import DefaultRanker
-from optiedt.analysis.scoring import DefaultScorer
+from optiedt.analysis.scoring import DefaultScorer, normalise
 from optiedt.domain.entities import Candidate, ConstraintCode, SubScore
 
 CODES: tuple[ConstraintCode, ...] = ("S2", "S3", "S4", "S5", "S6", "S7", "S10")
@@ -149,6 +151,101 @@ def test_dominance_is_detected(base_values, margin, weight_values):
     verdicts = {v.candidate: v.dominated_by for v in ranker.dominance([dominated, dominator])}
 
     assert verdicts["dominated"] == "dominator"
+
+
+@given(
+    raw=st.floats(min_value=0.0, max_value=500.0, allow_nan=False),
+    improvement=st.floats(min_value=1e-3, max_value=500.0, allow_nan=False),
+    maximum=st.floats(min_value=1.0, max_value=1000.0, allow_nan=False),
+    weight_values=st.tuples(*[_weight for _ in CODES]),
+    code_index=st.integers(min_value=0, max_value=len(CODES) - 1),
+)
+def test_reducing_a_raw_violation_count_never_lowers_the_score(
+    raw, improvement, maximum, weight_values, code_index
+):
+    """Monotonicity as the specification actually states it: "reducing
+    VIOLATIONS of one criterion never lowers the score".
+
+    test_reducing_one_violation_never_lowers_the_score above only covers
+    normalised -> score, which is monotone by inspection given non-negative
+    weights. The claim that matters spans raw_value -> normalise -> score, and
+    it is normalise() that carries the sign flip (n_i = 1 - ...) that makes
+    "fewer violations" mean "higher score". Get that inversion backwards and
+    the application would rank the worst timetable first while every other
+    property test stayed green.
+    """
+    bounds = Bounds(minimum=0.0, maximum=maximum)
+    better_raw = max(0.0, raw - improvement)
+    weights = _weights(weight_values)
+    scorer = DefaultScorer()
+
+    def score_for(value: float) -> float:
+        normalised = normalise(value, bounds)
+        values = tuple(normalised if i == code_index else 0.5 for i in range(len(CODES)))
+        return scorer.score(_candidate("k", values), weights)
+
+    assert score_for(better_raw) >= score_for(raw) - 1e-9
+
+
+@given(
+    values=st.tuples(*[_normalised for _ in CODES]),
+    weight_values=st.tuples(*[_weight for _ in CODES]),
+)
+def test_a_candidate_tied_on_one_criterion_is_not_reported_dominated(values, weight_values):
+    """Pins the STRICT reading of dominance that
+    docs/scoring-and-explanation.md states ("improves on every criterion"),
+    as opposed to the textbook Pareto rule ("at least as good on all, better
+    on one"). A candidate beaten on six criteria but tied on the seventh is
+    NOT dominated here.
+
+    This test exists to make that a deliberate, visible choice rather than an
+    accident of a ``>`` someone might "fix" to ``>=`` - switching it is a
+    specification decision (see ranking.py's dominance docstring and
+    docs/open-questions.md).
+    """
+    weights = _weights(weight_values)
+    worse = _candidate("worse", values)
+    # Strictly better everywhere except the last criterion, where it ties.
+    better_values = tuple(
+        v if i == len(CODES) - 1 else min(1.0, v + 0.5) for i, v in enumerate(values)
+    )
+    better = _candidate("better", better_values)
+    ranker = DefaultRanker(weights=weights)
+
+    verdicts = {v.candidate: v.dominated_by for v in ranker.dominance([worse, better])}
+    assert verdicts["worse"] is None
+
+
+@given(weight_values=st.tuples(*[_weight for _ in CODES]))
+def test_a_candidate_with_no_sub_scores_is_never_dominated(weight_values):
+    """``all()`` over an empty criterion set is vacuously true, so a candidate
+    carrying no sub-scores would otherwise be reported as dominated by an
+    arbitrary other candidate on no evidence whatsoever."""
+    weights = _weights(weight_values)
+    empty = Candidate(
+        id="empty",
+        run="run-1",
+        profile_name="balanced",
+        cost=0,
+        score=0.0,
+        placements=(),
+        sub_scores=(),
+    )
+    other = _candidate("other", (0.5,) * len(CODES))
+    ranker = DefaultRanker(weights=weights)
+
+    verdicts = {v.candidate: v.dominated_by for v in ranker.dominance([empty, other])}
+    assert verdicts["empty"] is None
+
+
+@given(weight_values=st.tuples(*[_weight for _ in CODES]))
+def test_a_negative_weight_is_refused_rather_than_ranked_on(weight_values):
+    """Monotonicity follows from weight non-negativity and nothing else, so a
+    negative weight does not merely skew the order - it breaks a property the
+    department is told holds. It must fail loudly, not silently invert."""
+    weights = {**_weights(weight_values), CODES[0]: -0.1}
+    with pytest.raises(ValueError, match="non-negative"):
+        DefaultScorer().score(_candidate("k", (0.5,) * len(CODES)), weights)
 
 
 @given(

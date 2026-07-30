@@ -11,6 +11,13 @@ Every class caches an InstanceView (and, for S6, the per-room-type target
 utilisation) at construction, because Criterion.raw_value(candidate) does not
 receive the instance - only bounds(instance) does. Constructing a criterion
 is therefore a per-run operation, not a per-candidate one.
+
+⚠️ Consequence of that caching: ``bounds(instance)`` IGNORES its argument and
+answers from the cached InstanceView. Passing a different instance than the
+one build_criteria() was given returns the wrong bounds silently. The
+argument is kept only because the Criterion Protocol declares it - a
+signature that deliberately makes ADR-009's rejected reading (bounds derived
+from candidates) inexpressible. Build criteria per instance, per run.
 """
 
 from __future__ import annotations
@@ -117,9 +124,18 @@ class S4ExtraWorkingDay:
 @dataclass(frozen=True, slots=True)
 class S5TeacherPreference:
     """Proxy for a genuine preferred-window declaration (C-12, option b):
-    the instance carries no preference data, so this counts sessions placed
-    in the first or last period of their day - a standard, teacher-agnostic
+    the instance carries no preference data, so this counts sessions occupying
+    period_index 0 or periods_per_day - 1 - a standard, teacher-agnostic
     convention, not a definition of any one teacher's actual preference.
+
+    Precisely: the FIRST and LAST period INDEX of the grid, not the first and
+    last OPEN period of each particular day. On the reference instance
+    Saturday closes after period 2, so a Saturday session ending the day at
+    period 2 is not counted while a Saturday period-0 session is. That is a
+    known imprecision of the proxy, left as-is deliberately: making it
+    per-day-aware would refine a placeholder whose whole purpose is to be
+    replaced by real preference data (C-12 option (a)), and would have to be
+    mirrored in solver/objective.py to keep the two layers agreeing.
 
     The alternative tested and rejected (generalising a teacher's declared
     UNAVAILABLE periods across the week) degenerates on this instance: most
@@ -207,18 +223,10 @@ class S7SubjectSpread:
     view: InstanceView
     code: ConstraintCode = "S7"
 
-    def _sessions_by_group_and_course(self) -> dict[tuple[str, str], tuple[SessionId, ...]]:
-        by_group_course: dict[tuple[str, str], list[SessionId]] = defaultdict(list)
-        for leaf, session_ids in self.view.sessions_for_leaf_group.items():
-            for sid in session_ids:
-                course = self.view.session_by_id[sid].course
-                by_group_course[(leaf, course)].append(sid)
-        return {k: tuple(v) for k, v in by_group_course.items()}
-
     def raw_value(self, candidate: Candidate) -> float:
         placements = _placement_slots(candidate)
         total = 0
-        for session_ids in self._sessions_by_group_and_course().values():
+        for session_ids in self.view.sessions_by_leaf_group_and_course.values():
             per_day: dict[int, int] = defaultdict(int)
             for sid in session_ids:
                 start_slot = placements.get(sid)
@@ -231,7 +239,7 @@ class S7SubjectSpread:
     def bounds(self, instance: object) -> Bounds:
         maximum = sum(
             max(0, len(session_ids) - 1)
-            for session_ids in self._sessions_by_group_and_course().values()
+            for session_ids in self.view.sessions_by_leaf_group_and_course.values()
         )
         return Bounds(minimum=0.0, maximum=float(maximum))
 

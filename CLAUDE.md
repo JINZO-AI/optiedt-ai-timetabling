@@ -191,7 +191,7 @@ Read the ADR before arguing with any of these.
 
 ## Open — do not silently decide
 
-**Four questions are open; `docs/open-questions.md` is the authority and `docs/dashboard.md` carries the
+**Two questions are open; `docs/open-questions.md` is the authority and `docs/dashboard.md` carries the
 current summary.** They are not listed here, so that there is exactly one place to update when one is
 resolved. What belongs here is the rule, not the list:
 
@@ -200,11 +200,21 @@ resolved. What belongs here is the rule, not the list:
 > and never written down is how this project acquires a defect that surfaces three weeks later — and
 > C-13 is the proof: a plausible conclusion nobody tried to falsify cost three sessions of work.
 
-**Resolved, with the two operational facts worth carrying:** only H1, H3, H7 and H12 carry
-`carries_assumption_literal = True`, the four real CP-SAT postings (C-6). And `y[s][t]` means
-*occupies* `t`, channelled from start indicators in `solver/occupancy.py` — **built on demand, not by
-every solve**, because it adds 10,048 variables and costs the feasibility solve about 2.5× (C-7). Half
-of C-7 stays open under C-4: the objective's auxiliaries cannot be counted until the formulas exist.
+**Resolved, with the three operational facts worth carrying:** only H1, H3, H7 and H12 carry
+`carries_assumption_literal = True`, the four real CP-SAT postings (C-6). `y[s][t]` means *occupies*
+`t`, channelled from start indicators in `solver/occupancy.py` — **built on demand, not by every
+solve**, because it adds 10,048 variables and costs the feasibility solve about 2.5× (C-7); `engine.py`
+gates that build on `has_active_criteria`, so an all-zero-weight profile stays equivalent to a
+feasibility solve. And **C-4/C-12 are resolved**: all seven soft criteria have a `v_i` and bounds, and
+the objective's auxiliaries — the last open half of C-7 — are measured at **5,249** under the catalogue
+defaults (`docs/status.md`).
+
+⚠️ **The same seven formulas are implemented twice, on purpose:** `analysis/criteria.py` over realised
+placements, `solver/objective.py` as CP-SAT expressions. The solver may not import the analysis layer
+(`docs/architecture.md`), so nothing but a test keeps them in step —
+`tests/integration/test_objective_matches_analysis.py`. **Change one, change the other**, and mind the
+units: the two layers must agree on scale, not just on shape (S6's did not, and the solver silently
+priced it 28× too high until it was caught).
 
 **C-13 is resolved, and how it was resolved matters more than the answer.** For three sessions it was
 recorded as "room-assignment symmetry makes the correct model hard to solve", and three legitimate
@@ -217,8 +227,9 @@ establish that a solution exists before treating it as a performance problem** �
 `INFEASIBLE` is evidence of a too-tight model, but its *absence* is not evidence of a sound instance.
 Full account in `docs/open-questions.md`.
 
-(The C-12 × C-5 interaction — why those two must be resolved together — is stated once, in
-`docs/open-questions.md`, and summarised in `docs/dashboard.md`.)
+(**C-12 is resolved**, so the C-12 × C-5 interaction is no longer live: S5 measures a real,
+candidate-dependent quantity instead of zero. **C-5 itself is still open** and still blocks portfolio
+orchestration and the FR-13 acceptance test — the account is in `docs/open-questions.md`.)
 
 If your work touches one of these, **resolve it in `docs/open-questions.md` first**, then implement.
 An assumption made in code and never written down is how this project acquires a defect that surfaces

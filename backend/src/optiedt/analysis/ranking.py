@@ -102,24 +102,48 @@ class DefaultRanker:
         )
 
     def dominance(self, candidates: list[Candidate]) -> list[DominanceVerdict]:
-        """A candidate is dominated iff some OTHER candidate is strictly
-        better on EVERY criterion (docs/scoring-and-explanation.md: "improves
-        on every criterion"). Exact, no parameters beyond the candidates
-        themselves - weight-independent by construction."""
+        """A candidate is dominated iff some OTHER candidate is STRICTLY
+        better on EVERY criterion.
+
+        The strict reading is what docs/scoring-and-explanation.md states -
+        "a candidate that another improves on **every** criterion" - and is
+        deliberately NOT the textbook Pareto rule ("at least as good on all,
+        strictly better on one"). Two consequences worth knowing, because
+        they are visible in real output rather than theoretical:
+
+        - A candidate beaten on six criteria but merely TIED on the seventh
+          is reported as not dominated. Under Pareto it would be dominated.
+        - S10 carries weight 0, so nothing optimises for it and ties on it
+          are common - which under this rule can mask a genuine compromise.
+
+        Whether to move to the Pareto rule is a specification decision, not a
+        keyboard one (CLAUDE.md), so the documented wording is implemented as
+        written and the risk is recorded in docs/open-questions.md instead of
+        being resolved here. Exact and weight-independent either way.
+
+        A candidate carrying NO sub-scores is never dominated: ``all()`` over
+        an empty criterion set is vacuously true, which would otherwise report
+        it as dominated by an arbitrary other candidate on no evidence at all.
+        """
         sub_scores_by_id = {c.id: _sub_scores_by_code(c) for c in candidates}
         scores_by_id = {c.id: self.scorer.score(c, self.weights) for c in candidates}
 
         verdicts = []
         for candidate in candidates:
             own = sub_scores_by_id[candidate.id]
-            dominators = [
-                other
-                for other in candidates
-                if other.id != candidate.id
-                and all(
-                    sub_scores_by_id[other.id].get(code, 0.0) > own.get(code, 0.0) for code in own
-                )
-            ]
+            dominators = (
+                [
+                    other
+                    for other in candidates
+                    if other.id != candidate.id
+                    and all(
+                        sub_scores_by_id[other.id].get(code, 0.0) > own.get(code, 0.0)
+                        for code in own
+                    )
+                ]
+                if own
+                else []
+            )
             dominated_by = None
             if dominators:
                 best = max(dominators, key=lambda o: (scores_by_id[o.id], o.id))

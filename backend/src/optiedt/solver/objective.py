@@ -318,9 +318,32 @@ def _s5_teacher_preference_terms(
 def _room_efficiency_terms(
     model: cp_model.CpModel, variables: Variables, view: _ObjectiveView, weight: float
 ) -> list[cp_model.LinearExprT]:
-    """S6, non-cumulative room types only - see module docstring."""
-    scale = _scaled(weight)
-    if scale == 0:
+    """S6, non-cumulative room types only - see module docstring.
+
+    ⚠️ Unit care. analysis/criteria.py measures S6 as a sum of FRACTIONS,
+    ``|occupied_r / open_slots - demand_type / (rooms_type * open_slots)|``,
+    so one room contributes at most 1. The natural CP-SAT expression is in
+    PERIODS, which is ``open_slots`` times larger (28x on the reference
+    instance) - posting that directly would silently price S6 28x above every
+    other criterion in the objective while the displayed score used the
+    fractional scale. The two layers would then disagree about what "weight
+    0.10 on S6" means.
+
+    Both problems are removed by scaling with exact integer arithmetic.
+    Multiplying the deviation through by ``rooms_type`` keeps the target
+    integral (no ``round()``, which on this instance would turn a true target
+    of 11.71 periods into 12 and leave a residual deviation even for a
+    perfectly balanced assignment), and dividing the weight by
+    ``rooms_type * open_slots`` converts back to the fractional unit
+    analysis/criteria.py uses:
+
+        rooms * |occ - demand/rooms| == |rooms*occ - demand|      (integral)
+        |occ/open - demand/(rooms*open)| == |rooms*occ - demand| / (rooms*open)
+
+    _WEIGHT_SCALE (1e6) leaves ample headroom for that division to stay
+    faithful at integer precision.
+    """
+    if _scaled(weight) == 0:
         return []
 
     demand_by_type: dict[RoomType, int] = defaultdict(int)
@@ -335,7 +358,12 @@ def _room_efficiency_terms(
     for room_type, room_ids in view.rooms_by_type.items():
         if room_type in variables.cumulative_room_types or not room_ids:
             continue
-        target_periods = round(demand_by_type.get(room_type, 0) / len(room_ids))
+        room_count = len(room_ids)
+        demand = demand_by_type.get(room_type, 0)
+        # Weight expressed in the same fractional unit as analysis/criteria.py.
+        scale = _scaled(weight / (room_count * view.open_slot_count))
+        if scale == 0:
+            continue
         for room_id in room_ids:
             session_ids = assign_by_room.get(room_id, [])
             occupied_expr: cp_model.LinearExprT = (
@@ -348,9 +376,11 @@ def _room_efficiency_terms(
                 if session_ids
                 else 0
             )
-            deviation = model.new_int_var(0, view.open_slot_count, f"room_dev[{room_id}]")
-            model.add(deviation >= occupied_expr - target_periods)
-            model.add(deviation >= target_periods - occupied_expr)
+            deviation = model.new_int_var(
+                0, room_count * view.open_slot_count, f"room_dev[{room_id}]"
+            )
+            model.add(deviation >= room_count * occupied_expr - demand)
+            model.add(deviation >= demand - room_count * occupied_expr)
             terms.append(scale * deviation)
     return terms
 
@@ -422,6 +452,34 @@ def _lunch_break_terms(
     return terms
 
 
+def has_active_criteria(weights: dict[ConstraintCode, float]) -> bool:
+    """Whether any criterion carries enough weight to contribute a term.
+
+    engine.py calls this BEFORE build_occupancy() so a profile carrying no
+    usable weight does not pay for 10,048 accounting variables no constraint
+    would read - see solver/occupancy.py on why that build is on demand. The
+    threshold is _scaled(), not ``> 0``, so this agrees exactly with the
+    per-criterion gates below: a weight too small to survive the integer
+    scaling contributes nothing, and must not trigger the build either.
+    """
+    _reject_negative_weights(weights)
+    return any(_scaled(w) > 0 for w in weights.values())
+
+
+def _reject_negative_weights(weights: dict[ConstraintCode, float]) -> None:
+    """A negative weight would make the solver actively pursue a defect, and
+    would break the monotonicity property the analysis layer is tested on
+    (docs/scoring-and-explanation.md requires non-negative weights). Refusing
+    it here is cheaper than discovering it as an inexplicable ranking."""
+    negative = sorted(code for code, w in weights.items() if w < 0)
+    if negative:
+        raise ValueError(
+            f"negative weight(s) for {', '.join(negative)}: weights must be non-negative "
+            "(docs/scoring-and-explanation.md). A negative weight would reward the "
+            "violation it is meant to penalise."
+        )
+
+
 def build_objective(
     model: cp_model.CpModel,
     variables: Variables,
@@ -430,10 +488,15 @@ def build_objective(
     weights: dict[ConstraintCode, float],
 ) -> cp_model.LinearExprT | None:
     """Posts model.minimize(...) for the seven soft criteria and returns the
-    expression, or returns None and posts nothing if every weight is zero or
-    absent - which is what keeps a profile carrying no weights equivalent to
-    the Phase 2 feasibility-only solve.
+    expression, or returns None and posts nothing if no criterion carries
+    usable weight.
+
+    Returning None means no objective was posted. It does NOT by itself make
+    the solve identical to the Phase 2 feasibility one - that also requires
+    the caller to have skipped build_occupancy(), which is why engine.py gates
+    on has_active_criteria() rather than on this return value.
     """
+    _reject_negative_weights(weights)
     view = _build_view(instance)
     terms: list[cp_model.LinearExprT] = []
 
