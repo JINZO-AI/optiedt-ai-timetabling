@@ -20,6 +20,16 @@ verifications with the stated results.
 
 This is C-11 in `docs/open-questions.md`.
 
+⚠️ **With one correction the generator must honour.** The room mix is now
+`Amphi 2 / Salle 7 / Lab_Info 8 / Lab_Sciences 3` (total still 20), not the
+`2 / 10 / 6 / 2` the PDFs record, and laboratory occupancy is **91% of
+two-period windows**, not 95% of periods. The original mix made the instance
+**infeasible**: all 104 laboratory sessions span two periods, a two-period
+session must fit inside one day, and a 5-period day gives a room only two such
+windows — so 6 computer laboratories offered 66 against 80 needed. The "95%"
+was measured correctly and measured the wrong thing. See C-13 in
+`docs/open-questions.md`; the errata list carries the replacement figures.
+
 ## Why the generator imports nothing from `backend/`
 
 **The 13 files are the contract between the generator and the application.** If

@@ -6,8 +6,16 @@ The three PDFs **state the instance's verification results as facts** — 0 sess
 room, 95% laboratory occupancy, a heaviest load of 12 periods, a smallest margin of 11 free slots, 425
 students matching declared group sizes.
 
-**Those claims were re-measured on 2026-07-29 against the actual files, and every one matches.**
+**Those claims were re-measured on 2026-07-29 against the actual files, and every one matched.**
 The instance lives in `data/instance/` — 13 CSVs, 36 KB, committed.
+
+⚠️ **One of them matched and was still wrong — read this before trusting a verification.** The "95%
+laboratory occupancy" figure was arithmetically correct and described an instance that **had no
+solution**: it counted periods, and a two-period session needs two *consecutive* periods inside one
+day. Measuring the quantity the specification named is not the same as measuring the quantity that
+determines feasibility. The room mix was repaired on 2026-07-30 (`Salle` 10 → 7, `Lab_Info` 6 → 8,
+`Lab_Sciences` 2 → 3, total still 20 rooms) and the check now applies both bounds — see "91% is the
+number to watch" below, and C-13 in `docs/open-questions.md`.
 
 ```bash
 scripts/verify-instance.ps1
@@ -183,7 +191,7 @@ All five pass on the reference instance, with these results:
 | Verification | Expected result |
 |---|---|
 | Each session finds a room of the required type and sufficient capacity | **0 sessions** without a suitable room |
-| Open slots cover the demand for each room type | lecture theatres **57%** · classrooms **29%** · **computer laboratories 95%** · science laboratories **86%** |
+| Open slots cover the demand for each room type — **two bounds, see below** | *Periods:* lecture theatres **57%** · classrooms **42%** · computer laboratories **71%** · science laboratories **57%**. *Two-period windows, the binding figure:* **computer laboratories 91%** · science laboratories **73%** |
 | No teacher exceeds the maximum load of their rank | **0 teachers** above the limit; heaviest load 12 periods (18 hours) |
 | Each teacher keeps enough free slots for their assigned sessions | **0 teachers** in difficulty; smallest margin **11 free slots** |
 | The group hierarchy is consistent | **0 invalid references, 0 invalid chains**; 425 students matching declared group sizes exactly |
@@ -191,10 +199,25 @@ All five pass on the reference instance, with these results:
 A failing verification **names the resource concerned and the quantity missing** — that is the content
 of the report required by FR-12, not a boolean.
 
-### ⚠️ 95% is the number to watch
+### ⚠️ 91% is the number to watch — and counting periods will not show it to you
 
-Computer laboratories at 95% of available capacity are the tightest point of the instance and the one
-most likely to make the problem infeasible if a room is withdrawn.
+Computer laboratories at **91% of their two-period windows** are the tightest point of the instance and
+the one most likely to make the problem infeasible if a room is withdrawn.
+
+**Why "windows" and not "periods".** A two-period session needs its periods *consecutive* and inside
+*one day*: H8 forbids crossing a day boundary, H9 forbids closed slots. So the week's open slots are
+not a flat pool but six contiguous runs — five of length 5, one of length 3 — and a run of length `L`
+offers a room only `floor(L/2)` disjoint two-period windows. **One room offers 11 a week, not 28
+periods' worth.** With 5-period days and 2-period laboratory sessions, one period per room-day is
+structurally unusable: a fifth of the apparent capacity does not exist.
+
+Counting periods is therefore **necessary but not sufficient**, and the difference is not academic. The
+instance as first generated had 6 computer laboratories: 160 / 168 periods = a comfortable **95.2%**,
+against 80 sessions needing 66 windows — **short by 14, with no solution at all**. It passed
+verification, and the resulting `UNKNOWN` from the solver was diagnosed for three sessions as a
+search-performance problem before anyone checked whether a solution existed (C-13). The repair re-typed
+three classrooms as laboratories. **Both bounds are now checked, and any new check must state which
+kind it is.**
 
 The practical consequence for development: **at that saturation, a modelling regression surfaces as
 `INFEASIBLE`, not as a slow solve.** An over-tight domain restriction or a wrong channelling constraint

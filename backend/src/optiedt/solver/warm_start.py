@@ -1,27 +1,31 @@
-"""A constructive greedy warm-start for CP-SAT (C-13, docs/open-questions.md).
+"""A constructive greedy warm-start for CP-SAT.
 
-Neither the per-room encoding nor the cumulative reformulation resolved the
-room-assignment search difficulty alone (docs/status.md, 2026-07-30): both
-returned UNKNOWN after minutes of tuned search on the real instance. CP-SAT
-is typically far faster at VERIFYING a supplied candidate assignment than
-at FINDING one from an empty state, so this builds one full, hard-constraint
--respecting timetable by hand - a classical constructive scheduling
-heuristic, not a solver - and engine.py feeds it to CP-SAT via
+CP-SAT is typically far faster at VERIFYING a supplied candidate assignment
+than at FINDING one from an empty state, so this builds a full,
+hard-constraint-respecting timetable by hand - a classical constructive
+scheduling heuristic, not a solver - and engine.py feeds it to CP-SAT via
 model.add_hint() before searching.
 
-This is a heuristic, not a guarantee, and on the reference instance it does
-NOT reach a complete placement: pure most-constrained-variable-first (MRV)
-ordering gets stuck after only 26 of 218 sessions, and thousands of
-randomised restarts plateau around 190/218 (measured 2026-07-30). A
-first-fit greedy with no backtracking simply isn't clever enough to finish
-this particular near-critical instance. Rather than discard that, this
-returns the BEST PARTIAL placement found across all attempts - a hint that
-covers most sessions is still a real head start for CP-SAT, which only
-then has to search over the uncovered remainder rather than the whole
-schedule from nothing. Never treat a partial (or even a failed) result as
-evidence about the instance's true feasibility - only CP-SAT's own
-INFEASIBLE status means that; this is a construction heuristic, not a
-decision procedure. It reuses variables.py's own domain-computation
+This is a heuristic, not a guarantee, so it returns the BEST PARTIAL
+placement found across all attempts rather than insisting on completeness:
+a hint covering most sessions is still a real head start, leaving CP-SAT to
+search only the uncovered remainder.
+
+On the reference instance it reaches all 218 sessions on the first MRV
+attempt, in 0.04s (measured 2026-07-30). It was written when the instance
+still had 6 computer laboratories, where it plateaued around 192/218 across
+thousands of restarts - which was not the greedy being weak but the
+instance being INFEASIBLE, with at most 202 placements possible at all
+(C-13, docs/open-questions.md).
+
+⚠️ **A partial result is weak evidence about feasibility, and a complete one
+is proof only of feasibility.** This module previously advised that "only
+CP-SAT's own INFEASIBLE status" establishes infeasibility - which is the
+reasoning that let C-13 stand for three sessions. `UNKNOWN` establishes
+nothing in either direction, and an arithmetic bound (demand exceeding the
+number of disjoint windows available) is a proof of infeasibility that no
+solver run is needed to obtain. Reach for the arithmetic first. It reuses
+variables.py's own domain-computation
 helpers (valid_starts, candidate_rooms_for_session, ...) rather than
 recomputing H4/H5/H6/H8/H9 pruning logic a second time.
 

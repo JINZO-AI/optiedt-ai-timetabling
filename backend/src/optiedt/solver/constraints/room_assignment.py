@@ -12,12 +12,18 @@ solved, is read off of whichever assign[s, r] came back 1 - see
 solver/engine.py.
 
 Room types in variables.cumulative_room_types use a different encoding
-instead (C-13, resolved 2026-07-30 - see docs/open-questions.md). These are
-room types where every requiring session has every room of that type as a
-candidate - full interchangeability - and on the reference instance two
-such types (Lab_Info, Lab_Sciences) sit at 95.2% / 85.7% occupancy, which
-made the per-room encoding an intractable symmetric search for CP-SAT
-(measured: UNKNOWN after 480s of tuned search). For these types, H3 posts
+instead. These are room types where every requiring session has every room
+of that type as a candidate - full interchangeability - which on the
+reference instance means Amphi, Lab_Info and Lab_Sciences.
+
+⚠️ The reason originally recorded here was wrong. It read: full
+interchangeability at high occupancy "made the per-room encoding an
+intractable symmetric search for CP-SAT (measured: UNKNOWN after 480s)".
+Those UNKNOWNs were an INFEASIBLE instance - 80 two-period laboratory
+sessions against 66 available windows - not a hard search (C-13, resolved
+2026-07-30, docs/open-questions.md). The encoding below is correct and
+worth keeping on its own merits; it is not load-bearing for solvability.
+For these types, H3 posts
 one AddCumulative over the sessions' unconditional intervals (demand 1
 each, capacity = room count) instead of a NoOverlap per room, and H7 posts
 nothing at all for them - "exactly one room" is guaranteed afterward by a

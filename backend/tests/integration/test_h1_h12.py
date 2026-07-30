@@ -26,24 +26,32 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from ortools.sat.python import cp_model
 
 from optiedt.domain.enums import AvailabilityState
 from optiedt.instance.loader import load_instance
+from optiedt.solver.constraints import ALL_HARD_CONSTRAINTS
 from optiedt.solver.engine import CpSatSolver
 from optiedt.solver.interfaces import SolverInput
+from optiedt.solver.occupancy import build_occupancy
+from optiedt.solver.variables import build_variables
 
 INSTANCE_PATH = Path(__file__).resolve().parents[3] / "data" / "instance"
 SEED = 42
 
-# Measured on the reference instance (docs/status.md, 2026-07-30): the room
-# type Lab_Info is 6 fully interchangeable rooms packed to 160/168
-# room-periods (95.2%), which makes room assignment a hard symmetric
-# bin-packing search for CP-SAT's default portfolio, independently of
-# whether H1-H12 are modelled correctly. This budget is generous rather than
-# tight for exactly that reason - see the deterministic-time measurement
-# recorded in docs/status.md for what was actually needed.
-DETERMINISTIC_BUDGET = 480.0
-WALL_CLOCK_CEILING = 480.0
+# Measured on the reference instance (docs/status.md, 2026-07-30): the solve
+# takes 0.13-0.21 deterministic units and 2.8-3.3s wall across seven seeds.
+# The budget below is therefore a hang backstop with three orders of
+# magnitude of headroom, not a tight bound - deliberately, so that this test
+# fails for a modelling reason rather than for a timing reason on a slower
+# machine. If it ever approaches the budget, that is a real regression and
+# the budget is not the thing to raise.
+#
+# It previously read 480s because the model was believed to be a hard
+# symmetric bin-packing search. It was not: the instance was INFEASIBLE, and
+# no budget would ever have been enough (C-13, docs/open-questions.md).
+DETERMINISTIC_BUDGET = 60.0
+WALL_CLOCK_CEILING = 120.0
 
 
 @pytest.fixture(scope="module")
@@ -71,12 +79,75 @@ def _occupied(duration_periods: int, start_slot: int) -> set[int]:
 def test_reference_instance_is_feasible(instance, result):
     assert not result.infeasible, (
         "H1+H3+H7+H12 (plus the domain-pruned H4/H5/H6/H8/H9/H10) could not place "
-        "all sessions of the reference instance within the deterministic budget. "
-        "All five pre-analysis checks pass on this instance, so this points to a "
-        "modelling bug, not an unsolvable instance - isolate further by solving "
-        "constraint subsets individually against the real data, per docs/status.md."
+        "all sessions of the reference instance. Check in this order, because the "
+        "reverse order cost three sessions once (C-13): FIRST re-run "
+        "scripts/verify-instance.ps1 and confirm the instance still has a solution "
+        "- the pre-analysis passing is NOT proof that it does unless every bound it "
+        "applies is sufficient rather than merely necessary - and only THEN look for "
+        "a modelling bug by solving constraint subsets against the real data."
     )
     assert len(result.placements) == len(instance.sessions)
+
+
+@pytest.mark.solver
+def test_occupancy_channelling_matches_the_solved_placements(instance):
+    """C-7, end to end: y[s,t] must equal "s occupies t" in an actual solution.
+
+    The unit tests check which (s, t) pairs EXIST; this checks what they are
+    worth once solved, which is the half that would catch a channelling sign
+    error or an off-by-one on the second period. Solved here rather than
+    reusing the module fixture because occupancy is deliberately not part of
+    the feasibility solve - engine.py builds it only when there is an
+    objective to read it (see solver/occupancy.py).
+    """
+    model = cp_model.CpModel()
+    request = SolverInput(
+        instance=instance,
+        profile=None,  # type: ignore[arg-type]
+        seed=SEED,
+        deterministic_budget=DETERMINISTIC_BUDGET,
+    )
+    variables = build_variables(model, request)
+    for builder in ALL_HARD_CONSTRAINTS:
+        builder.apply(model, variables, instance)
+    occupancy = build_occupancy(model, variables, instance)
+
+    solver = cp_model.CpSolver()
+    solver.parameters.max_deterministic_time = DETERMINISTIC_BUDGET
+    solver.parameters.max_time_in_seconds = WALL_CLOCK_CEILING
+    solver.parameters.random_seed = SEED
+    status = solver.solve(model)
+    assert status in (cp_model.OPTIMAL, cp_model.FEASIBLE), (
+        "adding the C-7 accounting variables made a model infeasible that solves "
+        "without them - build_occupancy() must only add consequences of start[s]"
+    )
+
+    for session in instance.sessions:
+        start = solver.value(variables.start[session.id])
+        occupied = set(range(start, start + session.duration_periods))
+
+        for slot in occupancy.occupied_slots(session.id):
+            expected = 1 if slot in occupied else 0
+            assert solver.value(occupancy.occupies[(session.id, slot)]) == expected, (
+                f"{session.id} starts at {start} for {session.duration_periods} period(s), "
+                f"so y[{session.id},{slot}] should be {expected}"
+            )
+
+        # Exactly one start indicator, and y sums to the duration - the second
+        # is what distinguishes "occupies" from "starts at" for a 2-period session.
+        set_indicators = [
+            slot
+            for (s, slot) in occupancy.starts_at
+            if s == session.id and solver.value(occupancy.starts_at[(s, slot)])
+        ]
+        assert set_indicators == [start], f"{session.id}: start indicators disagree with start[s]"
+        assert (
+            sum(
+                solver.value(occupancy.occupies[(session.id, slot)])
+                for slot in occupancy.occupied_slots(session.id)
+            )
+            == session.duration_periods
+        )
 
 
 @pytest.mark.solver

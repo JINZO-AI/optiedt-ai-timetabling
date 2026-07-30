@@ -1,13 +1,64 @@
 # Status
 
-**Increment 1 of 2 · Phase 2 in progress · blocked on one architecture decision, not broken.**
-**Last updated 2026-07-30.**
+**Increment 1 of 2 · Phase 2 milestone REACHED — a conflict-free timetable is produced on the
+reference instance in ~3 s. Last updated 2026-07-30.**
 
 Keep this file current. A stale status file is worse than none, because the next session trusts it.
 
 ---
 
 ## ▶ Resume from here — copy this to continue
+
+> Resume OptiEDT. Read `CLAUDE.md`, then this file's "Session log — 2026-07-30, fourth continuation",
+> then C-13 in `docs/open-questions.md` (now **RESOLVED**). Do not open the PDFs.
+>
+> **Phase 2's milestone is met.** H1–H12 are built, correct, and demonstrated: the reference instance
+> solves in **2.8–3.3 s** (deterministic time 0.13–0.21, measured across seven seeds on the production
+> default configuration) and all 27 tests pass, including
+> `tests/integration/test_h1_h12.py`, which re-derives every hard constraint from the raw CSVs rather
+> than trusting CP-SAT's status. **Do not redo any of this work, and do not go looking for a
+> solver-performance problem — there isn't one.**
+>
+> **The C-13 "room-assignment symmetry" investigation reached the wrong conclusion and is now
+> resolved.** The model was always correct; the *instance* had no solution. Every laboratory session
+> spans two periods, a two-period session must fit inside one day, and a 5-period day offers a room
+> only two such windows — so a room offered 11 two-period windows a week against demand that needed
+> more. `Lab_Info` needed 80 windows and had 66; `Lab_Sciences` needed 24 and had 22. The three
+> techniques tried before (cumulative reformulation, parameter tuning, greedy warm-start) all
+> "failed" because they were searching for a solution that did not exist. **Fixed by re-typing three
+> classrooms as laboratories** — `Salle` 10 → 7, `Lab_Info` 6 → 8, `Lab_Sciences` 2 → 3, total room
+> count still 20, calendar and session mix untouched.
+>
+> **The lesson worth keeping.** Pre-analysis verification 2 compared *period totals*
+> (`rooms × open_slots`) and reported a comfortable 95.2 %. That bound is necessary but not
+> sufficient: it cannot see that a 5-period day wastes one period per room whenever the sessions are
+> 2-period. The instance was really **121 % subscribed**. The check whose stated job is to separate
+> "this instance has no solution" from "the model has a bug" gave the wrong answer, and three sessions
+> went hunting a bug that did not exist. `data/verification/verify_instance.py` now applies both
+> bounds; **the FR-12 in-application port must carry the contiguity bound too.**
+>
+> **C-7 is also resolved and implemented** (`solver/occupancy.py`, 2026-07-30): `y[s,t]` means
+> *occupies* `t`, channelled from start indicators `x[s,t₀]`, built **on demand** because it costs the
+> feasibility solve 2.5×. **Phase 2's modelling is therefore complete** — H1–H12, a conflict-free
+> timetable, and the accounting variables the objective will read.
+>
+> **Next: C-4, and it is not a keyboard decision.** Seven soft criteria each need a `v_i` and a
+> `min_i`/`max_i`, and **none has one**. The objective cannot be encoded until they exist, and
+> inventing them in code is precisely what `CLAUDE.md` forbids. **C-12 must be settled in the same
+> pass** — S5 carries weight 0.20 with no input data, and if it measures identically zero the
+> teacher-favouring profile collapses onto another one and the three-candidate acceptance test fails
+> for an invisible reason (C-5). Both are the technical lead's, before Phase 3.
+>
+> Also still owed, and blocked on the same decision: the objective's **auxiliary variable count**
+> (first/last occupied period per group-day, gap indicators). It follows from the criterion formulas,
+> so it is recorded as unknown rather than guessed.
+
+---
+
+## ▶ Superseded resume block — kept only so the correction is legible
+
+<details>
+<summary>What this file told the previous session to do, and why it was wrong</summary>
 
 > Resume OptiEDT Phase 2. Read `CLAUDE.md`, then `docs/status.md` in full (all "Session log —
 > 2026-07-30" entries), then `docs/open-questions.md`'s C-13 — do not open the PDFs.
@@ -70,17 +121,134 @@ Keep this file current. A stale status file is worse than none, because the next
 > background solves explicitly so you can stop them rather than leave them orphaned (see the incident
 > in the first 2026-07-30 session log entry below).
 
+**Every "genuinely untested" option listed above is now moot.** None of them was needed: a larger
+budget would have searched an empty space for longer, symmetry-breaking would have pruned equivalent
+non-solutions, and a better warm-start construction could not have exceeded 202 of 218 because that is
+the arithmetic maximum. The one thing never tried was **checking whether a solution existed at all**,
+which takes 0.088 s.
+
+</details>
+
 ---
 
 ## Where the project is
 
 | | |
 |---|---|
-| **Current phase** | Phase 2 — H1-H12 built, fixed, reformulated and hinted per C-13, all committed (`c1be462`, `480061e`, `8f22e2b`, `c18e963`); Phase 2's milestone ("a timetable without conflict on the instance") **not reached** — three independent techniques tried, none resolved it |
-| **Next step** | Technical lead decides: a much larger budget, a deeper model investment, or park this and move forward on other work while flagging the risk (see "Resume from here") |
-| **Days used** | ~1.5 of 20. Phase 2 is budgeted 5 days |
-| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · 11 commits, all green |
-| **Blocked on** | A genuine engineering decision (see "Resume from here") — not an unresolved bug |
+| **Current phase** | **Phase 2 complete.** H1–H12 built and demonstrated correct (conflict-free timetable in ~3 s, every hard constraint re-verified from raw CSVs); C-13 resolved — the model was correct, the instance was infeasible and has been repaired; C-7 resolved — `y[s][t]` channelled and tested. 33 tests green |
+| **Next step** | **Phase 3, blocked on a specification decision.** C-4 (a `v_i` and bounds for all seven soft criteria) and C-12 (S5 has weight 0.20 and no data) are the technical lead's, not the keyboard's. Nothing further can be encoded until they land |
+| **Days used** | ~2 of 20. Phase 2 was budgeted 5 |
+| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · 11 commits · the C-13 resolution is **uncommitted**, see "Resume from here" |
+| **Blocked on** | Nothing. C-7 is a modelling decision that can be taken at the keyboard |
+
+---
+
+## Session log — 2026-07-30, fifth continuation: C-7 resolved, Phase 2's modelling complete
+
+**Resolved C-7 in `docs/open-questions.md` before writing any code**, per CLAUDE.md. The specification
+names `y[s][t]` and attributes H7 to it but never writes the constraint tying it to `start[s]` — and
+with 104 of 218 sessions spanning two periods, `y` has to mean *occupies* `t`, not *starts at* `t`.
+
+**The decision: channel through start indicators.** One boolean `x[s,t₀]` per legal start, an
+`exactly_one` over them, `start[s] == Σ t₀·x[s,t₀]`, and then `y[s,t] == Σ{x[s,t₀] : t₀ ≤ t ≤ t₀+d−1}`.
+That last line is uniform in duration — it collapses to `x[s,t]` for a 1-period session and is
+`x[s,t−1] + x[s,t]` for a 2-period one — and because `exactly_one` lets at most one term be true the
+sum is always 0 or 1, so the equality is exact rather than a pair of inequalities. Reifying against the
+interval instead would avoid `x`, but costs two constraints per pair and propagates worse. `x` is also
+the natural variable for S5 and S7, which are properties of where a session *starts*.
+
+**Implemented in a new `solver/occupancy.py`**, deliberately separate from `variables.py`: it is
+accounting, not placement, and every constraint it posts is a consequence of `start[s]`, so it cannot
+make a feasible model infeasible. Measured **4,720 `x` + 5,328 `y` = 10,048 variables**; `y` at 87.3%
+of the 6,104 upper bound `docs/constraint-model.md` records.
+
+**Built on demand, on evidence.** Switching occupancy on takes the feasibility solve from **2.9–4.1 s
+to 7.6–8.0 s** (deterministic time 0.4–1.9 → ~6.1) across three seeds at identical settings. The Phase
+2 feasibility solve therefore does not build it; `engine.py` will, once there is an objective to read
+it. Paying 2.5× for variables no constraint reads would have been a silent regression of the milestone
+measured two entries above.
+
+**Tested both halves separately**, because they fail differently. Five structural unit tests (no solve)
+pin *which* `(s, t)` pairs exist — including one that fails specifically if `y` were built as "starts
+at", which is the C-7 mistake, and one pinning the measured counts so a pruning change shows up as a
+number rather than as a slower solve. One solver-marked test then solves the real instance and checks
+what those variables are *worth*: `y` matches the placements exactly, `Σₜ y = duration`, and `Σ x = 1`.
+
+**What C-7 does not close, stated rather than papered over.** The original finding also noted that the
+objective's auxiliaries (first/last occupied period per group-day, reified gap indicators) are missing
+from the model-size table. **They cannot be counted yet** — how many there are follows from the
+criterion formulas, and no soft criterion has one. That is C-4, and inventing an answer here would be
+exactly the "assumption made in code and never written down" CLAUDE.md warns about. Order-of-magnitude
+figures are recorded for planning; the exact count is owed when C-4 is decided.
+
+---
+
+## Session log — 2026-07-30, fourth continuation: C-13 resolved, and it was not what three sessions thought
+
+**Re-derived the instance's arithmetic from the CSVs before touching any code**, on the principle that
+the documentation is evidence rather than truth. That took about ten minutes and produced the answer
+the previous three sessions had been searching for with the solver.
+
+**The reference instance had no solution.** All 104 laboratory sessions span two periods; a two-period
+session must fit inside one day (H8) on open slots (H9); the week's open slots form six contiguous
+runs, five of length 5 and one of length 3. A run of length `L` gives one room `floor(L/2)` disjoint
+two-period windows, so a room offers **11 a week**, not 28 periods' worth. `Lab_Info` needed 80 and had
+6 × 11 = 66; `Lab_Sciences` needed 24 and had 2 × 11 = 22. Pigeonhole, no solver required.
+
+**Confirmed three independent ways.** Hand arithmetic; CP-SAT maximising placements returned exactly
+66 of 80 and 22 of 24 — the ceiling reached from below; and the same question posed as *counting*
+rather than as intervals returned `INFEASIBLE` in **0.088 s with zero conflicts**, where the interval
+formulation ran 480 s to `UNKNOWN`. `AddCumulative` reasons on area (160 ≤ 168, fine) and cannot see
+that a 5-period day will not tile with 2-period sessions. Real capacity was 132 period-units: the
+instance was **121 % subscribed**, not 95.2 %.
+
+**H1–H12 were correct all along, and are now demonstrated so positively.** With capacity repaired and
+nothing else changed — same encoding, same fully-interchangeable rooms, same parameters — the model
+solves in **~3 s**. Four repairs were built and each solved end-to-end with every hard constraint
+re-checked from raw data; the one chosen re-types three classrooms as laboratories (`Salle` 10 → 7,
+`Lab_Info` 6 → 8, `Lab_Sciences` 2 → 3), keeping the **total room count at 20** and leaving the
+calendar, the slot grid and the 32 / 82 / 104 session split untouched. `Salle` sat at 29.3 % while the
+laboratories were over-subscribed, so re-typing corrects the actual error instead of padding around it.
+
+**Three previous conclusions are disproved, and the reasoning error behind them is worth naming.** The
+investigation had settled on "no constraint subset ever reproduced an instant `INFEASIBLE`, therefore
+this is hardness rather than a correctness bug." An instant `INFEASIBLE` *is* evidence of a too-tight
+model — but its absence is not evidence of a sound instance, and treating it that way turned an
+untested assumption into a conclusion. The sub-0.1 s `INFEASIBLE` existed the whole time; it appears as
+soon as the question is asked as counting instead of as intervals. The warm-start's 192/218 plateau was
+likewise read as "close to capacity" when at most 202 sessions could be placed at all — it had been reporting the
+infeasibility, not struggling with it.
+
+**Fixed the check that should have caught this.** Verification 2 computed `capacity = rooms ×
+open_slots` and compared period totals — necessary but not sufficient, and it passed a genuinely
+infeasible instance while printing a reassuring 95.2 %. `data/verification/verify_instance.py` now
+applies a contiguity bound as well (`sessions of duration d ≤ rooms × Σ floor(L/d)`), verified to fire
+on the original mix (short by 14 and by 2) and to pass on the repaired one. It reports `Lab_Info` at
+**90.9 % of its two-period windows** — still the binding resource, now measured against a denominator
+that means something. ⚠️ **The FR-12 in-application port must carry this bound**, or the same blind
+spot ships inside the product.
+
+Full validation green: 7/7 import contracts, ruff, format, mypy on 31 files, **27/27 tests** including
+the three solver-marked ones, instance verification, frontend typecheck.
+
+**Then attacked the above rather than defending it**, since the failure mode this session corrected was
+precisely a plausible conclusion nobody tried to break. Six falsification attempts, all of which failed
+to overturn it:
+
+| Attack | Result |
+|---|---|
+| Derive the 11-windows-per-room figure by brute force instead of by the `floor(L/2)` formula | 2+2+2+2+2+1 = **11**. Confirmed |
+| Reconstruct the original room mix in memory and let CP-SAT search the **full** original model hard for a solution — one feasible answer refutes everything | `UNKNOWN` after 90 s, 124,201 conflicts. No counter-example |
+| Repaired instance across seven seeds on production defaults — one failure means 2.9 s was luck | **7/7 placed 218/218**, wall 2.84–3.30 s |
+| Does the post-hoc room labeller ever fail? It raises rather than mislabelling | Never raised, across all seven seeds |
+| Did removing three `Salle` rooms create a new bottleneck the aggregate hides? Check each capacity-restricted subset | No. Only capacity-30 rooms were removed, so the demanding `>= 35` subset is **unchanged** at 5 rooms / 7.1%; the worst subset is 41.8% |
+| Do the re-typed laboratories still satisfy H5? | `Lab_Info` group sizes 10–18 against capacity 20; `Lab_Sciences` 11–15 against 24. OK |
+
+**Two of this session's own claims were wrong and are corrected**, found by that pass rather than by
+review: "202 is the true maximum" was an *upper bound* stated as an attained value (whether 202 is
+reachable was never tested and does not matter to the argument), and the headline "deterministic time
+0.42" came from a diagnostic configuration — `num_workers=8`, warm start off — not from the production
+default path, which measures **0.13–0.21**. Both fixed here and in `docs/open-questions.md`.
 
 ---
 
@@ -323,24 +491,26 @@ Left in place because C-7's reasoning still stands and is referenced elsewhere.*
 Two are decisions only the technical lead can make; the third is a modelling choice that can be made
 at the keyboard.
 
-### Blocks *finishing* Phase 2 — new, 2026-07-30
+### ~~Blocks *finishing* Phase 2~~ — **C-13, RESOLVED 2026-07-30**
 
-**C-13 — room-assignment symmetry makes H1-H12 hard to solve in practice, even though no bug has been
-found.** `Lab_Info` and `Lab_Sciences` are fully interchangeable room types at 95.2% and 85.7%
-occupancy - the textbook hard case for CP-SAT's default search. Full detail, measurements and three
-options in `docs/open-questions.md`. **This blocks task 11 and Phase 2's milestone directly** - it is
-the one genuinely open item right now.
+**The diagnosis recorded here was wrong.** It read: "room-assignment symmetry makes H1–H12 hard to
+solve in practice, even though no bug has been found." There was no search-performance problem. The
+*instance* had no solution: 80 two-period `Lab_Info` sessions against 66 available two-period windows,
+24 `Lab_Sciences` against 22. The model was correct throughout and now solves in ~3 s on the repaired
+instance. Full account in `docs/open-questions.md` under C-13, and in the fourth-continuation session
+log above.
 
-### Blocks the *objective* inside Phase 2
+### ~~Blocks the *objective* inside Phase 2~~ — **C-7, RESOLVED 2026-07-30**
 
-**C-7 — the `y[s][t]` channelling constraint is unwritten.** `y[s][t]` is up to 6,104 booleans and its
-real job is soft-constraint accounting, not H7. **104 of the 218 sessions span two periods**, so
-`y[s][t]` must mean *occupies* t, not *starts at* t — and the rule linking `start[s]`, `iv[s]` and
-`y[s][t]` across a 2-period duration appears in none of the three documents. The auxiliary variables
-the objective needs are also uncounted, so the stated model size is an underestimate.
+The rule linking `start[s]` and `y[s][t]` across a 2-period duration appeared in none of the three
+documents. It is now written, implemented (`solver/occupancy.py`) and tested: start indicators
+`x[s,t₀]`, an `exactly_one` over them, and `y[s,t]` as the sum of the starts that would cover `t`.
+Measured 4,720 + 5,328 = 10,048 variables, built on demand because they cost the feasibility solve
+2.5×. Full reasoning in `docs/open-questions.md` under C-7.
 
-*H1–H12 and a first conflict-free timetable do not need this.* Start there; C-7 bites when the
-objective goes in.
+**One half of C-7 remains open and belongs to C-4**: the objective's auxiliary variables (first/last
+occupied period per group-day, reified gap indicators) still cannot be counted, because how many there
+are follows from criterion formulas that do not exist yet.
 
 ### Blocks Phase 3
 
@@ -368,14 +538,19 @@ H2 and H11 are subsumed (no separate posting exists); H4/H5/H6/H8/H9/H10 are dom
 
 1. ~~Loader~~ - done, committed (`2c9c356`).
 2. ~~Model H1-H12, H12 bug fixed~~ - done, committed (`0f9253e`, `c91a346`, `c1be462`).
-3. **Decide C-13** (room-assignment symmetry - see `docs/open-questions.md`), implement the chosen
-   option, then finish task 11 with a configuration that actually resolves. This is the immediate next
-   step, ahead of everything below.
-4. **Decide C-7**, then encode the objective.
-5. **Decide C-12 and C-4**, then scoring - Phase 3.
+3. ~~Decide C-13~~ - **resolved 2026-07-30**: the instance was infeasible, not the model slow. Repaired
+   by re-typing three classrooms as laboratories; task 11 passes in ~3 s.
+4. ~~Decide C-7~~ - **resolved and implemented 2026-07-30**: start-indicator channelling in
+   `solver/occupancy.py`, built on demand. **Phase 2's modelling is complete.**
+5. **Decide C-12 and C-4**, then scoring - Phase 3. This is now the immediate next step, and it is a
+   specification decision for the technical lead, not a keyboard one: seven criteria need a `v_i` and a
+   `min_i`/`max_i` each, and the objective cannot be encoded until they exist. The variables it will
+   read (`x[s,t₀]`, `y[s,t]`) are built and tested.
 6. **Port the five verifications into the application** as FR-12. The standalone checker at
    `data/verification/verify_instance.py` already has the logic; the in-application version reports
-   structural risks through the API.
+   structural risks through the API. ⚠️ **Port the contiguity bound, not just the period bound** — the
+   period bound alone is what let C-13 through, and shipping it alone would put the same blind spot in
+   the product.
 
 Persistence can wait: the solver can read the CSVs through the loader, and PostgreSQL is only needed
 once runs, candidates and publication have to survive a restart.
@@ -423,7 +598,9 @@ its decomposition, and validation on the published instances.
 | Risk | Effect | Handling |
 |---|---|---|
 | **~2.5 unbudgeted assistant days** (C-1) | ≈12% overrun on 20 days | Confirmed, not contingent. Release valve is reduction step 1 |
-| **95% laboratory occupancy** | A modelling regression looks like an infeasible instance | Pre-analysis first, always. Re-check the figure whenever the instance changes |
+| **91% laboratory occupancy** (of two-period windows) | A modelling regression looks like an infeasible instance — **and, as C-13 showed, an infeasible instance looks like a slow model** | Pre-analysis first, always, and read the *window* figure rather than the period figure. Re-check both whenever the instance changes |
+| **A pre-analysis check that is necessary but not sufficient** | Passes an infeasible instance, so the next failure is attributed to the model. Cost three sessions on C-13 | Both bounds now checked in `verify_instance.py`. Any new check must state whether it is sufficient, and FR-12 must port both |
+| **The cumulative reformulation and the warm-start were built for a problem that did not exist** | Two committed mechanisms (`cumulative_room_types`, `solver/warm_start.py`) are carried for a reason now known to be wrong. Both are correct and tested, neither is load-bearing: the model solves with the warm start off, and the greedy now reaches 218/218 in 0.04 s | **Not removed** — no evidence they harm anything, and both should earn their place once the objective makes the search non-trivial. **Whether the plain per-room encoding would now serve for every type is untested.** Re-evaluate when the objective lands; delete then if they still pay for nothing |
 | **Objective encoding** | Auxiliary variables absent from the size estimate; second unknown after C-7 | 5 days budgeted to Phase 2 |
 | **Deterministic-time calibration unmeasured** | The user-facing time limit is a guess | Calibrate in Phase 2, record below |
 | **Exam multi-room assignment** (R-6) | Breaks a shared `room[s]` abstraction | Keep it out of shared solver code from the start |
@@ -456,24 +633,35 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 | **Toolchain** | **all green** | 2026-07-29 | 6/6 layer contracts kept · ruff clean · mypy strict clean on 20 files · frontend `tsc` clean · instance verified |
 | **Python** | **3.14.2** | 2026-07-29 | Resolved by uv 0.12.0 |
 | **OR-Tools CP-SAT imports and solves** | **yes** | 2026-07-29 | On Python 3.14. `max_deterministic_time` **is accepted by the solver parameters** — ADR-011 is implementable, not just plausible |
-| Deterministic time → wall clock, reference instance | **not a clean ratio under `num_workers=0`** | 2026-07-30 | `max_deterministic_time=60` consumed 247.98 deterministic-time units before the 360s wall-clock ceiling stopped the run. The parameter does not tightly bound parallel search the way ADR-011 assumes for one worker — needs further calibration, see C-13 |
-| First valid timetable | **not yet reached** | 2026-07-30 | Room-assignment symmetry (C-13) makes H1-H12 hard to solve as currently encoded: `UNKNOWN` after 480s wall-clock with tuned parameters, no proof either way. Target < 60 s is now known to be unmet in the current encoding, not just unmeasured |
+| Deterministic time → wall clock, reference instance | **not a clean ratio under `num_workers=0`** | 2026-07-30 | `max_deterministic_time=60` consumed 247.98 units before the 360s wall-clock ceiling stopped the run. Measured while searching an infeasible model, but the finding does not depend on that. Not urgent now — the repaired instance solves in ~0.2 deterministic units, far below any budget — and becomes urgent again once the objective makes solves long enough to reach one |
+| **First valid timetable** | **2.84–3.30 s wall · 0.13–0.21 deterministic** | 2026-07-30 | ✅ **Target < 60 s met with a wide margin.** Seven seeds (1, 7, 42, 123, 999, 2026, 31337), production defaults (`num_workers=0`, warm start on); all seven placed 218/218. Full pipeline: warm-start construction, solve, and independent re-verification of every hard constraint from the raw CSVs (`tests/integration/test_h1_h12.py`). Measured on the repaired instance — see C-13; the earlier `UNKNOWN` results were an infeasible instance, not a slow model |
 | Portfolio of 3 candidates | *not yet measured* | — | Target < 5 min |
 | Diagnosis run on an infeasible instance | *not yet measured* | — | Single worker, no objective — expect it to be slow |
-| Effective `y[s][t]` count after pruning | *not yet measured* | — | Upper bound 6,104 |
+| **Effective `y[s][t]` count after pruning** | **5,328** of 6,104 | 2026-07-30 | 87.3% of the upper bound. Start indicators `x[s,t₀]`: **4,720**. Together 10,048 variables (C-7) |
+| **Cost of building the C-7 accounting** | **2.9–4.1 s → 7.6–8.0 s** | 2026-07-30 | Same configuration, three seeds; deterministic time 0.4–1.9 → ~6.1. Why `build_occupancy()` is called on demand and not by the feasibility solve |
 
-### Measured on the instance, 2026-07-29
+### Measured on the instance, 2026-07-30 (after the C-13 repair)
 
-| Room type | Demand / capacity | Occupancy |
-|---|---|---|
-| Amphi | 32 / 56 | 57.1% |
-| Salle | 82 / 280 | 29.3% |
-| **Lab_Info** | **160 / 168** | **95.2%** ← tightest point |
-| Lab_Sciences | 48 / 56 | 85.7% |
+Two bounds, because **the period bound alone is misleading** — that is what hid C-13. A two-period
+session needs two *consecutive* open periods inside one day, so what a room really offers is
+`Σ floor(L/2)` over its contiguous runs: **11 two-period windows a week**, not 28 periods.
 
-Lab_Info has **8 spare room-periods in the whole week**. Withdrawing one computer laboratory removes 28
-and makes the instance infeasible. Re-run `scripts/verify-instance.ps1` after any change to the
-instance.
+| Room type | Rooms | Periods used / available | Period occupancy | 2-period windows used / offered | **Binding** |
+|---|---|---|---|---|---|
+| Amphi | 2 | 32 / 56 | 57.1% | — (no 2-period sessions) | — |
+| Salle | 7 | 82 / 196 | 41.8% | — | — |
+| **Lab_Info** | **8** | 160 / 224 | 71.4% | **80 / 88** | **90.9% ← tightest point** |
+| Lab_Sciences | 3 | 48 / 84 | 57.1% | 24 / 33 | 72.7% |
+
+`Lab_Info` has **8 spare two-period windows in the whole week**. Withdrawing one computer laboratory
+removes 11 and makes the instance infeasible again. Re-run `scripts/verify-instance.ps1` after any
+change to the instance — it now checks both bounds and fails, naming the shortfall, if either is
+violated.
+
+**For comparison, the original mix and why it read as feasible:** `Lab_Info` 6 rooms, 160 / 168
+periods = **95.2 %** — comfortable — against 80 sessions needing 66 windows, **short by 14**.
+`Lab_Sciences` 2 rooms, 48 / 56 = 85.7 %, against 24 needing 22, **short by 2**. The period figure was
+never wrong arithmetically; it was answering a question that does not determine feasibility.
 
 ---
 
@@ -481,7 +669,9 @@ instance.
 
 Track these as they are met; the project is accepted requirement by requirement.
 
-- [ ] No hard-constraint violation on the reference instance
+- [x] **No hard-constraint violation on the reference instance** — met 2026-07-30. Every one of H1–H12
+      re-derived from the raw CSVs and checked against the returned placements, independently of
+      CP-SAT's own status (`tests/integration/test_h1_h12.py`)
 - [ ] At least three candidates, each with its overall score and sub-scores *(see C-5)*
 - [ ] The sum of displayed contributions equals the score difference, to display precision
 - [ ] Two runs with the same data, weights and seed produce the same candidates in the same order

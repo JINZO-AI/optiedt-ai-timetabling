@@ -107,12 +107,18 @@ def _label_cumulative_rooms(
 
 
 def _apply_warm_start(model: cp_model.CpModel, variables: Variables, request: SolverInput) -> None:
-    """Hints CP-SAT with a hand-built greedy placement (C-13,
-    docs/open-questions.md). CP-SAT is typically far faster at verifying a
-    supplied candidate than at finding one from scratch, and even a partial
-    hint (the greedy does not reach 100% coverage on the reference
-    instance - see warm_start.py) gives the search a real head start on the
-    sessions it does cover, leaving only the rest to actually search over.
+    """Hints CP-SAT with a hand-built greedy placement. CP-SAT is typically
+    far faster at verifying a supplied candidate than at finding one from
+    scratch, and a partial hint still gives the search a head start on the
+    sessions it covers.
+
+    On the reference instance the greedy now covers all 218 sessions in
+    0.04s (measured 2026-07-30, after the C-13 repair). It previously
+    plateaued around 192/218 - because at most 202 could be placed at all,
+    the instance being infeasible, which is what that plateau was actually
+    reporting. The hint is therefore not needed for feasibility here; it is
+    kept because it costs almost nothing and should earn its place once the
+    objective makes the search non-trivial.
     """
     warm_start = build_warm_start(request)
     session_by_id = {s.id: s for s in request.instance.sessions}

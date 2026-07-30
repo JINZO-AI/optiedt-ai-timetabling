@@ -23,14 +23,21 @@ whichever assign[s, r] the solver sets to 1, after solving, in engine.py -
 never carried as its own model variable. This was flagged and approved before
 implementation.
 
-That per-room encoding is NOT used for every room type, though (C-13,
-resolved 2026-07-30 - see docs/open-questions.md). Lab_Info and Lab_Sciences
-are fully interchangeable room types on the reference instance - every
-session needing one gets every room of that type as a candidate - and at
-95.2% / 85.7% occupancy that symmetry made the per-room encoding intractable
-for CP-SAT's default search (measured: UNKNOWN after 480s of tuned search,
-never a proof either way, on a model whose H1/H3/H7/H12 semantics had
-already been independently verified correct). A room type qualifies as
+That per-room encoding is NOT used for every room type, though. Amphi,
+Lab_Info and Lab_Sciences are fully interchangeable room types on the
+reference instance - every session needing one gets every room of that type
+as a candidate - so the cumulative encoding below applies to them.
+
+⚠️ This split was introduced to fix a search-performance problem that did
+not exist. The `UNKNOWN` results it was reacting to were an INFEASIBLE
+instance, not a hard symmetric search: the reference instance offered 66
+two-period laboratory windows against 80 sessions needing one (C-13,
+resolved 2026-07-30 - see docs/open-questions.md). The encoding is still
+correct, still unit-tested, and cuts the room-assignment boolean count by
+roughly 90%, so it is kept - but **whether the simpler per-room encoding
+would now serve for every type has not been measured**, and the honest
+reason this code exists is a diagnosis that turned out to be wrong. A room
+type qualifies as
 "cumulative" here (see cumulative_room_types below) only when EVERY session
 needing it has ALL of that type's rooms as candidates - if even one session
 is narrower (the way Salle sessions are, since group size varies), the whole

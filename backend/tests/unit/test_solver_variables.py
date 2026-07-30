@@ -113,9 +113,10 @@ def test_assign_variables_exist_only_for_candidate_pairs(instance, variables):
 
 def test_fully_interchangeable_room_types_are_cumulative_encoded(instance, variables):
     """Amphi, Lab_Info and Lab_Sciences: every session needing that type
-    has every room of that type as a candidate (2/2, 6/6, 2/2 - see
-    docs/status.md, 2026-07-30). Salle is only partially interchangeable
-    (5-10 of 10, depending on group size), so it must stay per-room."""
+    has every room of that type as a candidate (2/2, 8/8, 3/3 after the
+    C-13 room re-typing - see docs/open-questions.md). Salle is only
+    partially interchangeable (5-7 of 7, since a group of 35 does not fit
+    the two 30-seat rooms), so it must stay per-room."""
     _, v = variables
     assert v.cumulative_room_types == {
         RoomType.AMPHI,

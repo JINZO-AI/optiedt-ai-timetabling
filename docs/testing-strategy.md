@@ -40,9 +40,11 @@ recorded there.
 Their purpose is to distinguish **an instance that genuinely has no solution** from **an error in the
 model** — two situations a solver reports identically.
 
-This is also the project's primary debugging instrument. At 95% computer-laboratory occupancy, a
-modelling regression surfaces as `INFEASIBLE`, not as a slow solve. Without these checks you cannot
-tell which you are looking at. **Run them first, always.**
+This is also the project's primary debugging instrument. At 91% computer-laboratory occupancy (of
+two-period windows), a modelling regression surfaces as `INFEASIBLE`, not as a slow solve. Without
+these checks you cannot tell which you are looking at. **Run them first, always** — and be sure a check
+that passes is actually *sufficient*, not merely necessary. C-13 was a genuinely infeasible instance
+that passed verification, so the `UNKNOWN` it produced was blamed on the model for three sessions.
 
 A failing check must name the **resource concerned and the quantity missing**, not return a boolean —
 that is the content FR-12 requires.

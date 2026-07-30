@@ -71,13 +71,23 @@ def test_groups_by_level(instance):
 
 
 def test_rooms_by_type(instance):
+    """2 / 7 / 8 / 3, not the 2 / 10 / 6 / 2 the specification first recorded.
+
+    Three classrooms were re-typed as laboratories on 2026-07-30 because the
+    original mix made the instance INFEASIBLE: all 104 laboratory sessions span
+    two periods, and a two-period session must fit inside one day, so a room
+    offers only 11 two-period windows a week (five 5-period days give two each,
+    Saturday's 3 open periods give one). Six computer laboratories therefore
+    offered 66 windows against 80 sessions. See C-13 in docs/open-questions.md.
+    """
     by_type = {t: 0 for t in RoomType}
     for r in instance.rooms:
         by_type[r.type] += 1
     assert by_type[RoomType.AMPHI] == 2
-    assert by_type[RoomType.SALLE] == 10
-    assert by_type[RoomType.LAB_INFO] == 6
-    assert by_type[RoomType.LAB_SCIENCES] == 2
+    assert by_type[RoomType.SALLE] == 7
+    assert by_type[RoomType.LAB_INFO] == 8
+    assert by_type[RoomType.LAB_SCIENCES] == 3
+    assert sum(by_type.values()) == 20, "the re-typing kept the total room count unchanged"
 
 
 def test_teachers_by_rank(instance):

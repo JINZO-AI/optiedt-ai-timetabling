@@ -128,7 +128,7 @@ literal.** The mapping constraint → literal must be 1:1 and non-redundant.
 
 **Blocks:** Phase 5 diagnosis run. **Owner:** whoever builds the solver.
 
-### C-7 — The `y[s][t]` channelling constraint is unwritten
+### C-7 — The `y[s][t]` channelling constraint · **RESOLVED 2026-07-30 → start-indicator encoding, built on demand**
 
 `y[s][t]` is up to 6,104 booleans — the dominant term in model size. **104 of the 218 sessions span two
 periods**, so `y[s][t]` must mean *occupies* `t`, not *starts at* `t`. The constraint linking
@@ -137,11 +137,61 @@ periods**, so `y[s][t]` must mean *occupies* `t`, not *starts at* `t`. The const
 Related: SRS Table 27 attributes H7 to `y`, but with `start[s]` an integer over a pruned domain each
 session already has exactly one start — `y`'s real purpose is soft-constraint accounting.
 
-Also unspecified: the **auxiliary variables the objective needs** (per-group-per-day first and last
-occupied period, reified gap indicators) are absent from the model-size table, so the stated size is an
-underestimate.
+#### The decision
 
-**Blocks:** Phase 2, the model. **Owner:** whoever builds the solver.
+**Channel through start indicators, not through the interval.** For each session `s` with duration `d`
+and pruned start domain `D(s)`:
+
+```
+x[s,t₀] ∈ {0,1}                        for every t₀ ∈ D(s)      "s starts at t₀"
+exactly_one( x[s,t₀] : t₀ ∈ D(s) )                              s starts somewhere
+start[s] == Σ t₀ · x[s,t₀]                                      channel to the integer
+y[s,t]  == Σ { x[s,t₀] : t₀ ∈ D(s), t₀ ≤ t ≤ t₀+d−1 }           "s occupies t"
+```
+
+The last line **is** the answer to C-7, and it is uniform in `d` — a 1-period session's `y[s,t]` reduces
+to `x[s,t]`, a 2-period session's is `x[s,t−1] + x[s,t]`. Because `exactly_one` makes at most one term
+of any such sum true, the sum is always 0 or 1 and the equality is exact: no `≤`/`≥` pair, no big-M, no
+reified disjunction.
+
+**Why not reify against the interval** (`y[s,t] ⇒ start[s] ∈ [t−d+1, t]` and the negation, via
+`only_enforce_if`)? It needs no `x`, but it costs two constraints per pair instead of one, and it
+propagates strictly worse: nothing links the `y[s,·]` of one session to each other, so the solver can
+sit with several `y` unfixed while `start[s]` is already decided. The `exactly_one` above is the
+standard direct encoding of an integer variable, which CP-SAT's presolve recognises and exploits.
+
+**`x` is not scaffolding — it is the natural variable for three of the seven criteria.** S5 (preferred
+windows) and S7 (subject spread) are properties of *where a session starts*; S4 (extra working day) is
+a property of which days are touched. Expressing those over `x` is direct; expressing them over `y`
+means undoing the double-counting a 2-period session introduces.
+
+**Only reachable pairs are materialised.** `y[s,t]` is created only for slots some valid start can
+actually cover. Pairs no start can reach are constant 0 and are omitted rather than posted — this is
+the pruning `docs/constraint-model.md` refers to when it calls 6,104 an upper bound and never an
+estimate. Measured effective count is in `docs/status.md`.
+
+**Built on demand, not on every solve.** `build_occupancy()` lives in `solver/occupancy.py` and is
+called only when something needs the accounting. The Phase 2 feasibility solve does **not** call it, so
+it does not pay for variables no constraint reads. This matters: that solve is measured at ~3 s and
+must not regress for an objective that does not exist yet.
+
+#### The auxiliary-variable question, answered honestly
+
+The original finding also observed that per-group-per-day first/last occupied period and reified gap
+indicators are absent from the model-size table, so the stated size is an underestimate. **That part
+cannot be closed here, and pretending otherwise would be inventing C-4.** How many auxiliaries the
+objective needs is a function of the criterion formulas, and *no soft criterion has a formula yet*.
+
+What can be stated now: the criteria are all expressible as linear functions over `x` and `y` plus
+per-(resource, day) auxiliaries, and the resource-day grid is fixed by the instance at **51 groups + 44
+teachers + 20 rooms, × 6 days**. So an objective needing first/last per group-day adds ~612 integers;
+one adding a gap indicator per group-day-period adds ~1,530 booleans. Those are order-of-magnitude
+figures for planning, not a specification. **The exact count follows C-4 and must be recorded when C-4
+is decided.**
+
+**Resolved:** the channelling, which is what blocked the model. **Still open under C-4:** the
+auxiliaries, because they follow from formulas that do not exist. **Owner of the remainder:** technical
+lead, before Phase 3.
 
 ### C-9 — Four requirements have no detailed specification
 
@@ -220,7 +270,90 @@ column.
 
 ---
 
-### C-13 — Room-assignment symmetry makes H1–H12 hard to solve on the reference instance · **OPEN, three techniques tried, none sufficient**
+### C-13 — "Room-assignment symmetry makes H1–H12 hard to solve" · **RESOLVED — the diagnosis was wrong; the instance was infeasible**
+
+**Resolution, 2026-07-30.** There was never a search-performance problem. The reference instance as
+originally generated had **no solution at all**, and every `UNKNOWN` recorded below was CP-SAT failing
+to *prove* an infeasibility whose proof its propagators cannot construct. The model — H1, H3, H7, H12
+and the domain-pruned rest — was correct throughout.
+
+**The argument, which needs no solver.** A two-period session needs its two periods consecutive and
+inside one day: H8 forbids crossing a day boundary, H9 forbids closed slots. The week's open slots are
+therefore not a flat pool of periods but six contiguous runs — five of length 5 (Mon–Fri) and one of
+length 3 (Saturday, afternoon closed). A run of length `L` offers one room only `floor(L / 2)` disjoint
+two-period windows, so **one room offers 5×2 + 1 = 11 two-period windows a week**, not 28 periods'
+worth. Every laboratory session in this instance spans two periods:
+
+| Room type | Two-period sessions | Rooms | Windows offered | Verdict |
+|---|---|---|---|---|
+| `Lab_Info` | 80 | 6 | 6 × 11 = **66** | short by **14** |
+| `Lab_Sciences` | 24 | 2 | 2 × 11 = **22** | short by **2** |
+
+Pigeonhole. No assignment exists, and none of H1, H12, teacher availability or room symmetry is
+involved in the argument.
+
+**Confirmed three ways, independently:**
+
+1. Hand arithmetic, above.
+2. CP-SAT asked to *maximise* the number of placeable sessions (optional intervals, cumulative bound
+   only) returned exactly **66 of 80** and **22 of 24** — the arithmetic ceiling, reached from below.
+3. The same feasibility question expressed as **counting** rather than as intervals — assign each
+   two-period session to a day, cap each day at `rooms × Σ floor(L/2)` — returns `INFEASIBLE` in
+   **0.088 s with zero conflicts**, at presolve. Written as intervals, the identical question runs for
+   480 s and returns `UNKNOWN`.
+
+**Why CP-SAT could not see it.** `AddCumulative` reasons about *area*: 160 period-units of demand
+against 6 rooms × 28 open periods = 168 available, which fits. The obstruction is not area but
+**structure** — a 5-period day cannot be tiled by 2-period sessions, so one period per room-day is
+unusable and the true capacity is 132 period-units, i.e. the instance was **121 % subscribed, not
+95.2 %**. No amount of budget, tuning, warm-starting or reformulation can find a solution that does
+not exist, which is exactly why all three techniques below "failed" identically.
+
+**Previous conclusions this disproves:**
+
+- ❌ "Full interchangeability at near-full capacity is the textbook hard case, and that is what this
+  is." The interchangeability was real but irrelevant. With capacity repaired and *nothing else
+  changed* — same encoding, same symmetric fully-interchangeable rooms, same parameters — the model
+  solves in **2.8–3.3 s** (deterministic time 0.13–0.21), reproducibly across seven seeds.
+- ❌ "No constraint subset has ever reproduced an instant `INFEASIBLE`, which is evidence of hardness
+  rather than a correctness bug." The inference was wrong in both directions: an instant `INFEASIBLE`
+  is evidence of a *too-tight model*, but its absence is not evidence of a *correct instance*. The
+  sub-0.1 s `INFEASIBLE` was there the whole time — it appears the moment the question is posed as
+  counting instead of as intervals.
+- ❌ "The greedy warm-start plateaus at 192/218 because the instance sits very close to its capacity
+  limit." **At most 202 of 218 sessions can be placed at all** (218 − 14 − 2), so the greedy was within
+  10 of an upper bound it could never have passed — it was reporting the infeasibility, not struggling
+  with it. (202 is an upper bound; whether it is attainable was not tested, and does not matter to the
+  argument.)
+- ✅ Confirmed: pure time scheduling (H1 + H12, no rooms) is fast. Also confirmed: H1–H12 are
+  correctly modelled — now positively, by solving and independently re-verifying every rule, rather
+  than by the absence of a bad signal.
+
+**The repair, applied 2026-07-30.** Three classrooms were re-typed as laboratories — `Salle` 10 → 7,
+`Lab_Info` 6 → 8, `Lab_Sciences` 2 → 3 — which leaves the **total room count at 20** and the calendar,
+the slot grid and the 32 / 82 / 104 session split untouched. `Salle` was 29.3 % occupied while the
+laboratories were over-subscribed, so this corrects the actual error rather than adding capacity around
+it. The instance stays tight where the project wants it tight: `Lab_Info` is at **90.9 % of its
+two-period windows**, still the binding resource, now measured against a denominator that means
+something.
+
+**Consequence for the pre-analysis — this is the part worth carrying forward.** Verification 2 computed
+`capacity = rooms × open_slots` and compared period totals. That bound is necessary but **not
+sufficient**, and it passed a genuinely infeasible instance while reporting a comfortable "95.2 %". The
+check whose entire stated purpose is to tell *"this instance has no solution"* apart from *"the model
+has a bug"* returned the wrong answer, and three sessions of work went looking for a bug that did not
+exist. `data/verification/verify_instance.py` now applies **both** bounds: the period-area bound as
+before, and a contiguity bound per duration — `sessions of duration d ≤ rooms × Σ floor(L / d)` — which
+fires on the original mix (short by 14 and by 2) and passes on the repaired one. **The in-application
+port of the five checks (FR-12) must carry the contiguity bound too**; shipping the area bound alone
+would reintroduce exactly this failure inside the product.
+
+---
+
+<details>
+<summary>Superseded analysis, kept because the measurements are real and the reasoning is instructive</summary>
+
+### C-13 as originally recorded — Room-assignment symmetry makes H1–H12 hard to solve
 
 H1, H3, H7 and H12 were built, reviewed, and — after finding and fixing a real bug in H12's original
 grouping (see `docs/status.md`, 2026-07-30) — are believed correct: no test at any point has reproduced
@@ -297,6 +430,15 @@ mode without further calibration.
 **Blocks:** Task 11 (integration test) and therefore Phase 2's stated milestone ("a timetable without
 conflict on the instance"). **Owner:** technical lead.
 
+</details>
+
+**Still open from the superseded analysis, on its own merits:** the deterministic-time calibration in
+the last paragraph above. `max_deterministic_time` did not tightly bound parallel search, and that
+observation stands independently of C-13 — it was measured on runs that happened to be searching an
+infeasible model, but nothing about the finding depends on that. The repaired instance now solves in
+~0.2 deterministic units, far below any configured budget, so the question is no longer urgent; it
+becomes urgent again when the objective goes in and solves get long enough to reach a budget.
+
 ---
 
 ## Verification of the reference archives
@@ -335,6 +477,8 @@ Corrections to send in one pass rather than re-argue.
 | **PPM §8.3** | Reduction order numbered **4–9** | **1–6.** "Item 4" currently has no referent |
 | **CdC/SRS §4.5.2** | Grounding steps numbered **9–12** | **1–4** |
 | **SRS Table 36** | FR-10 absent | Add: FR-10 → §4.1 → "Print or export a timetable view" |
+| **CdC Table 10** (room mix) | Amphi 2 · Salle 10 · Lab_Info 6 · Lab_Sciences 2 | **Amphi 2 · Salle 7 · Lab_Info 8 · Lab_Sciences 3.** Total unchanged at 20. The original mix made the instance infeasible — see C-13 |
+| **CdC Table 11** (verification 2) | "computer laboratories **95%**" | "computer laboratories **91% of two-period windows** (71% of periods)". The period figure is necessary but not sufficient and passed an instance with no solution — see C-13 |
 
 ### Not errors — recorded so they are not re-investigated
 

@@ -92,10 +92,13 @@ fields, the assistant must be removable without affecting anything else.
 Stages 1 and 2 always run. **Stage 3 runs only when stage 2 returns `INFEASIBLE`.**
 
 1. **Pre-analysis** — five arithmetic checks, no solver. Distinguishes *this instance genuinely has no
-   solution* from *the model has a bug*. The reference instance sits at **95.2% computer-laboratory
-   occupancy (8 spare room-periods in the whole week)**, so at that saturation a modelling regression
-   surfaces as `INFEASIBLE`, not as a slow solve. **Run this first when debugging; you cannot tell the
-   two apart without it.**
+   solution* from *the model has a bug*. The reference instance sits at **90.9% computer-laboratory
+   occupancy — of two-period *windows*, 8 spare in the whole week**, which is the figure that binds.
+   Counting periods instead gives a reassuring 71.4% and is **necessary but not sufficient**: a
+   two-period session needs two consecutive open periods inside one day, so a 5-period day leaves one
+   period per room structurally unusable. Reading the period figure alone is what let an infeasible
+   instance pass verification and cost three sessions (C-13). **Run this first when debugging, and
+   check that a solution exists before concluding the solver is slow.**
 2. **Optimisation** — one solve per weight profile, sequential, carries the objective, all workers,
    bounded by `max_deterministic_time` (ADR-011).
 3. **Diagnosis** — three properties imposed by CP-SAT itself, not choices: **a single worker**
@@ -173,12 +176,30 @@ Read the ADR before arguing with any of these.
 
 | # | Open | Blocks |
 |---|---|---|
-| C-4 | `v_i` and the bounds of **all seven** soft criteria are undefined | Scoring, everything downstream |
-| C-7 | The `y[s][t]` channelling constraint for 2-period sessions is unwritten | The model |
+| C-4 | `v_i` and the bounds of **all seven** soft criteria are undefined. **This is the current blocker** — Phase 2 is done and nothing further can be encoded without it | Scoring, everything downstream |
 | C-12 | **S5 carries weight 0.20 and has no input data** — no "preferred" state in the schema | Scoring, availability grid |
-| C-6 | Which of H2 / H11 get their own assumption literal | The diagnosis report |
 | C-5 | "At least three candidates" can fail when duplicates are removed | Acceptance tests |
 | C-9 | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Acceptance |
+
+**C-6 is resolved and implemented**: only H1, H3, H7 and H12 carry `carries_assumption_literal = True`
+— the four constraints that are real CP-SAT postings.
+
+**C-7 is resolved and implemented**: `y[s][t]` means *occupies* `t`, channelled from start indicators
+`x[s,t₀]` in `solver/occupancy.py`. **It is built on demand, not by every solve** — it adds 10,048
+variables and costs the feasibility solve about 2.5×, so nothing pays for it until an objective reads
+it. Half of C-7 stays open under C-4: the objective's auxiliary variables cannot be counted until the
+criterion formulas exist.
+
+**C-13 is resolved, and how it was resolved matters more than the answer.** For three sessions it was
+recorded as "room-assignment symmetry makes the correct model hard to solve", and three legitimate
+techniques were spent on it. The model was correct; the **instance had no solution**. Every laboratory
+session spans two periods, a two-period session must fit inside one day (H8), and a 5-period day gives
+a room only two such windows — so a room offered 11 a week against demand that needed more.
+Ten minutes of arithmetic on the CSVs found what days of solver time could not, because CP-SAT was
+being asked to prove an infeasibility its propagators cannot express. **When a solve returns `UNKNOWN`,
+establish that a solution exists before treating it as a performance problem** — an instant
+`INFEASIBLE` is evidence of a too-tight model, but its *absence* is not evidence of a sound instance.
+Full account in `docs/open-questions.md`.
 
 ⚠️ **C-12 and C-5 are the same bug waiting to happen.** The teacher-favouring profile differs by
 raising S3 *and* S5. If S5 measures identically zero it differs by S3 alone, two candidates converge,
@@ -206,7 +227,7 @@ From `backend/`:
 | **One test** | `uv run pytest tests/unit/test_scoring.py::test_decomposition_is_exact` |
 | **By name** | `uv run pytest -k decomposition` |
 | Property tests only | `uv run pytest tests/property` |
-| Skip solver tests | `uv run pytest -m "not solver"` |
+| Skip solver tests | `uv run pytest -m "not solver"` (already `run-checks.ps1`'s default — a solver test can legitimately take minutes) |
 | Lint · format · types | `uv run ruff check . · uv run ruff format . · uv run mypy` |
 | **Layer boundaries** | `uv run lint-imports` |
 | Migrations | `uv run alembic revision --autogenerate -m "..."` · `uv run alembic upgrade head` |
@@ -229,7 +250,7 @@ documentation is now false.
 **Any test that invokes the solver must fix the seed *and* use a deterministic budget.** A test bounded
 by wall clock passes on one machine and fails on another, and the failure looks like a solver bug.
 
-### Two traps that will waste your time
+### Three traps that will waste your time
 
 - **`pytest` exits 5** while there are no tests. `run-checks.ps1` tolerates it; remove `5` from the
   allowed list once the first test lands.
@@ -237,6 +258,10 @@ by wall clock passes on one machine and fails on another, and the failure looks 
   instance folder) and matches at any depth. It silently swallowed `data/instance/` — the whole
   dataset. There is an explicit un-ignore for it, plus one for `/dataset/`. **Do not remove either**,
   and check `git status` after adding data files.
+- **Solving with `num_workers=0` (the default) uses every CPU core** and can make unrelated shell
+  commands stall for tens of seconds to minutes — this is expected, not a hung environment. Always
+  track a backgrounded solve explicitly and stop it before starting a replacement; an abandoned one
+  silently burns CPU for the rest of the session and looks exactly like broken tooling.
 
 ---
 

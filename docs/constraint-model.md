@@ -33,12 +33,34 @@ size. Two things about it are commonly got wrong:
 2. **`y[s][t]` means *occupies* t, not *starts at* t.** **104 of the 218 sessions span two periods.**
    For a 2-period session starting at `t`, both `y[s][t]` and `y[s][t+1]` are true.
 
-⚠️ **The channelling constraint linking `start[s]`, `iv[s]` and `y[s][t]` across a multi-period
-duration is not specified anywhere in the three PDFs.** It must be written before the objective can be
-encoded. Tracked as **C-7** in `docs/open-questions.md`.
-
 The effective count is well below 6,104 because H4–H10 prune domains before search. 6,104 is recorded
-as an upper bound, never as an estimate.
+as an upper bound, never as an estimate. **Measured: 5,328** (`solver/occupancy.py`, 2026-07-30).
+
+### The channelling constraint — C-7, resolved 2026-07-30
+
+The rule linking `start[s]` to `y[s][t]` appears in none of the three PDFs. It is written here. For
+each session `s` of duration `d` with pruned start domain `D(s)`:
+
+```
+x[s,t₀] ∈ {0,1}                        for every t₀ ∈ D(s)      "s starts at t₀"
+exactly_one( x[s,t₀] : t₀ ∈ D(s) )                              s starts somewhere
+start[s] == Σ t₀ · x[s,t₀]                                      channel to the integer
+y[s,t]  == Σ { x[s,t₀] : t₀ ∈ D(s), t₀ ≤ t ≤ t₀+d−1 }           "s occupies t"
+```
+
+The last line is the answer, and it is uniform in `d`: a 1-period session's `y[s,t]` collapses to
+`x[s,t]`, a 2-period session's is `x[s,t−1] + x[s,t]`. `exactly_one` makes at most one term of any such
+sum true, so the sum is always 0 or 1 and the equality is exact — no inequality pair, no big-M.
+
+`y[s,t]` is created only for slots some valid start can reach; the rest are constant 0 and are omitted
+rather than posted. That omission is the pruning referred to above.
+
+⚠️ **Built on demand, not on every solve.** `build_occupancy()` adds 10,048 variables and, measured
+across three seeds on the reference instance, takes the feasibility solve from **2.9–4.1 s to
+7.6–8.0 s** (deterministic time 0.4–1.9 → ~6.1). The Phase 2 feasibility solve therefore does not call
+it. Nothing here may narrow a domain or forbid a placement: every constraint it posts is a consequence
+of `start[s]`, so any solution of the model without it extends to exactly one solution with it. If that
+ever stops being true, a soft criterion has silently become a hard one.
 
 ---
 
@@ -110,11 +132,18 @@ is no separate posting to attach a literal to. H4, H5, H6, H8, H9 and H10 are li
 are domain restrictions applied at variable construction (`solver/variables.py`), never posted as
 constraints at all.
 
-⚠️ **H1, H3, H7 and H12 being correct does not mean the model is easy to solve.** `Lab_Info` and
-`Lab_Sciences` are fully interchangeable room types at 95.2% and 85.7% occupancy, which makes room
-assignment a hard symmetric search for CP-SAT's default portfolio, independently of constraint
-correctness. See **C-13** in `docs/open-questions.md` for the measurements and the options being
-weighed.
+⚠️ **H1, H3, H7 and H12 being correct does not mean a solution exists.** For three sessions this
+section warned instead that full room interchangeability at high occupancy "makes room assignment a
+hard symmetric search". It does not — on this instance the same encoding, with the same fully
+interchangeable rooms, solves in ~3 s. What was actually happening is that the instance had **no
+solution**, and CP-SAT was being asked to prove an infeasibility its propagators cannot construct:
+`AddCumulative` reasons about area (160 period-units against 168 available, which fits) and cannot see
+that a 5-period day will not tile with 2-period sessions. Posed as counting rather than as intervals,
+the same question returns `INFEASIBLE` in 0.088 s.
+
+**The rule to take from it:** when a solve returns `UNKNOWN`, establish that a solution exists before
+treating it as a performance problem. An instant `INFEASIBLE` is evidence of a too-tight model; its
+absence is *not* evidence of a sound instance. See **C-13** in `docs/open-questions.md`.
 
 ---
 
@@ -193,9 +222,12 @@ Encoding the objective is the second unknown of this phase, after `y` channellin
 |---|---|
 | Sessions to place | 218 |
 | Open slots | 28 |
-| Integer variables | 436 — `start[s]` and `room[s]` per session |
-| Interval variables | 218 |
-| Boolean `y[s][t]` | **at most** 6,104, reduced by domain pruning |
+| Integer variables | 218 — `start[s]` per session. `room[s]` is **not** a variable: room assignment is `assign[s,r]` booleans, or a cumulative bound plus post-hoc labelling for fully interchangeable types (see H3/H7 above) |
+| Interval variables | 218 unconditional, plus one optional per `assign[s,r]` pair |
+| Boolean `assign[s,r]` | 770 — `Salle` only; the other three types are cumulative-encoded |
+| Boolean `x[s,t₀]` start indicators | **4,720** measured — built on demand |
+| Boolean `y[s][t]` | **at most** 6,104, reduced by domain pruning to **5,328** measured — built on demand |
+| Objective auxiliaries | **unknown, and deliberately not guessed** — they follow from the criterion formulas, which are C-4. Order of magnitude for planning only: ~612 integers for first/last per group-day, ~1,530 booleans for a gap indicator per group-day-period |
 | Hard constraint families | 12 |
 | Quality criteria | 7, of which 6 with non-zero default weight |
 | Objectives | 1 per weight profile |

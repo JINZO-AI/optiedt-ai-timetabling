@@ -98,9 +98,14 @@ Five arithmetic checks, no solver involved. Their purpose is to tell apart two s
 reports identically: *this instance genuinely has no solution* and *the model has a bug*.
 
 They run in milliseconds and they are the primary debugging instrument for this project, because the
-reference instance sits at **95% computer-laboratory occupancy**. At that saturation a modelling
-regression surfaces as `INFEASIBLE`, not as a slow solve — and without stage 1 you cannot tell which
-you are looking at.
+reference instance sits at **91% computer-laboratory occupancy** (of two-period windows — the figure
+that binds; see `docs/data-and-instance.md`). At that saturation a modelling regression surfaces as
+`INFEASIBLE`, not as a slow solve — and without stage 1 you cannot tell which you are looking at.
+
+⚠️ **A check that is necessary but not sufficient is worse than no check**, because a false pass sends
+the next failure to the wrong suspect. Verification 2 originally compared period totals, passed an
+infeasible instance, and cost three sessions of debugging aimed at the model (C-13). Every check must
+state which kind it is.
 
 Checks and their expected results on the reference instance are in `docs/data-and-instance.md`.
 
