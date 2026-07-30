@@ -9,55 +9,61 @@ Keep this file current. A stale status file is worse than none, because the next
 
 ## ▶ Resume from here — copy this to continue
 
-> Resume OptiEDT Phase 2. Read `CLAUDE.md`, then `docs/status.md` in full (all three "Session log —
+> Resume OptiEDT Phase 2. Read `CLAUDE.md`, then `docs/status.md` in full (all "Session log —
 > 2026-07-30" entries), then `docs/open-questions.md`'s C-13 — do not open the PDFs.
 >
-> The loader, variables, and all 12 constraint builders — including the H12 ancestor-lineage fix and
-> the C-13 cumulative-constraint reformulation — are committed and green (`c1be462`, `480061e`,
-> `8f22e2b`; 24 tests, ruff, mypy, format, 7/7 import contracts, all pass with solver-marked tests
-> excluded from the default fast path). The integration test is committed too
-> (`backend/tests/integration/test_h1_h12.py`, `@pytest.mark.solver`). **Do not redo any of this work.**
+> The loader, variables, all 12 constraint builders (H12 ancestor-lineage fix included), the C-13
+> cumulative-constraint reformulation, and a greedy warm-start hint are all committed and green
+> (`c1be462`, `480061e`, `8f22e2b`, `c18e963`; 24 tests, ruff, mypy, format, 7/7 import contracts, all
+> pass with solver-marked tests excluded from the default fast path). **Do not redo any of this work.**
 >
-> **Task 11 is still blocked, and the chosen fix (C-13 option 3, reformulate room assignment as a
-> cumulative constraint) did not resolve it on its own.** Measurements, most recent first:
+> **Task 11 is still blocked. Three independent, legitimate techniques have now been tried and none
+> resolved it, alone or combined:**
 >
 > | Configuration | Budget | Result |
 > |---|---|---|
-> | Cumulative reformulation, tuned, 480s | 480s wall | `UNKNOWN`, 405,301 conflicts, 2.42M branches |
-> | Cumulative reformulation, tuned, 180s | 180s wall | `UNKNOWN`, 96,020 conflicts, 1.28M branches |
+> | Cumulative reformulation + warm-start hint + tuning | 480s wall | `UNKNOWN`, 435,688 conflicts, 2.35M branches |
+> | Cumulative reformulation + tuning, no hint | 480s wall | `UNKNOWN`, 405,301 conflicts, 2.42M branches |
+> | Cumulative reformulation + tuning | 180s wall | `UNKNOWN`, 96,020 conflicts, 1.28M branches |
 > | Cumulative reformulation, default parameters | 480s wall | `UNKNOWN` (via the integration test's own fixture) |
-> | Per-room encoding, tuned, 480s (pre-reformulation) | 480s wall | `UNKNOWN`, 29 conflicts, 2.29M branches |
+> | Per-room encoding + tuning (pre-reformulation) | 480s wall | `UNKNOWN`, 29 conflicts, 2.29M branches |
 > | Per-room encoding, default parameters | 360s wall | `UNKNOWN`, 337,954 conflicts |
 > | Room assignment alone (H3+H7, no teacher/hierarchy), per-room | 200s wall | `UNKNOWN`, 78,824 conflicts |
 >
-> The reformulation is real and correct (cut the room-assignment boolean count from thousands to 770 -
-> only `Salle` still uses `assign[s,r]`; unit-tested; see `docs/constraint-model.md` and
-> `solver/engine.py`'s labeller), but it did **not** meaningfully close the gap at a comparable budget.
-> Two things are independently confirmed and should not be re-litigated:
+> **The warm-start hint made essentially no difference** (435,688 vs. 405,301 conflicts at the same
+> budget, both `UNKNOWN`) despite covering 190/218 sessions - and the greedy that built it couldn't
+> reach full coverage either: MRV order alone gets stuck at 26/218; 3,000 random restarts plateau
+> around 190/218 (`solver/warm_start.py`, measured 2026-07-30). Three techniques - a cumulative
+> reformulation, CP-SAT parameter tuning, and a constructive warm-start - have now converged on the
+> same result. This is no longer "try one more lever"; it is a genuinely hard instance for this model
+> within the budgets tested so far (up to 480s / 8 minutes).
 >
-> - **Pure time scheduling (H1+H12, no rooms at all) is fast** - confirmed `OPTIMAL` in the 2026-07-30
->   session, before this investigation started. The difficulty is specifically in the room dimension.
-> - **No constraint subset, at any point across both sessions, has reproduced an instant `INFEASIBLE`.**
+> Two things remain independently confirmed and should not be re-litigated:
+>
+> - **Pure time scheduling (H1+H12, no rooms at all) is fast** - confirmed `OPTIMAL` before this
+>   investigation started. The difficulty is specifically in the room dimension.
+> - **No constraint subset, across this entire investigation, has reproduced an instant `INFEASIBLE`.**
 >   Every result has been `UNKNOWN` after real search effort, never the sub-0.1s signature the H12 bug
->   produced. This is still evidence of hardness, not of a remaining correctness bug.
+>   produced. This remains evidence of hardness, not of a remaining correctness bug - H1-H12 are
+>   believed correct by construction and by extensive independent testing.
 >
-> **What hasn't been tried yet, in rough order of promise:**
+> **What's left, genuinely untested:**
 >
-> 1. **A constructive greedy warm-start fed via `model.add_hint()`.** Build one feasible assignment by
->    hand (list-scheduling heuristic, outside CP-SAT) and hint it to the solver - CP-SAT is typically
->    fast at *verifying* a supplied assignment even when it's slow at *finding* one from scratch. Not
->    yet attempted this session.
-> 2. **A genuinely large budget** (tens of minutes, not ~8) to see if the search converges at all, in
->    either direction, given enough time - only budgets up to 480s have been tried so far.
-> 3. **Symmetry-breaking on `Salle`** (the one remaining per-room-encoded type) in case its partial
->    interchangeability (5-10 of 10 rooms) still contributes meaningfully - considered unlikely, since
->    `Salle` sits at only 29% occupancy, but not directly tested in isolation.
+> 1. **A much larger budget** (tens of minutes to hours) - only up to 480s has actually been tried.
+> 2. **Symmetry-breaking specifically on `Salle`** (the one remaining per-room type) - considered
+>    unlikely to matter (29% occupancy) but never directly isolated.
+> 3. **A more sophisticated construction heuristic** for the warm-start (proper backtracking or a
+>    matching-based room assignment instead of greedy first-fit) - might close more than the ~87%
+>    coverage reached so far, though the fact it barely helped even at that coverage is a discouraging
+>    sign for this direction specifically.
+> 4. **Reconsidering the model more radically** (e.g. additional redundant/implied constraints to help
+>    propagation, or a different global-constraint structure entirely) - a bigger investment than
+>    anything tried so far.
 >
 > **A second, independent finding, still unresolved**: under `num_workers=0` (parallel),
 > `max_deterministic_time` does not tightly bound the search the way ADR-011 assumes for a
 > single-worker budget - configured limits have consistently been exceeded before the wall-clock
-> ceiling actually stops the run (e.g. a 60s deterministic budget consumed 247.98 deterministic-time
-> units over 360s wall-clock). Flagged, not yet calibrated.
+> ceiling actually stops the run. Flagged, not yet calibrated.
 >
 > **Before running any solve with `num_workers=0`, be aware it will use every CPU core** and can make
 > even trivial shell commands stall for tens of seconds to minutes — budget for it, and always track
@@ -70,10 +76,10 @@ Keep this file current. A stale status file is worse than none, because the next
 
 | | |
 |---|---|
-| **Current phase** | Phase 2 — H1-H12 built, fixed, reformulated per C-13 and committed (`c1be462`, `480061e`, `8f22e2b`); Phase 2's milestone ("a timetable without conflict on the instance") **still not reached** — the chosen reformulation was a real improvement but did not resolve it alone |
-| **Next step** | Technical lead picks the next lever (warm-start hint, larger budget, or something else — see "Resume from here") |
+| **Current phase** | Phase 2 — H1-H12 built, fixed, reformulated and hinted per C-13, all committed (`c1be462`, `480061e`, `8f22e2b`, `c18e963`); Phase 2's milestone ("a timetable without conflict on the instance") **not reached** — three independent techniques tried, none resolved it |
+| **Next step** | Technical lead decides: a much larger budget, a deeper model investment, or park this and move forward on other work while flagging the risk (see "Resume from here") |
 | **Days used** | ~1.5 of 20. Phase 2 is budgeted 5 days |
-| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · 9 commits, all green |
+| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · 11 commits, all green |
 | **Blocked on** | A genuine engineering decision (see "Resume from here") — not an unresolved bug |
 
 ---
@@ -201,6 +207,49 @@ is independently correct and worth keeping, but on its own it was not the fix. T
 identified and not yet tried: a constructive greedy warm-start via `model.add_hint()`, and a genuinely
 larger budget (only up to 480s has been tested). Reporting back before spending more solver time on
 either, since both are new decisions in their own right.
+
+---
+
+## Session log — 2026-07-30, continued a third time: the warm-start hint
+
+Technical lead chose the warm-start hint. Built `solver/warm_start.py`: a most-constrained-variable
+-first (MRV) greedy that reuses `variables.py`'s own domain-computation helpers (promoted from private
+to public - `open_slot_map`, `day_of`, `unavailable_by_teacher`, `valid_starts`,
+`candidate_rooms_for_session` - rather than recompute H4/H5/H6/H8/H9 pruning a second time), falling
+back to bounded, seed-derived random restarts if the deterministic MRV order gets stuck.
+
+**Measured the greedy's own ceiling before wiring it in, since it's cheap to test standalone (pure
+Python, no CP-SAT):** MRV order alone places only 26 of 218 sessions before getting stuck. 200 random
+restarts reach 188/218 best; 3,000 restarts (7 seconds of pure-Python search) reach 192/218 and plateau
+there. A "least-loaded room" room-selection variant was tried too and was worse (175/218 best) - not
+kept. **A complete greedy placement was never found**, on any ordering tried. This doesn't prove
+infeasibility (backtrack-free greedy heuristics routinely fail on tightly-packed instances even when a
+solution exists), but it is a second piece of evidence, independent of CP-SAT, that this instance sits
+very close to its capacity limit.
+
+Redesigned `WarmStart` to return the **best partial** result across all attempts rather than requiring
+100% coverage (`WarmStart.covered`), so a strong-but-incomplete placement (the ~192/218 ceiling reached)
+still gets used rather than discarded. Wired into `engine.py` (`_apply_warm_start`): hints `start[s]` for
+every covered session, plus `assign[s,r]` for non-cumulative-type sessions (1 for the chosen room, 0 for
+the rest, so the hint is a fully consistent partial assignment, not just a single free-floating value).
+
+**Measured the hinted model against the same 480s tuned configuration used to evaluate the
+reformulation.** Conflicts: 435,688 (vs. 405,301 without the hint) - essentially no change, still
+`UNKNOWN`. **The warm-start hint did not help.** Three independent, legitimate techniques - the
+cumulative reformulation, CP-SAT parameter tuning, and this constructive warm-start - have now been
+tried, individually and combined, and none resolved the underlying search difficulty within budgets up
+to 480s (8 minutes). All three are committed as real, correct improvements to the codebase regardless
+(`480061e`, `c18e963`) - none of them was wasted work, but none was the fix either.
+
+**Conclusion for this session, stated plainly per the working instructions: Phase 2 is NOT complete.**
+The milestone ("a timetable without conflict on the instance") has not been reached. This is not,
+however, evidence of a remaining modelling bug: nothing in this investigation - not the original H12
+bug hunt, not any of today's three follow-on techniques - has ever reproduced the instant-`INFEASIBLE`
+signature that would indicate one. H1-H12 are believed correct by construction, by unit test, and by
+the independent re-verification built into `tests/integration/test_h1_h12.py`. What remains is a
+genuine, now well-evidenced computational-difficulty problem, and the options for addressing it (a much
+larger budget, a deeper model investment, or parking it) are recorded in "Resume from here" above for
+whoever picks this up next.
 
 ---
 

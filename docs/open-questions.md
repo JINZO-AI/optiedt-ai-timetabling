@@ -220,7 +220,7 @@ column.
 
 ---
 
-### C-13 — Room-assignment symmetry makes H1–H12 hard to solve on the reference instance · **OPEN, option (c) tried and insufficient alone**
+### C-13 — Room-assignment symmetry makes H1–H12 hard to solve on the reference instance · **OPEN, three techniques tried, none sufficient**
 
 H1, H3, H7 and H12 were built, reviewed, and — after finding and fixing a real bug in H12's original
 grouping (see `docs/status.md`, 2026-07-30) — are believed correct: no test at any point has reproduced
@@ -260,14 +260,32 @@ encoding's at the same budget (405,301 vs. 29). The reformulation remains worth 
 verified improvement to the encoding - but the underlying search difficulty needs a different or
 additional lever.
 
-**Not yet tried**, in rough order of promise:
+**A constructive greedy warm-start was also tried, 2026-07-30, and also did not resolve C-13**
+(`solver/warm_start.py`, commit `c18e963`). A most-constrained-variable-first (MRV) greedy, with bounded
+random restarts on failure, was measured standalone before wiring it in: MRV alone places only 26 of
+218 sessions before getting stuck; 3,000 random restarts plateau around 192/218 - a complete greedy
+placement was never found on any ordering tried. The best partial result (`WarmStart.covered`) was hinted
+to CP-SAT via `model.add_hint()` regardless, on the reasoning that CP-SAT is typically much faster at
+*verifying* a supplied candidate than at *finding* one from scratch. Measured against the same 480s
+tuned configuration used for the reformulation: conflicts=435,688 (vs. 405,301 without the hint) -
+essentially unchanged, still `UNKNOWN`. **The hint made no meaningful difference.**
 
-- A constructive greedy warm-start (list-scheduling heuristic, built by hand outside CP-SAT) fed to the
-  solver via `model.add_hint()`. CP-SAT is typically fast at verifying a supplied candidate even when
-  slow at finding one from scratch - untested this session.
-- A genuinely larger budget (tens of minutes) - only up to 480s has been tried.
+**Three independent, legitimate techniques - the cumulative reformulation, CP-SAT parameter tuning, and
+the constructive warm-start - have now been tried, individually and combined, and none resolved the
+underlying search difficulty within budgets up to 480s (8 minutes).** All three remain committed as
+real, correct improvements (the reformulation and the warm-start module are both independently useful
+and unit-tested), but none was the fix. This is no longer a "try the next idea" situation.
+
+**What's left, genuinely untested**, in rough order of promise:
+
+- A much larger budget (tens of minutes to hours) - only up to 480s has actually been tried.
 - Symmetry-breaking specifically on `Salle` (option (b), narrowed to the one remaining per-room type) -
   considered unlikely to matter given its 29% occupancy, but not directly tested.
+- A more sophisticated warm-start construction (real backtracking, or a matching-based room assignment
+  rather than greedy first-fit) that might close more of the ~87% coverage ceiling reached so far -
+  though the fact the ~87%-covering hint barely helped is a discouraging sign for this direction.
+- Reconsidering the model more radically (additional redundant/implied constraints to aid propagation,
+  or a different global-constraint structure) - the largest investment of anything considered so far.
 
 A second, smaller finding from the same investigation: under `num_workers=0` (parallel search),
 `max_deterministic_time` did not tightly bound the search the way ADR-011 assumes for a single-worker
