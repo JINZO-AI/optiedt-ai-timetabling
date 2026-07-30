@@ -94,11 +94,35 @@ def test_lab_info_session_only_gets_lab_info_rooms(instance, variables):
 
 
 def test_assign_variables_exist_only_for_candidate_pairs(instance, variables):
+    """Only for sessions whose room type is NOT fully interchangeable
+    (C-13) - a cumulative-encoded session has candidate_rooms populated
+    (H4/H5 still needs it) but no assign/room_interval at all, since which
+    specific room it gets is decided after solving, not by the model."""
     _, v = variables
+    session_by_id = {s.id: s for s in instance.sessions}
     for session_id, rooms in v.candidate_rooms.items():
+        if session_by_id[session_id].required_room_type in v.cumulative_room_types:
+            for room_id in rooms:
+                assert (session_id, room_id) not in v.assign
+                assert (session_id, room_id) not in v.room_interval
+            continue
         for room_id in rooms:
             assert (session_id, room_id) in v.assign
             assert (session_id, room_id) in v.room_interval
+
+
+def test_fully_interchangeable_room_types_are_cumulative_encoded(instance, variables):
+    """Amphi, Lab_Info and Lab_Sciences: every session needing that type
+    has every room of that type as a candidate (2/2, 6/6, 2/2 - see
+    docs/status.md, 2026-07-30). Salle is only partially interchangeable
+    (5-10 of 10, depending on group size), so it must stay per-room."""
+    _, v = variables
+    assert v.cumulative_room_types == {
+        RoomType.AMPHI,
+        RoomType.LAB_INFO,
+        RoomType.LAB_SCIENCES,
+    }
+    assert RoomType.SALLE not in v.cumulative_room_types
 
 
 def test_locked_sessions_not_yet_supported(instance):

@@ -39,7 +39,11 @@ try {
     Invoke-Step 'types'            { uv run mypy }
     # pytest exits 5 when it collects nothing. That is the expected state
     # while the scaffold has no tests; remove 5 once the first test lands.
-    Invoke-Step 'tests'            { uv run pytest } -AllowExit @(0, 5)
+    # Solver-marked tests are excluded here: they invoke CP-SAT against the
+    # real reference instance and can legitimately take minutes (see C-13,
+    # docs/open-questions.md) - a check meant to fail fast must not wait on
+    # one. Run them explicitly with `uv run pytest -m solver` when needed.
+    Invoke-Step 'tests'            { uv run pytest -m "not solver" } -AllowExit @(0, 5)
 } finally { Pop-Location }
 
 Invoke-Step 'instance' { & (Join-Path $root 'scripts\verify-instance.ps1') }
