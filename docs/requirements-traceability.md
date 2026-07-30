@@ -7,11 +7,11 @@ built?" without reading code.
 
 Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 
-**Where the project actually is: 6 of 25 requirements are under way, none is finished.** Phase 2 built
-the decision layer (FR-3) and Phase 3 built the objective, scoring, ranking, decomposition and dominance
-(FR-4, FR-5, FR-6, FR-15, FR-17) — but a requirement is only `✓` once a user can reach it, and there is
-no API or interface yet. Do not read the run of `—` below as "nothing works": see
-[`docs/dashboard.md`](dashboard.md).
+**Where the project actually is: 7 of 25 requirements are under way, none is finished.** Phase 2 built
+the decision layer (FR-3) and Phase 3 built the objective, scoring, ranking, decomposition, dominance
+and the portfolio (FR-4, FR-5, FR-6, FR-13, FR-15, FR-17) — but a requirement is only `✓` once a user
+can reach it, and there is no API or interface yet. Do not read the run of `—` below as "nothing
+works": see [`docs/dashboard.md`](dashboard.md).
 
 **FR-3 is `WIP`, not `✓`, deliberately.** H1–H12 are implemented and demonstrated on the reference
 instance, with every hard constraint re-derived from the raw CSVs rather than trusted from CP-SAT's
@@ -19,13 +19,19 @@ status (`backend/tests/integration/test_h1_h12.py`). What is missing is the path
 no run record, no interface. H10 is also registered but dormant — `build_variables` refuses to run if
 any session is locked, which is safe only because the reference instance has none.
 
-**FR-4, FR-5, FR-6, FR-15 and FR-17 are `WIP` as of 2026-07-30 (Phase 3), for the same reason as FR-3.**
-The seven soft criteria (`analysis/criteria.py`), the scorer and ranker (`analysis/scoring.py`,
-`analysis/ranking.py`) and the CP-SAT objective (`solver/objective.py`) are implemented and tested — the
-four analysis properties pass in `tests/property/test_scoring_properties.py`, and a real solve against
-the reference instance under the catalogue's default weights improves every criterion but S4 and S10
-relative to the unweighted feasibility solve. What is missing is the path *to* it: no run record, no
-endpoint, no comparison screen — Phases 4–5.
+**FR-4, FR-5, FR-6, FR-13, FR-15 and FR-17 are `WIP` as of 2026-07-30 (Phase 3), for the same reason as
+FR-3.** The seven soft criteria (`analysis/criteria.py`), the scorer and ranker (`analysis/scoring.py`,
+`analysis/ranking.py`), the CP-SAT objective (`solver/objective.py`) and the portfolio
+(`services/portfolio.py`) are implemented and tested — nine analysis properties pass in
+`tests/property/test_scoring_properties.py`, and a real portfolio run on the reference instance returns
+three distinct candidates, each scored /100 with its seven sub-scores. What is missing is the path *to*
+it: no run record, no endpoint, no comparison screen — Phases 4–5.
+
+⚠️ **FR-13 is `WIP`, not `✓`, for a second reason beyond the missing interface.** It produces candidates
+under distinct profiles, but the profiles do not yet differentiate for the documented reason:
+"teacher-favouring" raises S3 and S5 and measurably improves only S5, because the objective weights raw
+violation counts of very different magnitudes. Recorded as a live risk in
+[`docs/status.md`](status.md); it needs a decision before FR-13 can be called done.
 
 ---
 
@@ -45,7 +51,7 @@ endpoint, no comparison screen — Phases 4–5.
 | **FR-10** | Print or export a timetable view | Expected | `features/timetable` | `integration` | — |
 | **FR-11** | Authenticate users and restrict access by role | Necessary | `core` — security; `api` — deps | `acceptance/test_fr11` | — |
 | **FR-12** | Verify data before solving; report structural risks | Necessary | `preanalysis` | `acceptance/test_fr12` | — |
-| **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs; `solver` | `acceptance/test_fr13` ⚠️ | — |
+| **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs; `solver` | `unit/test_portfolio` ✓, `acceptance/test_fr13` ⚠️ | **WIP** |
 | **FR-14** | Compare two candidates criterion by criterion | Necessary | `features/comparison` | `integration` | — |
 | **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition | `property` ✓, `acceptance/test_fr15` | **WIP** |
 | **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking | `unit` | — |

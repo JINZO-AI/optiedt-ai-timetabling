@@ -72,10 +72,15 @@ instance but does not resolve the specification's own wording conflict.
 2. ~~Decide C-12 and C-4~~ · ~~Implement the seven criteria, scoring, ranking, the objective, the
    recommendation translator, the four properties~~ — **done 2026-07-30**. See `docs/dashboard.md`'s
    "Phase 3 — what was built" for the precise file list and what each one does and does not cover.
-3. **Portfolio orchestration**: loop over the 3 profiles, score each candidate, remove duplicates.
-   Needs **C-5 decided first** — implementing it while candidates could silently converge just moves
-   the risk into `services/` instead of removing it. This is Phase 4–5 territory (needs `services`,
-   `db`), not this pass's `analysis/solver/recommendations` scope.
+3. ~~**Portfolio orchestration**: loop over the 3 profiles, score each candidate, remove duplicates.~~
+   **Done 2026-07-30** — `services/portfolio.py`, 16 unit tests. On the reference instance: 3 distinct
+   candidates, 0 duplicates.
+   ⚠️ **This entry previously claimed it was blocked on C-5 and belonged to Phase 4–5. Both were
+   wrong.** `docs/open-questions.md` is the authority on what an open question blocks and records C-5
+   against *Phase 6 acceptance*; SRS Table 29 already fixes the implementation behaviour ("at most 3,
+   duplicates removed"), so only the acceptance *wording* was ever undecided. And `services` needs no
+   database to run a portfolio — "needs `services`" is not "needs Phase 4". The error cost nothing here
+   because it was caught, but it is the same shape as C-13: a plausible blocker nobody tried to falsify.
 4. **Port the five verifications into the application** as FR-12. The standalone checker at
    `data/verification/verify_instance.py` already has the logic; the in-application version reports
    structural risks through the API. ⚠️ **Port the contiguity bound, not just the period bound** — the
@@ -140,7 +145,9 @@ its decomposition, and validation on the published instances.
 | **A pre-analysis check that is necessary but not sufficient** | Passes an infeasible instance, so the next failure is attributed to the model. Cost three sessions on C-13 | Both bounds now checked in `verify_instance.py`. Any new check must state whether it is sufficient, and FR-12 must port both |
 | **The cumulative reformulation and the warm-start were built for a problem that did not exist** | Two committed mechanisms (`cumulative_room_types`, `solver/warm_start.py`) are carried for a reason now known to be wrong. Both are correct and tested, neither is load-bearing: the model solves with the warm start off, and the greedy now reaches 218/218 in 0.04 s | **Still not removed.** The objective has now landed and confirmed a real cost: `cumulative_room_types` also means S6 (room efficiency) cannot be optimised for those room types at all, only scored after the fact — see below. **Whether the plain per-room encoding would now serve for every type remains untested** |
 | **Objective encoding — done, with one gap** | S2–S5, S7, S10 are fully encoded in `solver/objective.py`. **S6 only covers non-cumulative room types (Salle)** — cumulative types (Amphi, Lab_Info, Lab_Sciences) have no per-room CP-SAT variable, only a post-solve labeller the objective cannot influence | `analysis/criteria.py` still scores S6 correctly for every room. Closing the solver-side gap needs `solver/variables.py` changes (out of the scope this landed in) |
-| **Deterministic-time calibration — now live, not dormant** | Measured 2026-07-30 with the objective posted: `max_deterministic_time=30` under `num_workers=0` consumed **~92 deterministic units and ~50s wall** before the solve stopped, on the reference instance under the catalogue's default weights. The same C-2/C-13 under-bounding, now actually triggered by a real workload rather than a theoretical one | **Not recalibrated this session** (out of scope). Measure across seeds/profiles before Phase 4 exposes a user-facing time limit — the wall-clock ceiling is doing more of the real work than ADR-011 assumed, more so now |
+| **Deterministic-time calibration — the budget does not bind** | Measured 2026-07-30 with the objective posted, `num_workers=0`, reference instance: **10 units requested → 111.1 consumed** (191.6 s wall); **30 requested → 325.4 consumed** (600.7 s wall, stopped by the *wall-clock ceiling*, not the budget). A consistent ~11× over-run. ADR-011 adopted deterministic time precisely so that the wall clock would not be what ends a solve; today it is | **Open — closure checklist item 3.** Until this is fixed, no time bound in this system is trustworthy, and the reproducibility criterion that ADR-011 exists to guarantee is unverified |
+| **The portfolio misses its < 5 min target** | 3 profiles at total budget 30 took **9.2 minutes** (551 s) on the reference instance. `services/portfolio.py` divides the budget exactly as docs/constraint-model.md requires (10 units each); the solver then over-runs each allocation ~11× | Mechanism is correct, calibration is not. Measurement is closure checklist item 2; the fix is item 3 |
+| **Raw-weight objective lets a large-scale criterion swamp a small one** | The objective minimises `Σ(weight_i × violations_i)` in **raw** units, and the criteria have incomparable scales — S5 ~100 (session count) against S3 ~15 (idle periods). In teacher-favouring, S5 contributes ≈32 to the objective against S3's ≈4.5, so it behaves as an S5-only profile. Measured across budgets: S5 improves 101 → 72 (beating balanced's 81) while S3 *degrades* 13 → 18. **"Teacher-favouring" does not currently favour teachers on S3** | Not an implementation defect — the profile raises both weights exactly as documented, and the analysis layer scores both correctly. It is a consequence of the objective's raw-weight formulation meeting criteria of different magnitudes. Needs a decision: normalise the objective's weights by each criterion's bound range, or set the emphasis factor per criterion. **Not decided here** |
 | **Exam multi-room assignment** (R-6) | Breaks a shared `room[s]` abstraction | Keep it out of shared solver code from the start |
 | ~~`uv` not installed~~ | — | **Resolved.** uv 0.12.0 installed; the whole toolchain runs |
 | **Kaggle `students.csv` holds personal data** | 3,000 rows with names, emails, phones, addresses | Never load it beyond `student_id` + enrolment; never let such a field reach the assistant context |
@@ -169,7 +176,7 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 
 | Measurement | Value | Taken on | Notes |
 |---|---|---|---|
-| **Toolchain** | **all green** | 2026-07-30 | **7/7** layer contracts kept · ruff · format · mypy strict on **38** source files · **62 tests** (50 fast + 12 solver-marked) · instance verified · frontend `tsc` clean |
+| **Toolchain** | **all green** | 2026-07-30 | **7/7** layer contracts kept · ruff · format · mypy strict on **39** source files · **78 tests** (66 fast + 12 solver-marked) · instance verified · frontend `tsc` clean |
 | **Python** | **3.14.2** | 2026-07-29 | Resolved by uv 0.12.0 |
 | **OR-Tools CP-SAT imports and solves** | **yes** | 2026-07-29 | On Python 3.14. `max_deterministic_time` **is accepted by the solver parameters** — ADR-011 is implementable, not just plausible |
 | Deterministic time → wall clock, reference instance | **not a clean ratio under `num_workers=0`** | 2026-07-30 | `max_deterministic_time=60` consumed 247.98 units before the 360s wall-clock ceiling stopped the run. Measured while searching an infeasible model, but the finding does not depend on that. Not urgent now — the repaired instance solves in ~0.2 deterministic units, far below any budget — and becomes urgent again once the objective makes solves long enough to reach one |

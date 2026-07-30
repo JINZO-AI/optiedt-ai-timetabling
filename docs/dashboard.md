@@ -46,11 +46,12 @@ Phase 6  Tests, documentation, presentation            ░░░░░░░░�
 | **Architecture** | 🟢 Stable. Four layers, boundaries enforced by `import-linter` — **7/7 contracts kept**. No layer edge has been weakened |
 | **Solver** | 🟢 H1–H12 built and demonstrated correct. Reference instance solves in **2.8–3.3 s** (deterministic 0.13–0.21) across 7 seeds, all 218 sessions placed. C-7 fully closed — accounting (`x[s,t₀]`, `y[s,t]`) built on demand, auxiliaries measured at **5,249**. `solver/objective.py` (new) encodes S2–S10 as CP-SAT expressions; `engine.py` posts it — and builds occupancy at all — only when a criterion carries weight, so an all-zero profile is genuinely equivalent to a feasibility solve. A real solve under catalogue weights takes ~49 s wall / ~84 deterministic units (up from ~3 s / ~0.2 with no objective — the calibration risk below is now live) |
 | **Objective** | 🟡 Encoded for S2–S5, S7, S10 in full; **S6 only for non-cumulative room types** (Salle) — cumulative types (Amphi, Lab_Info, Lab_Sciences) have no per-room CP-SAT variable to optimise against, only a post-hoc labeller (C-13). `analysis/criteria.py` still scores S6 correctly for every room after the fact |
-| **Analysis / scoring** | 🟢 Implemented and tested. `analysis/criteria.py` (7 criteria), `analysis/scoring.py` (`DefaultScorer`, `evaluate_candidate`), `analysis/ranking.py` (`DefaultRanker`: rank/decompose/dominance). All four properties pass (`tests/property/test_scoring_properties.py`). Not yet wired to a run/portfolio orchestration — that is `services/`, Phase 4–5 |
+| **Analysis / scoring** | 🟢 Implemented and tested. `analysis/criteria.py` (7 criteria), `analysis/scoring.py` (`DefaultScorer`, `evaluate_candidate`), `analysis/ranking.py` (`DefaultRanker`: rank/decompose/dominance). All four properties pass (`tests/property/test_scoring_properties.py`) |
+| **Portfolio** | 🟡 `services/portfolio.py` (new) — the only module importing both `solver` and `analysis`, which is what `services` is for. Defines the three profiles, divides the total budget between them, solves sequentially under one fixed seed, removes duplicate timetables and ranks the survivors under one weight vector. 16 unit tests pin the rules against a recording fake solver. **Mechanism complete; calibration not** — see the risks below |
 | **API · frontend · persistence** | ⬜ Scaffold only. Phases 4–5. The solver reads CSVs through `optiedt.instance`; PostgreSQL is not needed until runs must survive a restart |
 | **Assistant** | ⬜ Scaffold only. Increment 1 (ADR-010), Phase 4+ |
 | **Validation** | 🟢 `scripts/run-checks.ps1` green: 7/7 contracts · ruff · format · mypy strict on 32 files · tests · instance verification · frontend `tsc` |
-| **Tests** | 🟢 **62 passing** (50 fast + 12 solver-marked). New this phase: `tests/property/test_scoring_properties.py` (9 hypothesis properties), `tests/unit/test_criteria.py` (the seven formulas against a hand-computable instance), `tests/integration/test_objective_matches_analysis.py` (**the cross-layer guard** — CP-SAT's objective value must equal the analysis layer's recomputation on the same placements) |
+| **Tests** | 🟢 **78 passing** (66 fast + 12 solver-marked). New this phase: `tests/property/test_scoring_properties.py` (9 hypothesis properties), `tests/unit/test_criteria.py` (the seven formulas against a hand-computable instance), `tests/integration/test_objective_matches_analysis.py` (**the cross-layer guard** — CP-SAT's objective value must equal the analysis layer's recomputation on the same placements), `tests/unit/test_portfolio.py` (16 orchestration rules against a recording fake solver — budget division, fixed seed, ordering, dedup, infeasible short-circuit) |
 | **Documentation** | 🟢 Current as of this commit. Session history archived to `docs/history.md` |
 
 ---
@@ -70,10 +71,12 @@ ever disagree, that file wins and this table is the bug. **Do not silently decid
 (2026-07-30 — formulas for all seven criteria; S5 via a labeled edge-of-day proxy, see
 `docs/open-questions.md`).
 
-⚠️ **C-5 is still open.** Resolving C-12 lowers the chance of hitting it on the reference instance (S5
-now varies with the candidate instead of measuring zero), but does not resolve the specification's own
-conflict between "duplicates removed" and "at least three candidates". Settle it before writing the
-FR-13 acceptance test.
+⚠️ **C-5 is still open**, but there is now evidence rather than speculation. The first real portfolio
+run (seed 42, total budget 30) returned **3 distinct candidates and removed 0 duplicates** — so the
+feared convergence did not occur on the reference instance. That does not resolve C-5: it is a conflict
+in the specification's own wording ("duplicates removed" vs "at least three candidates"), which one
+favourable measurement cannot settle. It does mean the acceptance test would pass today. Settle the
+wording before writing it.
 
 ---
 
@@ -84,7 +87,9 @@ FR-13 acceptance test.
 | **~2.5 unbudgeted assistant days** | ≈12 % overrun on 20 days | Confirmed, not contingent. Release valve is scope-reduction step 1 |
 | **91 % laboratory occupancy** (of two-period windows) | A modelling regression looks like an infeasible instance — **and an infeasible instance looks like a slow model** | Pre-analysis first, always. Read the *window* figure, not the period figure |
 | **A check that is necessary but not sufficient** | Passes an infeasible instance, so the next failure is blamed on the model. Cost three sessions on C-13 | Both bounds now checked. **FR-12's port must carry both** |
-| **Deterministic-time calibration is now live, not dormant** | A real solve with the objective on took ~92 deterministic units / ~50 s wall against a 30 s deterministic budget under `num_workers=0` — the same under-bounding C-2/C-13 measured, now actually reached because the objective lengthens solves as predicted | Not recalibrated this session (out of scope). Measure across seeds/profiles before Phase 4 exposes a user-facing time limit |
+| **Deterministic-time calibration is now live, not dormant** | The budget does not bind. Measured 2026-07-30 on the reference instance with the objective posted: **10 units requested → 111 consumed; 30 requested → 325 consumed** — a consistent ~11×. The 30-unit run was ultimately stopped by the *wall-clock ceiling*, not by its deterministic budget, which is precisely the mechanism ADR-011 exists to avoid | **Open.** Recalibration is checklist item 3. Until it lands, no time bound in this system is trustworthy |
+| **The portfolio misses its < 5 min target** | A 3-profile portfolio at total budget 30 took **9.2 minutes** (551 s). Because the budget over-runs ~11× (above), dividing the total between profiles does not bound the run either | Measurement is checklist item 2; the fix is checklist item 3. The mechanism is correct — `services/portfolio.py` divides the budget exactly as specified — but the solver does not honour what it is given |
+| **Raw-weight objective lets a large-scale criterion swamp a small one** | S5's raw value is ~100 (session count) while S3's is ~15 (idle periods). Inside teacher-favouring, S5 contributes 0.4×~80 ≈ 32 to the objective against S3's 0.3×~15 ≈ 4.5, so the profile is effectively S5-only. Measured: raising the budget improves S5 (101 → 72, better than balanced's 81) while S3 *degrades* (13 → 18) | The profile raises both weights exactly as documented, so this is not an implementation defect — it is a consequence of `minimise Σ(weight_i × violations_i)` using **raw** weights across criteria with incomparable scales. **"Teacher-favouring" does not currently favour teachers on S3.** Needs a decision (normalise the objective's weights, or set EMPHASIS per criterion); not resolved here |
 | **S6 cannot be optimised for cumulative room types** | The CP-SAT objective only covers Salle (non-cumulative); Amphi/Lab_Info/Lab_Sciences rooms are chosen by a post-solve labeller the objective cannot see | Scored correctly after the fact regardless (`analysis/criteria.py`). Closing this needs `solver/variables.py` changes — out of scope this session |
 | **`recommendations/translator.py` cannot build a full `SolverInput`** | `Run`/`Candidate` carry no instance reference, no base profile weights, no prior locks/exclusions | Returns a `RunOverride` (plain domain data) instead; a later layer (`services/`, Phase 4–5) must assemble the actual `SolverInput` |
 | **Exam multi-room assignment** (R-6) | Breaks a shared `room[s]` abstraction | Keep it out of shared solver code from the start |
@@ -101,8 +106,10 @@ automatic.
 
 **Completion criteria.**
 - Three weight profiles produce candidates; each carries an overall score /100 and its sub-scores.
-  ⬜ **Not yet** — the objective accepts any one profile and a solve under it produces a scored
-  candidate, but nothing loops over 3 profiles and deduplicates yet; that is `services/`, Phase 4–5.
+  ✅ **Met** — `services/portfolio.py` (new). On the reference instance it returns **3 distinct
+  candidates, 0 duplicates removed**, each scored /100 with its seven sub-scores. ⚠️ It does so in
+  **9.2 minutes against a < 5 min target**, and the profiles do not yet steer as their names promise —
+  see the two risks below; the *mechanism* is complete, its *calibration* is not.
 - The displayed contributions **sum exactly** to the score difference, to display precision. ✅ **Met**
   at the code level — `analysis/ranking.py`'s `decompose()`, verified by
   `tests/property/test_scoring_properties.py::test_decomposition_is_exact`.
@@ -187,16 +194,20 @@ to call `build_occupancy` + the objective when `request.profile is not None`),
 `recommendations/translator.py` (new), `tests/property/test_scoring_properties.py` (the four
 properties, hypothesis-based).
 
-**Not built, and why.** Portfolio orchestration (loop over 3 profiles, remove duplicates) needs **C-5**
-decided first — resolving it while candidates could silently converge would just move the risk, not
-remove it — and belongs in `services/`, which is out of this pass's scope along with `db/`, `api/`,
-`tasks/`. Validation on the published ITC-2007 instances (`docs/testing-strategy.md` §1) was not run
-against the new objective. H10's target-slot/room gap in `solver/variables.py` (see Phase 5 origin
-below) was **not** closed — closing it needs `solver/variables.py` and `solver/interfaces.py` changes,
-both outside `analysis/ · solver/objective.py · recommendations/ · tests/property/`.
-`recommendations/translator.py` therefore returns a `RunOverride` (plain domain data), not a
-`SolverInput` — see "Known risks" above for why the existing `Run`/`Candidate` schema cannot support
-building one directly.
+**Portfolio orchestration, added 2026-07-30 (closure item 1).** `services/portfolio.py` builds the
+three profiles from the catalogue, divides the total budget between them, solves sequentially under one
+fixed seed, removes duplicate timetables and ranks the survivors under a single weight vector. An
+earlier revision of this page claimed it was blocked on **C-5** and belonged to Phase 4–5. Both claims
+were wrong: `docs/open-questions.md` — the authority — records C-5 as blocking *Phase 6 acceptance*,
+and SRS Table 29 already specifies the implementation behaviour ("at most 3, duplicates removed"), so
+nothing was blocked. `services` needs no database to run a portfolio.
+
+**Not built, and why.** Validation on the published ITC-2007 instances (`docs/testing-strategy.md` §1)
+has still not been run against the objective. H10's target-slot/room gap in `solver/variables.py` was
+**not** closed — it needs `solver/variables.py` and `solver/interfaces.py` changes, and nothing before
+Phase 5's run record can exercise it. `recommendations/translator.py` therefore returns a `RunOverride`
+(plain domain data), not a `SolverInput` — see "Known risks" above for why the existing `Run`/`Candidate`
+schema cannot support building one directly.
 
 **S6 (room efficiency) is scored fully but optimised only partially.** `analysis/criteria.py` scores
 every room correctly after the fact. `solver/objective.py` can only post a CP-SAT term for
