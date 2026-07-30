@@ -60,8 +60,8 @@ retired code**.
 | **H8** | A multi-period session stays within one day | Withdraw end-of-day slots from `start[s]` |
 | **H9** | No session on a closed slot or a holiday | Domain restriction on `start[s]` |
 | **H10** | A locked session keeps its slot and room | Fix `start[s]` and `room[s]` |
-| **H11** | Aggregate demand stays within room capacity | Cumulative per room type |
-| **H12** | A promotion and its subgroups are never busy together | NoOverlap over the whole hierarchy |
+| **H11** | Aggregate demand stays within room capacity | Implied by H3 once a room is assigned — no separate posting |
+| **H12** | A group and every ancestor in its hierarchy are never busy together | Per group: NoOverlap over that group's own sessions plus every ancestor's — never a flat whole-hierarchy grouping (see below) |
 
 ### Domain reduction before search
 
@@ -69,28 +69,52 @@ retired code**.
 by posting constraints checked afterwards. This costs nothing during solving and shrinks the space to
 explore.
 
-### H12 — why it is not just H2 repeated
+### H12 — why it is not just H2 repeated, and why it is not a flat promotion-wide grouping either
 
 In the LMD organisation a **CM gathers the whole promotion** while TD and TP concern its groups and
 subgroups. Placing a lecture occupies every student of every subgroup. H12 is the hierarchy-aware
 equivalent of the conflict constraint in the curriculum-based formulation of ITC-2007.
 
-### ⚠️ Redundancy, and why it damages the diagnosis run
+⚠️ **A first implementation grouped every session under a promotion into one `NoOverlap` set — this is
+wrong, and was caught and fixed on 2026-07-30 (`docs/status.md`).** It forces unrelated siblings (e.g.
+two different TP subgroups of two different TD groups) to never run in parallel, even though they are
+disjoint sets of students who obviously can. The reference instance is genuinely infeasible under that
+reading in under a tenth of a second — the exact signature described below in "Redundancy" territory,
+except this was a correctness bug, not a redundancy.
+
+The correct relation, matching `constraint_catalogue.csv`'s own description of H12 ("Parent busy =>
+children busy (and vice-versa)"), is **ancestor-or-self**: two sessions conflict iff one's group is an
+ancestor of the other's, or they are the same group — never for sharing a distant common ancestor like
+the promotion. Implemented per group: gather that group's own sessions plus every ancestor's, and
+`NoOverlap` that set. Because a group's own chain always starts with itself, this still forces
+same-group exclusivity, which is why H2 remains fully subsumed (see below) even after the correction.
+
+### ⚠️ Redundancy, and why it would damage the diagnosis run
 
 Two pairs overlap:
 
-- **H2 is subsumed by H12** for any group inside a hierarchy — NoOverlap over the whole
-  promotion→group→subgroup chain already forbids what H2 forbids.
+- **H2 is subsumed by H12** for any group inside a hierarchy — the ancestor-or-self `NoOverlap`
+  described above already forbids what H2 forbids, since it includes a group's own sessions.
 - **H11 is implied by H3** once `room[s]` is assigned, and it duplicates pre-analysis check #2 in
   arithmetic form.
 
-Neither hurts feasibility. Both hurt the **diagnosis run**, whose entire value is naming the rule the
-user must change. If two assumption literals cover overlapping ground, the solver may return either,
-and the report names a rule the user cannot act on.
+Neither hurts feasibility. Both would hurt the **diagnosis run**, whose entire value is naming the rule
+the user must change. If two assumption literals covered overlapping ground, the solver could return
+either, and the report would name a rule the user cannot act on.
 
-**The constraint → assumption-literal mapping must be 1:1 and non-redundant.** Which of H2 and H11 are
-posted as propagation aids *without* their own literal is **C-6**, unresolved. Decide it explicitly
-before building the diagnosis run.
+**C-6 — RESOLVED 2026-07-30.** The constraint → assumption-literal mapping is 1:1 and non-redundant by
+construction: `carries_assumption_literal` is `True` only for **H1, H3, H7 and H12** — the four
+constraints that are real CP-SAT postings a literal could attach to. H2 and H11 are registered as
+documented no-ops (`solver/constraints/noop.py`) with `carries_assumption_literal = False`, since there
+is no separate posting to attach a literal to. H4, H5, H6, H8, H9 and H10 are likewise `False` — they
+are domain restrictions applied at variable construction (`solver/variables.py`), never posted as
+constraints at all.
+
+⚠️ **H1, H3, H7 and H12 being correct does not mean the model is easy to solve.** `Lab_Info` and
+`Lab_Sciences` are fully interchangeable room types at 95.2% and 85.7% occupancy, which makes room
+assignment a hard symmetric search for CP-SAT's default portfolio, independently of constraint
+correctness. See **C-13** in `docs/open-questions.md` for the measurements and the options being
+weighed.
 
 ---
 

@@ -220,6 +220,51 @@ column.
 
 ---
 
+### C-13 — Room-assignment symmetry makes H1–H12 hard to solve on the reference instance · **NEW, OPEN**
+
+H1, H3, H7 and H12 were built, reviewed, and — after finding and fixing a real bug in H12's original
+grouping (see `docs/status.md`, 2026-07-30) — are believed correct: no test at any point has reproduced
+an instant, sub-second `INFEASIBLE`, which is the signature the project's own docs (R-2) associate with
+a modelling bug at this instance's occupancy. Instead, solving the combined model returns `UNKNOWN`
+after minutes of search — CP-SAT neither finds a feasible timetable nor proves there isn't one.
+
+Root cause, confirmed by inspecting the instance directly (no solver call needed): `Lab_Info` (6 rooms,
+95.2% occupancy) and `Lab_Sciences` (2 rooms, 85.7%) are **fully interchangeable room types** — every
+session needing that type gets *every* room of that type as a candidate (min candidate count equals max
+candidate count equals room count, for both). Full interchangeability at near-full capacity is the
+textbook hard case for generic CP/MIP search, because the solver has to distinguish between assignments
+that are actually equivalent. `Amphi` is also fully interchangeable (2/2) but only 57% occupied, so it
+isn't believed to be part of the difficulty. `Salle` is partially interchangeable (5–10 of 10 rooms,
+depending on group size) at 29% occupancy — plenty of slack, also not implicated.
+
+Three ways to proceed:
+
+- **(a)** Accept a much larger deterministic budget (many minutes) as the current reality for a first
+  timetable, and revisit performance later. Lowest engineering risk; leaves the "<60s, an estimate"
+  target unmet for now and Phase 2's milestone unconfirmed for a long time.
+- **(b)** Add explicit symmetry-breaking constraints among interchangeable rooms of the same type (a
+  canonical ordering that prunes equivalent assignments). Keeps the current `assign[s,r]` +
+  optional-interval encoding; moderate risk of a new subtle bug written under time pressure.
+- **(c)** Reformulate room assignment for the fully-interchangeable types (`Amphi`, `Lab_Info`,
+  `Lab_Sciences`) as a `cumulative` constraint (simultaneous demand ≤ room count) instead of per-room
+  `NoOverlap` + `assign` booleans, and label the actual room afterward with a simple greedy sweep —
+  correct by construction (an interval-graph-colouring argument: if cumulative demand never exceeds
+  capacity, a per-room labelling always exists). Keep the existing encoding for `Salle`. Larger diff;
+  reverses a previously-approved design choice (`solver/variables.py`'s docstring on why `assign[s,r]`
+  was chosen over a plain `room[s]` integer).
+
+A second, smaller finding from the same investigation: under `num_workers=0` (parallel search),
+`max_deterministic_time` did not tightly bound the search the way ADR-011 assumes for a single-worker
+budget — a run configured for 60s deterministic time consumed 247.98 deterministic-time units before
+the wall-clock ceiling actually stopped it. Doesn't undermine ADR-011's reproducibility argument, but
+the deterministic-time parameter cannot yet be trusted as the primary stopping mechanism in parallel
+mode without further calibration.
+
+**Blocks:** Task 11 (integration test) and therefore Phase 2's stated milestone ("a timetable without
+conflict on the instance"). **Owner:** technical lead.
+
+---
+
 ## Verification of the reference archives
 
 **Confirmed the documented findings and sharpened two of them:**

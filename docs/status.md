@@ -1,19 +1,85 @@
 # Status
 
-**Increment 1 of 2 · Phase 1 complete · Phase 2 ready to start.**
-**Last updated 2026-07-29, end of day.**
+**Increment 1 of 2 · Phase 2 in progress · blocked on one architecture decision, not broken.**
+**Last updated 2026-07-30.**
 
 Keep this file current. A stale status file is worse than none, because the next session trusts it.
 
 ---
 
-## ▶ Tomorrow morning — copy this to resume
+## ▶ Resume from here — copy this to continue
 
-> Resume OptiEDT. Read `CLAUDE.md`, then `docs/status.md`, then `docs/open-questions.md` — do not open the PDFs.
-> We are at the start of Phase 2: build the CP-SAT model H1–H12 and get one conflict-free timetable on `data/instance/`.
-> Before you write solver code, ask me to confirm C-7 (the `y[s][t]` channelling rule for 2-period sessions) and C-6 (which of H2/H11 skip their assumption literal).
-> Leave C-4 and C-12 alone for now — they block Phase 3, not Phase 2, and I still owe you decisions on both.
-> Run `scripts/run-checks.ps1` first to confirm the repo is green, then start with a loader that reads `data/instance/` into the domain types.
+> Resume OptiEDT Phase 2. Read `CLAUDE.md`, then `docs/status.md` in full (especially both "Session
+> log — 2026-07-30" entries), then `docs/open-questions.md` — do not open the PDFs.
+>
+> The loader, variables, and all 12 constraint builders — **including the H12 ancestor-lineage fix** —
+> are committed and green (commit `c1be462`; 23 tests, ruff, mypy, format, 7/7 import contracts, all
+> pass). `solver/engine.py` (`CpSatSolver.solve()`) is committed too. **Do not redo this work.**
+>
+> **Task 11 is blocked on a real decision, not a bug.** The integration test exists on disk at
+> `backend/tests/integration/test_h1_h12.py` (**uncommitted** — do not commit it yet, see why below)
+> and independently re-verifies every placement against raw CSV data, not just CP-SAT's status. Running
+> it against the real instance does not resolve within a practical budget:
+>
+> | Configuration | Budget | Result |
+> |---|---|---|
+> | H3+H7 alone (room assignment only, no teacher/hierarchy) | 200s wall | `UNKNOWN`, 78,824 conflicts |
+> | Full H1+H3+H7+H12, default parameters | 360s wall | `UNKNOWN`, 337,954 conflicts |
+> | Full H1+H3+H7+H12, `use_probing_search` + `keep_symmetry_in_presolve` | 480s wall | `UNKNOWN`, 29 conflicts, 2.29M branches |
+>
+> **This is a different signature from the H12 bug** (which returned `INFEASIBLE` in under a tenth of
+> a second). `UNKNOWN` after minutes of search, with conflict counts that *fall* as branch counts
+> explode, means CP-SAT has not found a feasible point and has not proven there is none — the search is
+> hard, not wrong. No subset of constraints, at any point in this investigation, has reproduced the
+> instant-`INFEASIBLE` signature that would indicate another modelling bug.
+>
+> **Root cause, confirmed empirically**: `Lab_Info` (6 rooms, 95.2% occupancy) and `Lab_Sciences` (2
+> rooms, 85.7%) are **fully interchangeable room types** — every session needing that type gets *every*
+> room of that type as a candidate (confirmed: min candidate count == max candidate count == room count,
+> for both types; `Amphi` is the same, 2/2, but at only 57% occupancy it isn't tight enough to matter).
+> Full interchangeability at near-full capacity is the textbook hard case for generic CP/MIP search:
+> the solver has to distinguish between assignments that are actually equivalent, and its automatic
+> symmetry detection (`symmetry_level=2`, already the default) is not collapsing it. `Salle` is only
+> partially interchangeable (5–10 candidates depending on group size) but sits at 29% occupancy, so it
+> is not believed to be the bottleneck.
+>
+> **A second, independent finding worth recording**: under `num_workers=0` (parallel),
+> `max_deterministic_time` did **not** tightly bound the search the way ADR-011 assumes for a
+> single-worker budget — runs configured for 60s and 480s deterministic time both ran well past that
+> before the *wall-clock* ceiling actually stopped them (e.g. `max_deterministic_time=60` consumed
+> 247.98 deterministic-time units over a 360s wall-clock run). This doesn't undermine ADR-011's
+> reproducibility argument, but it means the deterministic-time parameter cannot yet be trusted as the
+> primary stopping mechanism in parallel mode without further calibration — flagged, not yet resolved.
+>
+> **Three options exist for how to proceed, and this is a decision for the technical lead, not something
+> to silently pick** (per this project's own "if ambiguous, stop and ask" rule):
+>
+> 1. **Accept a much larger deterministic budget** (many minutes) as the current reality for a first
+>    conflict-free timetable, revisit performance later. Lowest engineering risk, but leaves Phase 2's
+>    milestone unconfirmed for a long time and conflicts with the "<60s, an estimate" target.
+> 2. **Add explicit symmetry-breaking constraints** among interchangeable rooms of the same type (a
+>    standard CP technique — e.g. canonical ordering so equivalent assignments are pruned). Keeps the
+>    current `assign[s,r]` + optional-interval encoding, moderate risk of introducing a new subtle bug
+>    under time pressure.
+> 3. **Reformulate room assignment for fully-interchangeable types** (`Amphi`, `Lab_Info`,
+>    `Lab_Sciences`) as a `cumulative` constraint (simultaneous demand ≤ room count) instead of per-room
+>    `NoOverlap` + `assign` booleans, and label the actual room afterward with a simple greedy sweep —
+>    correct by construction (interval-graph colouring argument: if cumulative demand never exceeds
+>    capacity, a per-room labelling always exists), and removes the symmetry rather than fighting it.
+>    Keep the existing per-room encoding for `Salle`, which is not fully interchangeable. Larger diff,
+>    reverses a previously-approved design choice (`variables.py`'s docstring notes the current
+>    `assign[s,r]` design "was flagged and approved before implementation").
+>
+> **Do not commit `test_h1_h12.py` as-is.** `scripts/run-checks.ps1` runs the whole `pytest` suite
+> unfiltered — a solver-marked test that takes 8+ minutes and still doesn't resolve would make every
+> future check run hang or fail. Either wait until a working configuration exists, or wire
+> `-m "not solver"` (already documented in `CLAUDE.md`, never actually plumbed into a script) into the
+> fast path first.
+>
+> **Before running any solve with `num_workers=0`, be aware it will use every CPU core** and can make
+> even trivial shell commands stall for tens of seconds to minutes — budget for it, and always track
+> background solves explicitly so you can stop them rather than leave them orphaned (see the incident
+> in the first 2026-07-30 session log entry below).
 
 ---
 
@@ -21,15 +87,92 @@ Keep this file current. A stale status file is worse than none, because the next
 
 | | |
 |---|---|
-| **Current phase** | Phase 1 complete — instance verified, sources evaluated, scope fixed |
-| **Next phase** | Phase 2 — model H1–H12, first conflict-free timetable |
-| **Days used** | ~1 of 20. Phase 1 was budgeted 3 days |
-| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · 3 commits, all green |
-| **Blocked on** | Nothing blocks *starting* Phase 2. **C-7 blocks the objective encoding inside it**; C-4 and C-12 block Phase 3 |
+| **Current phase** | Phase 2 — H1-H12 built, fixed and committed (`c1be462`); Phase 2's milestone ("a timetable without conflict on the instance") **not yet reached** — blocked on a room-assignment symmetry/performance decision, not a known bug |
+| **Next step** | Technical lead picks one of the three options above; then finish task 11 with that configuration |
+| **Days used** | ~1.5 of 20. Phase 2 is budgeted 5 days |
+| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · 7 commits, all green |
+| **Blocked on** | A genuine engineering decision (see "Resume from here") — not an unresolved bug |
 
-**Phase 1's milestone is met**: instance verified, sources evaluated, scope fixed. It came in under
-budget because the instance already existed, so roughly 2 days are free. Spend them on Phase 2, which
-carries the real uncertainty, or on the ~2.5 unbudgeted assistant days.
+---
+
+## Session log — 2026-07-30
+
+**Built the full H1-H12 pipeline**, in order: `Instance` aggregate + CSV loader (`optiedt.instance`,
+a new package - domain/ must stay pure and preanalysis can't import solver/, so the loader needed its
+own leaf package, with a matching `.importlinter` contract), the CP-SAT variables (`solver/variables.py`
+- room assignment uses `assign[s,r]` booleans with optional intervals, not a plain `room[s]` IntVar,
+because `room[s]` is a decision the solver makes, not a fixed attribute the way `teacher_id` is), and
+all 12 constraint codes registered (H1/H3/H7/H12 as real postings, the other eight as documented
+no-ops - domain-pruning ones because CP-SAT domain restriction can only happen at variable
+construction, subsumption ones because H12/H3 already forbid what H2/H11 would separately forbid).
+
+**C-6 resolved and implemented, not just decided**: `carries_assumption_literal` is `True` only for
+H1, H3, H7, H12 - the four constraints that are actually posted objects a literal could attach to.
+
+**Caught a real modelling bug before it went any further.** The first `H12` implementation grouped
+every session under a promotion into one `NoOverlap` set. That also forces unrelated siblings - e.g.
+two different TP subgroups of two different TD groups - to never run in parallel, which is wrong: they
+are disjoint sets of students who obviously can be scheduled at the same time. Solving the real
+instance with just this constraint returned `INFEASIBLE` in under a tenth of a second, which is exactly
+the signature the project's own docs warn about: at this occupancy, a modelling bug looks identical to
+a genuinely unsolvable instance. Isolated it by solving progressively larger subsets of the constraints
+against the real data (not a synthetic fixture) until the exact culprit was found.
+
+**The fix**: two sessions conflict under H12 iff one's group is an ancestor of the other's group, or
+they're the same group (matching `constraint_catalogue.csv`'s own description, "Parent busy => children
+busy (and vice-versa)") - never for sharing a distant common ancestor like the promotion. Implemented
+per group: gather a group's own sessions plus every ancestor's, `NoOverlap` that set. Verified correct
+in isolation and combined with H1 (`OPTIMAL` both times). **Combined with all four real constraints
+(H1+H3+H7+H12) through the actual engine, with all CPU cores and a 60-second deterministic budget, the
+solve had not returned when the session was stopped** - so whether the corrected model is fully
+feasible on this instance is still an open question, not a settled one.
+
+**Incident: an abandoned background process.** An early debugging run (testing 8 constraint
+combinations against the *original, buggy* H12) got backgrounded, and was never explicitly stopped
+before moving on to a tighter retest. It kept running in the background - using the old buggy code -
+for the rest of the session, consuming enough CPU to make unrelated shell commands (`echo`, `sleep 1`,
+even `true`) stall for 20-120 seconds, which looked like a broken tool environment but was actually
+resource contention from a forgotten process. Found via `tasklist`/`Get-CimInstance`, confirmed via its
+exact command line before touching anything, and killed. **Lesson for next time: track every backgrounded
+solve explicitly and stop it before starting a replacement, especially with `num_workers=0`.**
+
+---
+
+## Session log — 2026-07-30, continued: task 11
+
+Picked up per the resume prompt: read and re-verified the H12 fix and `engine.py`, ran
+`scripts/run-checks.ps1` (one `ruff format` fix needed on `engine.py`, then all green — 7/7 import
+contracts, ruff, mypy on 30 files, 23/23 tests, instance verification, frontend typecheck), and
+committed both as `c1be462`.
+
+**Wrote the integration test** (`backend/tests/integration/test_h1_h12.py`) to solve the real instance
+end-to-end and then independently recompute H1, H3, H4/H5, H6, H8, H9 and H12 directly from the raw
+CSVs and the returned placements - not trusting CP-SAT's status alone, matching the project's own
+lesson from the H12 bug that a wrong model can look identical to an unsolvable instance in either
+direction. H2 and H11 are not checked separately: they're implied by the H12 and H3 checks
+respectively, per C-6.
+
+**Ran it against the real instance and it does not resolve** - see the measurements and root-cause
+analysis in "Resume from here" above. Tried three configurations, from a plain 360s run to an 480s run
+with `use_probing_search` and `keep_symmetry_in_presolve` enabled; all three returned `UNKNOWN`, never
+`INFEASIBLE`. Isolated the room-type structure directly (no solver call): confirmed `Lab_Info` and
+`Lab_Sciences` are fully interchangeable room types (every session gets every room of that type as a
+candidate) sitting at 95.2% and 85.7% occupancy respectively - the textbook hard case for CP-SAT's
+default search. Also checked the group hierarchy depth distribution (6 roots, 15 depth-1, 30 depth-2,
+matching the known 6/15/30 split) to rule out a hierarchy-construction bug inflating H12's NoOverlap
+sets - it's clean, three levels deep as expected, so H12 is not implicated in the difficulty.
+
+**Conclusion: no modelling bug found.** Every constraint subset tested, at every point in this session
+and the previous one, either solved quickly (`OPTIMAL`) or - in the one real bug found - failed
+instantly and unambiguously. Nothing has reproduced an instant-`INFEASIBLE` result on the corrected
+model. What blocks task 11 now is a genuine, confirmed computational-difficulty problem with the room
+assignment encoding at near-full, fully-interchangeable capacity - an engineering decision with real
+tradeoffs (see the three options above), not something to resolve by continuing to guess at parameters
+or budgets alone.
+
+**Left deliberately uncommitted**: `backend/tests/integration/test_h1_h12.py` (would make
+`scripts/run-checks.ps1` hang for 8+ minutes and still not pass) and this file. Everything else from
+today is committed.
 
 ---
 
@@ -97,8 +240,19 @@ have parsed the real CSVs. Both corrected in place rather than quietly deleted.
 
 ## Blockers, precisely
 
+*Written 2026-07-29; C-6 below was resolved and implemented on 2026-07-30 - see the session log above.
+Left in place because C-7's reasoning still stands and is referenced elsewhere.*
+
 Two are decisions only the technical lead can make; the third is a modelling choice that can be made
-at the keyboard. **None of them stops Phase 2 from starting.**
+at the keyboard.
+
+### Blocks *finishing* Phase 2 — new, 2026-07-30
+
+**C-13 — room-assignment symmetry makes H1-H12 hard to solve in practice, even though no bug has been
+found.** `Lab_Info` and `Lab_Sciences` are fully interchangeable room types at 95.2% and 85.7%
+occupancy - the textbook hard case for CP-SAT's default search. Full detail, measurements and three
+options in `docs/open-questions.md`. **This blocks task 11 and Phase 2's milestone directly** - it is
+the one genuinely open item right now.
 
 ### Blocks the *objective* inside Phase 2
 
@@ -127,19 +281,22 @@ test fails — for a reason nobody would look for.
 
 ### Decide at the keyboard, before the diagnosis run
 
-**C-6 — which of H2 / H11 skip their assumption literal.** H2 is subsumed by H12; H11 is implied by H3
-and duplicates pre-analysis check 2. Redundant literals let the solver name a rule the user cannot act
-on. Needed in Phase 5, but the constraint code is written in Phase 2, so decide it while writing.
+**C-6 — RESOLVED 2026-07-30.** Only H1, H3, H7 and H12 are real postings a literal can attach to;
+H2 and H11 are subsumed (no separate posting exists); H4/H5/H6/H8/H9/H10 are domain restrictions
+(nothing posted at all, by construction). Implemented in `solver/constraints/`, not just decided.
 
 ---
 
 ## Next, in order
 
-1. **Loader** — read `data/instance/` into the domain types. Nothing else can start without it.
-2. **Model H1–H12** and get one conflict-free timetable. Phase 2's milestone. Does not need C-4, C-7 or C-12.
-3. **Decide C-7**, then encode the objective.
-4. **Decide C-12 and C-4**, then scoring — Phase 3.
-5. **Port the five verifications into the application** as FR-12. The standalone checker at
+1. ~~Loader~~ - done, committed (`2c9c356`).
+2. ~~Model H1-H12, H12 bug fixed~~ - done, committed (`0f9253e`, `c91a346`, `c1be462`).
+3. **Decide C-13** (room-assignment symmetry - see `docs/open-questions.md`), implement the chosen
+   option, then finish task 11 with a configuration that actually resolves. This is the immediate next
+   step, ahead of everything below.
+4. **Decide C-7**, then encode the objective.
+5. **Decide C-12 and C-4**, then scoring - Phase 3.
+6. **Port the five verifications into the application** as FR-12. The standalone checker at
    `data/verification/verify_instance.py` already has the logic; the in-application version reports
    structural risks through the API.
 
@@ -222,8 +379,8 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 | **Toolchain** | **all green** | 2026-07-29 | 6/6 layer contracts kept · ruff clean · mypy strict clean on 20 files · frontend `tsc` clean · instance verified |
 | **Python** | **3.14.2** | 2026-07-29 | Resolved by uv 0.12.0 |
 | **OR-Tools CP-SAT imports and solves** | **yes** | 2026-07-29 | On Python 3.14. `max_deterministic_time` **is accepted by the solver parameters** — ADR-011 is implementable, not just plausible |
-| Deterministic time → wall clock, reference instance | *not yet measured* | — | Machine-dependent. Needed before any time limit is meaningful |
-| First valid timetable | *not yet measured* | — | Target < 60 s, an estimate not a guarantee |
+| Deterministic time → wall clock, reference instance | **not a clean ratio under `num_workers=0`** | 2026-07-30 | `max_deterministic_time=60` consumed 247.98 deterministic-time units before the 360s wall-clock ceiling stopped the run. The parameter does not tightly bound parallel search the way ADR-011 assumes for one worker — needs further calibration, see C-13 |
+| First valid timetable | **not yet reached** | 2026-07-30 | Room-assignment symmetry (C-13) makes H1-H12 hard to solve as currently encoded: `UNKNOWN` after 480s wall-clock with tuned parameters, no proof either way. Target < 60 s is now known to be unmet in the current encoding, not just unmeasured |
 | Portfolio of 3 candidates | *not yet measured* | — | Target < 5 min |
 | Diagnosis run on an infeasible instance | *not yet measured* | — | Single worker, no objective — expect it to be slow |
 | Effective `y[s][t]` count after pruning | *not yet measured* | — | Upper bound 6,104 |
