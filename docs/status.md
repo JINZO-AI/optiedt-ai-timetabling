@@ -1,6 +1,7 @@
 # Status
 
-**Increment 1 of 2 · Phase 2 complete · Phase 3 blocked on a specification decision (C-4, C-12).**
+**Increment 1 of 2 · Phase 2 complete · Phase 3 core algorithms done (C-4, C-12 resolved 2026-07-30);
+portfolio orchestration, persistence and ITC-2007 validation remain, in Phase 4-5's scope.**
 **Last updated 2026-07-30.**
 
 Keep this file current. A stale status file is worse than none, because the next session trusts it.
@@ -15,38 +16,52 @@ Keep this file current. A stale status file is worse than none, because the next
 
 | | |
 |---|---|
-| **Current phase** | **Phase 2 complete**, committed and pushed. H1–H12 built and demonstrated correct — the reference instance produces a conflict-free timetable in ~3 s with every hard constraint re-verified from the raw CSVs. C-13 resolved (the model was correct; the *instance* was infeasible and has been repaired). C-7 resolved (`y[s][t]` channelled, tested, built on demand) |
-| **Next step** | **Phase 3, blocked.** C-4 (a `v_i` and bounds for all seven soft criteria) and C-12 (S5 carries weight 0.20 with no input data) are the technical lead's decisions, not the keyboard's. Nothing further can be encoded until they land |
-| **Days used** | ~2 of 20. Phases 1–2 were budgeted 8 |
-| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · **15 commits**, working tree clean, in sync with `origin/main` · latest `0dc0078` |
-| **Blocked on** | **C-4 and C-12** — specification decisions. Nothing is blocked inside Phase 2 |
+| **Current phase** | **Phase 2 complete**, committed and pushed. H1–H12 built and demonstrated correct — the reference instance produces a conflict-free timetable in ~3 s with every hard constraint re-verified from the raw CSVs. C-13 resolved (the model was correct; the *instance* was infeasible and has been repaired). C-7 resolved (`y[s][t]` channelled, tested, built on demand). **Phase 3's core algorithms are now built**: the seven criteria, the scorer, the ranker (decomposition + dominance), the CP-SAT objective and the recommendation translator — see below |
+| **Next step** | Port the five pre-analysis checks into the application (FR-12), or start Phase 4 (web interface). Neither is blocked. Portfolio orchestration (loop over 3 profiles, remove duplicates) needs **C-5** decided first and belongs to `services/`, not this pass |
+| **Days used** | ~2 of 20 for Phases 1–2, plus this session's Phase 3 work. Phases 1–2 were budgeted 8, Phase 3 budgeted 3 |
+| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · **15 commits** on `origin/main`, plus this session's Phase 3 work committed locally, not yet pushed · latest pushed commit `0dc0078` |
+| **Blocked on** | Nothing inside Phase 3's given scope. **C-5** blocks portfolio orchestration and the FR-13 acceptance test; **C-9** blocks Phase 6 acceptance |
 
 ---
 
 ## Blockers, precisely
 
-*C-6, C-7 and C-13 were resolved on 2026-07-30 and are recorded in `docs/open-questions.md`. What
-follows is only what is still open.*
+*C-6, C-7 and C-13 were resolved on 2026-07-30 and are recorded in `docs/open-questions.md`. C-4 and
+C-12 were resolved the same session, after Phase 2, alongside the Phase 3 code that implements them.
+What follows is only what is still open.*
 
-Both remaining blockers are decisions only the technical lead can make. Neither can be taken at the
-keyboard, and guessing at either is what `CLAUDE.md` forbids.
+Neither remaining item blocks anything inside the scope this session covered
+(`analysis/ · solver/objective.py · recommendations/ · tests/property/`).
 
-### Blocks Phase 3
+### C-4 and C-12 — resolved 2026-07-30
 
-**C-4 — no soft criterion has a measurement formula.** All seven have codes, names and weights and
-none has a definition of `v_i`. It feeds the score, the contributions, monotonicity, dominance and the
-weight learning. Each also needs its `min_i`/`max_i` formula, which is one task per criterion, not two.
-S6 additionally has a dead half: H5 already forbids a room smaller than its group, so "over-used" must
-mean utilisation rate — the documents never say.
+**C-4.** All seven criteria (S2, S3, S4, S5, S6, S7, S10) now have a `v_i` and a `min_i`/`max_i`
+formula, implemented in `analysis/criteria.py` and independently re-implemented as CP-SAT expressions
+in `solver/objective.py` (the two layers may not share code — see that module's docstring). Full
+formulas and the reasoning behind each choice, including the two genuine judgment calls (S4's resource,
+S6's target), are in `docs/open-questions.md`.
 
-**C-12 — S5 carries weight 0.20 and has no input data.** `teacher_availability.csv` is a boolean and
-all 157 rows are 0. Nothing expresses a *preferred* window, yet SRS §4.1 specifies a three-state grid.
-⚠️ **This is C-5 in disguise** — see C-12 in `docs/open-questions.md` for why the two must be resolved
-in one pass.
+**C-12.** S5 uses a labeled proxy — sessions placed in the first or last period of the day — rather
+than real preference data, because the objectively better fix (a genuine preferred-window column) needs
+`data/instance/` and `instance/loader.py` changes that were outside this session's scope. The proxy
+gives S5 genuine candidate-dependent variation (confirmed on the real reference instance: 91–116 of 218
+sessions touch an edge period, depending on the profile), which is what the C-12×C-5 risk needed —
+without resolving C-5 itself.
 
-**Also owed once C-4 lands:** the objective's auxiliary variable count (first/last occupied period per
-group-day, reified gap indicators). It follows from the criterion formulas, so it is recorded as
-unknown rather than guessed — see C-7 in `docs/open-questions.md`.
+**Owed and closed alongside C-4:** the objective's auxiliary variable count. `solver/objective.py`
+builds `occ`/`any`/`first`/`last`/`idle` variables per (teacher-or-leaf-group, day) pair and per-room
+deviation variables for S6 — the order-of-magnitude estimate in `docs/constraint-model.md` can now be
+replaced with a measured count (not yet done this session; see Measurements below for what was timed
+instead).
+
+### Still open, blocking something later
+
+**C-5 — "at least three candidates" can fail when duplicates are removed.** Blocks portfolio
+orchestration (looping over the 3 profiles and deduplicating candidates, which is `services/`, Phase
+4–5) and the FR-13 acceptance test. Resolving C-12 lowers the risk of hitting this on the reference
+instance but does not resolve the specification's own wording conflict.
+
+**C-9 — four requirements have no detailed specification.** Blocks Phase 6 acceptance tests.
 
 ---
 
@@ -54,17 +69,28 @@ unknown rather than guessed — see C-7 in `docs/open-questions.md`.
 
 1. ~~Loader~~ · ~~Model H1–H12, H12 bug fixed~~ · ~~Decide C-13~~ · ~~Decide C-7~~ — **all done**, see
    `docs/history.md`. Phase 2 is closed.
-2. **Decide C-12 and C-4**, then scoring — Phase 3. The immediate next step, and a specification
-   decision rather than a keyboard one. The variables the objective will read (`x[s,t₀]`, `y[s,t]`)
-   are already built and tested.
-3. **Port the five verifications into the application** as FR-12. The standalone checker at
+2. ~~Decide C-12 and C-4~~ · ~~Implement the seven criteria, scoring, ranking, the objective, the
+   recommendation translator, the four properties~~ — **done 2026-07-30**. See `docs/dashboard.md`'s
+   "Phase 3 — what was built" for the precise file list and what each one does and does not cover.
+3. **Portfolio orchestration**: loop over the 3 profiles, score each candidate, remove duplicates.
+   Needs **C-5 decided first** — implementing it while candidates could silently converge just moves
+   the risk into `services/` instead of removing it. This is Phase 4–5 territory (needs `services`,
+   `db`), not this pass's `analysis/solver/recommendations` scope.
+4. **Port the five verifications into the application** as FR-12. The standalone checker at
    `data/verification/verify_instance.py` already has the logic; the in-application version reports
    structural risks through the API. ⚠️ **Port the contiguity bound, not just the period bound** — the
    period bound alone is what let C-13 through, and shipping it alone would put the same blind spot in
    the product.
-4. **Fill H10's dormant gap** when recommendation regeneration needs it: `build_variables` currently
+5. **Fill H10's dormant gap** when recommendation regeneration needs it: `build_variables` currently
    refuses to run if any session is locked, because `SolverInput` carries session ids without the
    target slot and room. Safe today only because the reference instance has none.
+   `recommendations/translator.py` already reads a `lock_session`'s target slot/room out of the
+   candidate correctly (`LockedPlacement`); what is missing is downstream — `SolverInput` needs a way to
+   carry that target, and `build_variables` needs to honour it.
+6. **Recalibrate the deterministic-time budget.** A real solve under the objective took ~92
+   deterministic units / ~50s wall against a 30s deterministic-budget target (`num_workers=0`) — the
+   same C-2/C-13 under-bounding, now actually reached. Measure across seeds and profiles before Phase 4
+   exposes a user-facing time limit.
 
 Persistence can wait: the solver reads the CSVs through the loader, and PostgreSQL is only needed once
 runs, candidates and publication have to survive a restart.
@@ -112,13 +138,14 @@ its decomposition, and validation on the published instances.
 | **~2.5 unbudgeted assistant days** (C-1) | ≈12% overrun on 20 days | Confirmed, not contingent. Release valve is reduction step 1 |
 | **91% laboratory occupancy** (of two-period windows) | A modelling regression looks like an infeasible instance — **and, as C-13 showed, an infeasible instance looks like a slow model** | Pre-analysis first, always, and read the *window* figure rather than the period figure. Re-check both whenever the instance changes |
 | **A pre-analysis check that is necessary but not sufficient** | Passes an infeasible instance, so the next failure is attributed to the model. Cost three sessions on C-13 | Both bounds now checked in `verify_instance.py`. Any new check must state whether it is sufficient, and FR-12 must port both |
-| **The cumulative reformulation and the warm-start were built for a problem that did not exist** | Two committed mechanisms (`cumulative_room_types`, `solver/warm_start.py`) are carried for a reason now known to be wrong. Both are correct and tested, neither is load-bearing: the model solves with the warm start off, and the greedy now reaches 218/218 in 0.04 s | **Not removed** — no evidence they harm anything, and both should earn their place once the objective makes the search non-trivial. **Whether the plain per-room encoding would now serve for every type is untested.** Re-evaluate when the objective lands; delete then if they still pay for nothing |
-| **Objective encoding** | The auxiliary variables it needs are still absent from the size estimate | **Moved to Phase 3.** C-7 built the variables the objective reads (`x`, `y`); the auxiliaries follow from the criterion formulas, so the count is owed when C-4 lands |
-| **Deterministic-time calibration unmeasured** | The user-facing time limit is a guess | **Dormant, not resolved.** Phase 2 ended without needing it — solves take ~0.2 deterministic units, far below any budget. Live again once the objective lengthens them; calibrate then |
+| **The cumulative reformulation and the warm-start were built for a problem that did not exist** | Two committed mechanisms (`cumulative_room_types`, `solver/warm_start.py`) are carried for a reason now known to be wrong. Both are correct and tested, neither is load-bearing: the model solves with the warm start off, and the greedy now reaches 218/218 in 0.04 s | **Still not removed.** The objective has now landed and confirmed a real cost: `cumulative_room_types` also means S6 (room efficiency) cannot be optimised for those room types at all, only scored after the fact — see below. **Whether the plain per-room encoding would now serve for every type remains untested** |
+| **Objective encoding — done, with one gap** | S2–S5, S7, S10 are fully encoded in `solver/objective.py`. **S6 only covers non-cumulative room types (Salle)** — cumulative types (Amphi, Lab_Info, Lab_Sciences) have no per-room CP-SAT variable, only a post-solve labeller the objective cannot influence | `analysis/criteria.py` still scores S6 correctly for every room. Closing the solver-side gap needs `solver/variables.py` changes (out of the scope this landed in) |
+| **Deterministic-time calibration — now live, not dormant** | Measured 2026-07-30 with the objective posted: `max_deterministic_time=30` under `num_workers=0` consumed **~92 deterministic units and ~50s wall** before the solve stopped, on the reference instance under the catalogue's default weights. The same C-2/C-13 under-bounding, now actually triggered by a real workload rather than a theoretical one | **Not recalibrated this session** (out of scope). Measure across seeds/profiles before Phase 4 exposes a user-facing time limit — the wall-clock ceiling is doing more of the real work than ADR-011 assumed, more so now |
 | **Exam multi-room assignment** (R-6) | Breaks a shared `room[s]` abstraction | Keep it out of shared solver code from the start |
 | ~~`uv` not installed~~ | — | **Resolved.** uv 0.12.0 installed; the whole toolchain runs |
 | **Kaggle `students.csv` holds personal data** | 3,000 rows with names, emails, phones, addresses | Never load it beyond `student_id` + enrolment; never let such a field reach the assistant context |
-| **C-12 × C-5 interaction** | If S5 measures zero, the teacher-favouring profile differs by S3 alone, candidates converge, and the "three candidates" acceptance test fails for an invisible reason | Resolve C-12 before Phase 3 |
+| **`recommendations/translator.py` cannot build a complete `SolverInput`** | `Run` carries no instance reference or base profile weights; `Candidate` carries a profile *name*, not its weights; neither carries prior locks/exclusions | Returns a `RunOverride` (plain domain data: `WeightOverride`, `LockedPlacement`, `ExcludedOption`) instead, leaving assembly of the actual `SolverInput` to a later layer with run/instance context (`services/`, Phase 4–5) |
+| ~~**C-12 × C-5 interaction**~~ | ~~If S5 measures zero, the teacher-favouring profile differs by S3 alone, candidates converge, and the "three candidates" acceptance test fails for an invisible reason~~ | **C-12 resolved 2026-07-30** — S5 now varies genuinely with the candidate (measured 91–116 of 218 sessions on the reference instance across two profiles). **C-5 itself is still open** and still needs its own decision before the FR-13 acceptance test is written |
 
 ---
 
@@ -142,7 +169,7 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 
 | Measurement | Value | Taken on | Notes |
 |---|---|---|---|
-| **Toolchain** | **all green** | 2026-07-30 | **7/7** layer contracts kept · ruff · format · mypy strict on **32** source files · **33 tests** (29 fast + 4 solver-marked) · instance verified · frontend `tsc` clean |
+| **Toolchain** | **all green** | 2026-07-30 | **7/7** layer contracts kept · ruff · format · mypy strict on **38** source files · **39 tests** (35 fast + 4 solver-marked) · instance verified · frontend `tsc` clean |
 | **Python** | **3.14.2** | 2026-07-29 | Resolved by uv 0.12.0 |
 | **OR-Tools CP-SAT imports and solves** | **yes** | 2026-07-29 | On Python 3.14. `max_deterministic_time` **is accepted by the solver parameters** — ADR-011 is implementable, not just plausible |
 | Deterministic time → wall clock, reference instance | **not a clean ratio under `num_workers=0`** | 2026-07-30 | `max_deterministic_time=60` consumed 247.98 units before the 360s wall-clock ceiling stopped the run. Measured while searching an infeasible model, but the finding does not depend on that. Not urgent now — the repaired instance solves in ~0.2 deterministic units, far below any budget — and becomes urgent again once the objective makes solves long enough to reach one |
@@ -151,6 +178,8 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 | Diagnosis run on an infeasible instance | *not yet measured* | — | Single worker, no objective — expect it to be slow |
 | **Effective `y[s][t]` count after pruning** | **5,328** of 6,104 | 2026-07-30 | 87.3% of the upper bound. Start indicators `x[s,t₀]`: **4,720**. Together 10,048 variables (C-7) |
 | **Cost of building the C-7 accounting** | **2.9–4.1 s → 7.6–8.0 s** | 2026-07-30 | Same configuration, three seeds; deterministic time 0.4–1.9 → ~6.1. Why `build_occupancy()` is called on demand and not by the feasibility solve |
+| **First solve with the C-4/C-12 objective posted** | **~50 s wall · ~92 deterministic units**, feasible (not proven optimal) | 2026-07-30 | Seed 42, catalogue default weights, `deterministic_budget=30`, `num_workers=0`, wall ceiling 120 s. 218/218 placed. Confirms the "deterministic-time calibration live again" risk above — not yet measured across seeds |
+| **Sub-scores, no objective vs. catalogue-weighted objective** | S2 65→19, S3 22→12, S4 45→52, S5 116→91, S6 1.76 (raw)→1.77, S7 45→29, S10 104→131; score 78.0→83.6 | 2026-07-30 | Same seed (42), reference instance. Most criteria improve; S4 and S10 (weight 0, never optimised for) do not — expected multi-criteria behaviour, not a bug |
 
 ### Measured on the instance, 2026-07-30 (after the C-13 repair)
 

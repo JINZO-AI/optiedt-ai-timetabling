@@ -188,31 +188,53 @@ but does not influence the order.
 **`S1`, `S8` and `S9` do not exist.** They were retired during specification revision. Codes are
 permanent identifiers — never reuse them.
 
-### ⚠️ The raw values are undefined
+### The raw values — RESOLVED 2026-07-30, formulas in `docs/open-questions.md`
 
-`v_i(k)` — the measured violation count for criterion `i` on candidate `k` — **has no formula for any
-of the seven criteria.** It feeds the score, the contributions, monotonicity, dominance and the weight
-learning. This is the single largest specification gap. Tracked as **C-4**.
+`v_i(k)` — the measured violation count for criterion `i` on candidate `k` — now has a formula for
+every one of the seven criteria, implemented in `optiedt.analysis.criteria` (post-hoc, against a
+realized `Candidate`) and independently in `optiedt.solver.objective` (as CP-SAT expressions over
+decision variables — the two layers may not share this code; see that module's docstring for why).
+**Full formulas, bounds and the reasoning behind each choice are in `docs/open-questions.md`, C-4** —
+this section only summarises what changed.
 
-S2, S4 and S6 can partly inherit from the ITC-2007 curriculum-based definitions. S3, S5, S7 and S10 are
-project-specific with no published definition. **S6 additionally has a dead half**: H5 already makes a
-room smaller than its group impossible, so "over-used" must mean utilisation rate rather than
-over-capacity — the documents never say.
+S2 does inherit from ITC-2007's idle-time definition, applied per **leaf group** (a TP subgroup, via its
+ancestor-or-self chain) rather than per hierarchy level, so a gap is not counted three times. S4 and S6
+do **not** literally inherit their ITC-2007 namesakes despite the note this section used to carry:
+ITC-2007's `MinimumWorkingDays` assumes a course repeats within the week for one curriculum, which this
+instance's data does not (`occurrences_per_week` is 1 throughout); ITC-2007's `RoomStability` is about a
+course reusing rooms, not utilisation rate. S4 uses `ClusterBusyTimesConstraint`'s per-**teacher**
+reading instead (a judgment call — leaf group was a defensible alternative); S6 follows the catalogue's
+own wording ("under/over-utilised") against a per-room-type target utilisation, resolving the dead half
+H5 leaves it (over-capacity is impossible, so "over-used" means booked more intensively than the type's
+own average).
 
-⚠️ **S5 has no input data at all.** `teacher_availability.csv` carries a boolean `is_available` and all
-157 rows are 0 — unavailability declarations, as documented. Nothing in the schema expresses a
-*preferred* window, yet S5 carries **weight 0.20, the second highest**. See **C-12**, and note that it
-interacts with C-5: a zero-valued S5 makes the teacher-favouring profile differ by S3 alone, so
-candidates may converge and the "three candidates" acceptance test fails for an invisible reason.
+⚠️ **S6 can only be optimised by the solver for non-cumulative room types.** For "fully interchangeable"
+types (`Variables.cumulative_room_types` — Amphi, Lab_Info, Lab_Sciences, C-13) there is no per-room
+decision variable at all; the specific room is chosen by a deterministic post-solve labeller in
+`solver/engine.py` that the objective cannot see or influence. `solver/objective.py`'s S6 term therefore
+only covers Salle. `analysis/criteria.py` still scores every room correctly after the fact, regardless.
 
-Implement each criterion through the `Criterion` Protocol, which requires `raw_value` **and** `bounds`
-together, deliberately, so a criterion cannot be half-defined (ADR-009).
+**S5 uses a labeled proxy, not real preference data (C-12).** `teacher_availability.csv` still carries
+only unavailability declarations — nothing in the schema expresses a *preferred* window. Rather than
+measure S5 as identically zero (the option C-5 warned against), S5 counts sessions placed in the first
+or last period of the day: a standard, teacher-agnostic convention, explicitly recorded as a stand-in
+for real preference data (option (a) in C-12) rather than a definition of any one teacher's actual
+preference. See `docs/open-questions.md` for why the alternative tested first (generalising a teacher's
+own declared unavailability across the week) degenerates on this instance's data.
 
-### Auxiliary variables the objective needs
+Each criterion is implemented through the `Criterion` Protocol, which requires `raw_value` **and**
+`bounds` together, deliberately, so a criterion cannot be half-defined (ADR-009).
 
-Idle time per group per day requires the first and last occupied period plus reified gap indicators.
-**These are not counted in the model-size table below** — the stated size is an underestimate.
-Encoding the objective is the second unknown of this phase, after `y` channelling.
+### Auxiliary variables the objective needs — built
+
+`solver/objective.py` builds, per (teacher-or-leaf-group, day) pair needed by an active criterion: an
+`occ` boolean per period, an `any_occupied` boolean, `first`/`last`/`idle` integers (S2, S3), an
+`extra_days` integer (S4, reusing S3's `any_occupied`); per session, an `edge` boolean (S5); per
+non-cumulative room, a `deviation` integer (S6); per (leaf group, course, day) triple with ≥2 candidate
+sessions, an `excess` integer (S7). S10 needs no new variable — its occupancy sum is already 0/1 by
+construction. All of this is built **only** for criteria carrying a non-zero weight in the profile being
+solved, so a profile that zeroes a criterion pays nothing for it. The exact count on the reference
+instance under the catalogue's default weights has not yet been measured and recorded here.
 
 ---
 

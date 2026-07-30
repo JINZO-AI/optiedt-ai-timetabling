@@ -7,16 +7,25 @@ built?" without reading code.
 
 Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 
-**Where the project actually is: 1 of 25 requirements is under way, none is finished.** Phase 2 built
-the decision layer, which is the engine behind FR-3 and the precondition for FR-4, FR-5 and FR-8 — but
-a requirement is only `✓` once a user can reach it, and there is no API or interface yet. Do not read
-the run of `—` below as "nothing works": see [`docs/dashboard.md`](dashboard.md).
+**Where the project actually is: 6 of 25 requirements are under way, none is finished.** Phase 2 built
+the decision layer (FR-3) and Phase 3 built the objective, scoring, ranking, decomposition and dominance
+(FR-4, FR-5, FR-6, FR-15, FR-17) — but a requirement is only `✓` once a user can reach it, and there is
+no API or interface yet. Do not read the run of `—` below as "nothing works": see
+[`docs/dashboard.md`](dashboard.md).
 
 **FR-3 is `WIP`, not `✓`, deliberately.** H1–H12 are implemented and demonstrated on the reference
 instance, with every hard constraint re-derived from the raw CSVs rather than trusted from CP-SAT's
 status (`backend/tests/integration/test_h1_h12.py`). What is missing is the path *to* it: no endpoint,
 no run record, no interface. H10 is also registered but dormant — `build_variables` refuses to run if
 any session is locked, which is safe only because the reference instance has none.
+
+**FR-4, FR-5, FR-6, FR-15 and FR-17 are `WIP` as of 2026-07-30 (Phase 3), for the same reason as FR-3.**
+The seven soft criteria (`analysis/criteria.py`), the scorer and ranker (`analysis/scoring.py`,
+`analysis/ranking.py`) and the CP-SAT objective (`solver/objective.py`) are implemented and tested — the
+four analysis properties pass in `tests/property/test_scoring_properties.py`, and a real solve against
+the reference instance under the catalogue's default weights improves every criterion but S4 and S10
+relative to the unweighted feasibility solve. What is missing is the path *to* it: no run record, no
+endpoint, no comparison screen — Phases 4–5.
 
 ---
 
@@ -27,9 +36,9 @@ any session is locked, which is safe only because the reference instance has non
 | **FR-1** | Load and manage department data | Necessary | `api`, `db`, `services` | `acceptance/test_fr01` | — |
 | **FR-2** | Teacher declares availability on a weekly grid | Necessary | `api`, `db`; `features/availability` | `acceptance/test_fr02` | — |
 | **FR-3** | Generate a timetable respecting H1–H12 | Necessary | `solver` | `integration/test_h1_h12` ✓ | **WIP** |
-| **FR-4** | Improve quality criteria within a time limit | Necessary | `solver` — objective | `integration` | — |
-| **FR-5** | Produce several candidates, each scored out of 100 | Necessary | `analysis` — scoring | `acceptance/test_fr05` | — |
-| **FR-6** | Order candidates by score | Necessary | `analysis` — ranking | `property` | — |
+| **FR-4** | Improve quality criteria within a time limit | Necessary | `solver` — objective | `integration` | **WIP** |
+| **FR-5** | Produce several candidates, each scored out of 100 | Necessary | `analysis` — scoring | `acceptance/test_fr05` | **WIP** |
+| **FR-6** | Order candidates by score | Necessary | `analysis` — ranking | `property` ✓ | **WIP** |
 | **FR-7** | Display the timetable by teacher, group and room | Necessary | `features/timetable` | `integration` | — |
 | **FR-8** | Report the rules in conflict when no timetable exists | Necessary | `preanalysis`, `solver` — diagnosis | `acceptance/test_fr08` | — |
 | **FR-9** | Configure the calendar: holidays, closed slots, shortened day | Necessary | `db`, `features/admin` | `acceptance/test_fr09` | — |
@@ -38,9 +47,9 @@ any session is locked, which is safe only because the reference instance has non
 | **FR-12** | Verify data before solving; report structural risks | Necessary | `preanalysis` | `acceptance/test_fr12` | — |
 | **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs; `solver` | `acceptance/test_fr13` ⚠️ | — |
 | **FR-14** | Compare two candidates criterion by criterion | Necessary | `features/comparison` | `integration` | — |
-| **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition | `property`, `acceptance/test_fr15` | — |
+| **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition | `property` ✓, `acceptance/test_fr15` | **WIP** |
 | **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking | `unit` | — |
-| **FR-17** | Signal a recommended candidate that another dominates | Expected | `analysis` — dominance | `property` | — |
+| **FR-17** | Signal a recommended candidate that another dominates | Expected | `analysis` — dominance | `property` ✓ | **WIP** |
 | **FR-18** | Display occupancy of each classroom and laboratory | Expected | `features/timetable` | `integration` | — |
 | **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db`, `services` | `acceptance/test_fr19` | — |
 | **FR-22** | Explain a candidate's quality from computed figures | Necessary | `assistant` | `acceptance/test_fr22` | — |

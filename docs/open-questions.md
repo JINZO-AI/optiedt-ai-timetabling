@@ -17,22 +17,23 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 
 ## Index — what is actually still open
 
-**Only four.** Everything else on this page is resolved and kept for its reasoning.
+**Only two.** Everything else on this page is resolved and kept for its reasoning.
 
 | # | Still open | Blocks | Owner |
 |---|---|---|---|
-| **C-4** | `v_i` and `min_i`/`max_i` undefined for all seven soft criteria | **Phase 3, everything downstream** | Technical lead |
-| **C-12** | S5 carries weight 0.20 with no input data | Phase 3, Phase 4 grid | Technical lead |
 | **C-5** | "At least three candidates" can fail when duplicates are removed | Phase 6 acceptance | Lead + supervisor |
 | **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
-**C-8, C-11**. The sections below keep their full reasoning; headings say which is which.
+**C-8, C-11** · **C-4, C-12** (2026-07-30, implemented). The sections below keep their full reasoning;
+headings say which is which.
 
-⚠️ The two Phase 3 blockers are **one bug waiting to happen**. If S5 measures identically zero (C-12),
-the teacher-favouring profile differs by S3 alone, two candidates converge, duplicate removal drops one,
-and the three-candidate acceptance test fails (C-5) — for a reason nobody would look for, because the
-symptom is "the portfolio is boring" and the cause is a missing column.
+⚠️ C-4 and C-12 **were** one bug waiting to happen, before they were resolved together on 2026-07-30:
+had S5 measured identically zero, the teacher-favouring profile would have differed from the others by
+S3 alone, risking two candidates converging under duplicate removal and failing the three-candidate
+acceptance test (C-5). **C-5 itself remains open** — S5 no longer being identically zero lowers the
+chance of hitting it on the reference instance, but does not resolve the specification's own conflict
+between "duplicates removed" and "at least three candidates".
 
 ---
 
@@ -103,23 +104,54 @@ otherwise if the institution expects an approval step in the application.
 commit messages still land on the right section. **Every heading states its own status** — trust the
 heading, and the index above, over the position on the page.*
 
-### C-4 — The raw value of every soft criterion is undefined · **largest gap**
+### C-4 — The raw value of every soft criterion is undefined · **RESOLVED 2026-07-30 → seven formulas, recorded here**
 
-S2–S10 have codes, names and weights. **None has a measurement formula.**
+S2–S10 had codes, names and weights but no measurement formula. `v_i(k)` feeds the score, the
+contributions, monotonicity, dominance and the weight learning, so this was the single most
+load-bearing undefined quantity in the specification.
 
-`v_i(k)` feeds the score, the contributions, monotonicity, dominance and the weight learning. It is the
-most load-bearing undefined quantity in the specification.
+**Shared building block (S2, S7, S10): leaf-group ancestor-or-self occupancy.** A "leaf group" is any
+group that is no other group's `parent_group` (the 30 TP groups on the reference instance, computed
+generically rather than assumed, so a future instance with a different depth still works). For a leaf
+group `g`, the periods it occupies on a day are the union of periods occupied by sessions belonging to
+`g` **or any ancestor of `g`** — the same relation H12 already uses, reimplemented independently inside
+`analysis/` from `Group.parent_group` (plain domain data), because `analysis/` may not import the
+solver (invariant 1). This is required for S2 specifically: a TP subgroup's students also sit through
+their TD's and their promotion's sessions, so idle time computed only from the leaf's own sessions
+would understate what the students actually experience, and computing it at every hierarchy level would
+triple-count the same gap.
 
-- S2, S4, S6 can partly inherit from the ITC-2007 curriculum-based definitions.
-- **S3** (teacher idle), **S5** (preferred windows), **S7** (spread), **S10** (midday break) are
-  project-specific with no published definition to lean on.
-- **S6 has a dead half.** H5 already makes "room smaller than its group" impossible, so "over-used"
-  must mean *utilisation rate* rather than over-capacity. The documents never say.
+| Code | `v_i(k)` | `min_i` / `max_i` | Reasoning |
+|---|---|---|---|
+| **S2** Student idle time | Σ over leaf groups `g`, days `d`: `(last_occupied − first_occupied + 1) − occupied_count`, only on days with ≥1 occupied period, via ancestor-or-self | `min=0`. `max = Σ_g min(days_open, n(g)) × (P−1)`, `n(g)` = sessions in `g`'s ancestor-or-self chain, `P` = periods/day (5) | Direct match to `LimitIdleTimesConstraint` (the catalogue's own xhstt_ref), applied per leaf group rather than per hierarchy level |
+| **S3** Teacher idle time | Same gap formula, per teacher, no hierarchy | `min=0`. `max = Σ_t min(days_open, n(t)) × (P−1)` | Same XHSTT constraint, teacher-side |
+| **S4** Extra working day | Σ over teachers `t`: `max(0, days_used(t) − ⌈total_periods(t)/P⌉)` | `min=0`. `max = Σ_t (days_open − ⌈total_periods(t)/P⌉)` | `ClusterBusyTimesConstraint` does not name a resource. Chose *teacher* over *leaf group*: S3 already penalises gaps within a day a teacher is present, but not a teacher spread thinly across many low-load days — S4 fills exactly that gap. This is a judgment call, not a derivation; leaf group was a defensible alternative |
+| **S5** Teacher preference | See C-12 | See C-12 | See C-12 |
+| **S6** Room efficiency | Σ over rooms `r`: `\|utilisation(r,k) − target(type(r))\|`, `target(τ) = Σ(duration of sessions requiring τ) / (rooms of type τ × 28 open slots)`, `utilisation(r,k)` = `r`'s occupied periods in `k` / 28 | `min=0`. `max = Σ_r max(target(type(r)), 1 − target(type(r)))` | Resolves the catalogue's "dead half": H5 already forbids over-capacity, so "over-used" means *booked more intensively than its room type's average*, not literal over-capacity. Per-type target is required — Lab_Info runs near 91% occupancy, Salle near 29%, so a single global target would misclassify every lab as over-used |
+| **S7** Subject spread | Σ over (leaf group `g`, course `c`, day `d`): `max(0, count(sessions of c reaching g on day d) − 1)`, via ancestor-or-self | `min=0`. `max = Σ_(g,c)` `(total sessions of c reaching g − 1)` | `occurrences_per_week=1` for every session in this instance, so ITC-2007's course-repetition reading of "spread" doesn't apply. Real signal exists anyway: a leaf group can see the same course's CM (via its promotion ancestor), TD (via its TD ancestor) and TP (directly) all on one day — exactly what `SpreadEventsConstraint` penalises |
+| **S10** Lunch break (weight 0) | Σ over leaf groups `g`, days `d`: 1 if `g` occupies the lunch period that day, else 0. Lunch period derived from the data (the `period_index` whose slot straddles 12:00 — `P3`, 11:50–13:20, on this instance), not hardcoded | `min=0`. `max = (leaf groups) × days_open` | Weight 0 means it never affects the score, but it is still shown as a sub-score and still enters the dominance check ("every criterion", not "every weighted criterion") |
 
-Each criterion also needs its `min_i`/`max_i` formula (C-3). Implement through the `Criterion` Protocol,
-which requires `raw_value` and `bounds` **together** so a criterion cannot be half-defined.
+**Not literally the ITC-2007 definitions for S4 and S6**, despite the "can partly inherit" note below
+being kept for its historical reasoning. ITC-2007's `MinimumWorkingDays` (S4's nearest analogue) is
+defined per *course* with repeated weekly occurrences, which this instance's data model does not have.
+ITC-2007's `RoomStability` (S6's nearest analogue) is about a course reusing rooms, not utilisation
+rate — the catalogue's own wording ("under/over-utilised") was followed instead, since S6's `xhstt_ref`
+is empty.
 
-**Blocks:** Phase 3 scoring and everything downstream. **Owner:** technical lead, before Phase 3.
+**Layering consequence, worth recording so the two implementations don't drift.** `docs/architecture.md`'s
+module map states `solver` depends only on `domain`, not `analysis`, and that the decision layer "may
+not read a score." So `solver/objective.py` cannot import `analysis`'s `Bounds`/`Criterion` to weight its
+CP-SAT objective by normalisation range — it independently re-implements these same seven formulas as
+CP-SAT linear expressions, weighted by the profile's **raw** weights, matching `constraint-model.md`'s
+plain `minimise Σ(weight_i × violations_i)` (no normalisation there — that stays an `analysis/`-only
+concept, computed after the fact for scoring and ranking). The same mathematical definition is
+therefore written twice, once per layer, by construction of the layer boundary, not by oversight.
+
+**Superseded, kept for its original reasoning:** S2, S4, S6 "can partly inherit from the ITC-2007
+curriculum-based definitions" — true for S2, not for S4/S6 as explained above. S3, S5, S7, S10 remain
+project-specific with no published definition, now given one above (S5 via C-12).
+
+**Blocks:** Phase 3 scoring — now unblocked. **Owner:** technical lead, decided 2026-07-30.
 
 ### C-5 — "At least three candidates" can fail when duplicates are removed
 
@@ -262,36 +294,62 @@ That is now a documentation and reproducibility task, **not a blocker** — the 
 is already here and checked. Re-run the checks any time with
 `scripts/verify-instance.ps1`.
 
-### C-12 — S5 carries weight 0.20 and has no input data · **NEW, OPEN**
+### C-12 — S5 carries weight 0.20 and has no input data · **RESOLVED 2026-07-30 → option (b), a labeled proxy**
 
 `teacher_availability.csv` has a boolean `is_available`, and **all 157 rows are 0** — they are
 unavailability declarations, exactly as documented. There is **no representation of a preferred
-window** anywhere in the instance schema.
+window** anywhere in the instance schema, even though `AvailabilityState.PREFERRED` already exists in
+`domain/enums.py`, anticipating it.
 
-But **S5 "Teacher preference" carries a default weight of 0.20 — the second highest of the seven
-criteria** — and SRS §4.1 specifies an availability grid whose slots are marked "available,
-unavailable **or preferred**".
-
-Three ways this can go, and the choice is not obvious:
+Three ways this could go:
 
 - **(a)** Add a third state (or a `preference` column) to `teacher_availability.csv` and have the
   generator produce some. Closest to the specification; changes the instance, so the documented row
-  count of 157 must be restated.
-- **(b)** Define S5 against something already present — e.g. distance from a teacher's declared
-  unavailable block. Keeps the instance untouched but is not what "preferred window" means.
-- **(c)** Accept that S5 measures 0 on this instance. **Cheapest and most dangerous.**
+  count of 157 must be restated. Requires touching `data/instance/` and `instance/loader.py`.
+- **(b)** Define S5 against something already present. Keeps the instance untouched.
+- **(c)** Accept that S5 measures 0 on this instance. **Cheapest and most dangerous** — see below.
 
-⚠️ **Why (c) is dangerous, and why this is worth resolving before Phase 3.** The three weight profiles
-are balanced, student-favouring (raises S2) and **teacher-favouring (raises S3 *and* S5)**. If S5 is
-identically zero, the teacher-favouring profile differs from the others by S3 alone — so it is weaker
-than intended and **two candidates may well converge**.
+**Decision: (b), with an edge-of-day formulation, not the "distance from unavailable block" reading
+originally sketched.** Two things drove this:
 
-That is precisely the **C-5** failure mode: duplicates are removed, fewer than three distinct
-candidates are produced, and the acceptance test fails. It would fail for a reason nobody would think
-to look for, because the visible symptom is "the portfolio is boring" and the cause is a missing
-column.
+1. **(a) is objectively the better long-term fix** — it is what "preferred window" actually means, and
+   the domain model already anticipated it — **but it is out of scope for the pass that resolved this**,
+   which was restricted to `analysis/`, `solver/objective.py`, `recommendations/`, `tests/property/`.
+   Nothing in that scope may touch `data/instance/` or the loader. This is a scope-driven choice, not a
+   merit-driven one, and (a) should be revisited whenever instance/loader work is back in scope (Phase 4
+   already touches the availability grid).
+2. **The obvious version of (b) — generalise a teacher's declared unavailability across the week (if
+   unavailable at period-of-day `p` on any day, treat `p` as generally disliked) — was tested against
+   the actual CSV and degenerates.** Unavailability is spread across almost every period index for most
+   teachers: 14 of 41 teachers with any declared unavailability already cover all 5 period indices, so
+   that reading would flag nearly every session those teachers give, regardless of where it is placed —
+   no signal that varies with the candidate.
 
-**Blocks:** Phase 3 (scoring), and the availability grid in Phase 4. **Owner:** technical lead.
+   The version adopted instead does vary with placement and needs no per-teacher data at all: **treat
+   the first and last period of the day as generally undesirable** — a standard convention in
+   university timetabling, independent of any one teacher's declarations — and count sessions placed
+   there:
+
+   ```
+   v_S5(k) = |{ sessions s : one of s's occupied periods has period_index in {0, P-1} }|
+   min_S5 = 0
+   max_S5 = |instance.sessions|  (218 on the reference instance — loose but valid and instance-constant)
+   ```
+
+   **This is a labeled stand-in for real preference data, not a definition of teacher preference.** It
+   is recorded as such here so nobody mistakes it for "the" meaning of S5 later. Replace it with (a)
+   once a genuine preferred-window column exists.
+
+⚠️ **Why (c) was rejected.** The three weight profiles are balanced, student-favouring (raises S2) and
+**teacher-favouring (raises S3 *and* S5)**. Had S5 stayed identically zero, the teacher-favouring
+profile would have differed from the others by S3 alone — weaker than intended, risking **two
+candidates converging**, which is precisely the **C-5** failure mode (duplicates removed, fewer than
+three distinct candidates, acceptance test fails) for a reason nobody would think to look for. The
+adopted formula gives S5 genuine, candidate-dependent variation, which lowers that risk without
+resolving C-5 itself — C-5 is a separate, still-open conflict in the specification's own wording.
+
+**Blocks:** Phase 3 (scoring) — now unblocked. The availability grid in Phase 4 still needs its own
+decision when (a) is revisited. **Owner:** technical lead, decided 2026-07-30.
 
 ---
 

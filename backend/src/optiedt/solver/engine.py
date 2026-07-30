@@ -17,9 +17,15 @@ two are independent proto fields and setting the wrong one would silently
 solve single-threaded while looking configured for parallelism. 0 means "use
 all cores," matching core.config.Settings.solver_workers's existing default.
 
-No objective is posted here. Phase 2 has hard constraints only - there is
-nothing yet to minimise, so every SolverOutput.cost from this engine is 0
-until Phase 3 adds the soft criteria.
+An objective is posted only when ``request.profile`` is not None (Phase 3):
+``build_occupancy`` and ``build_objective`` (solver/occupancy.py,
+solver/objective.py) are called first, so x[s,t0]/y[s,t] exist for the
+objective to read. A profile with every weight at zero still counts as "no
+objective" (``build_objective`` returns None and nothing is posted), which
+keeps that case identical to the Phase 2 feasibility-only solve. Existing
+callers that pass ``profile=None`` (feasibility-only, e.g. the Phase 2
+tests) are unaffected - occupancy is not built and ``SolverOutput.cost``
+stays 0, exactly as before.
 """
 
 from __future__ import annotations
@@ -33,6 +39,8 @@ from optiedt.domain.enums import RoomType
 from optiedt.domain.instance import Instance
 from optiedt.solver.constraints import ALL_HARD_CONSTRAINTS
 from optiedt.solver.interfaces import DiagnosisResult, SolverInput, SolverOutput
+from optiedt.solver.objective import build_objective
+from optiedt.solver.occupancy import build_occupancy
 from optiedt.solver.variables import Variables, build_variables
 from optiedt.solver.warm_start import build_warm_start
 
@@ -149,6 +157,16 @@ class CpSatSolver:
         if self.use_warm_start:
             _apply_warm_start(model, variables, request)
 
+        objective_posted = False
+        if request.profile is not None:
+            occupancy = build_occupancy(model, variables, request.instance)
+            objective_posted = (
+                build_objective(
+                    model, variables, occupancy, request.instance, request.profile.weights
+                )
+                is not None
+            )
+
         solver = cp_model.CpSolver()
         solver.parameters.max_deterministic_time = request.deterministic_budget
         solver.parameters.max_time_in_seconds = self.wall_clock_ceiling_seconds
@@ -180,9 +198,11 @@ class CpSatSolver:
                 for session in request.instance.sessions
             )
 
+        cost = round(solver.objective_value) if objective_posted and not infeasible else 0
+
         return SolverOutput(
             placements=placements,
-            cost=0,
+            cost=cost,
             infeasible=infeasible,
             proven_optimal=status == cp_model.OPTIMAL,
             deterministic_time_used=solver.deterministic_time,

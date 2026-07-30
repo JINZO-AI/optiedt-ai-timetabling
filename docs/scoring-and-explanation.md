@@ -81,6 +81,17 @@ weights.
 The order must not depend on the order in which candidates are read — this is a tested property, not an
 assumption.
 
+**One weight vector prices every candidate of a run, regardless of which profile produced its
+placements.** The three weight profiles (balanced, student-favouring, teacher-favouring) exist to steer
+the *solver* toward diverse candidates — that is the entire reason for varying the objective rather
+than the seed (see `docs/constraint-model.md`, "Weight profiles and the portfolio"). They are not, by
+themselves, a valid basis for scoring the resulting candidates: the exactness identity above only holds
+when the same `w_i` prices both `A` and `B`, and two candidates solved under two different profiles
+would need two different `w_i`. So the run's **weights in force** — one reference vector — score and
+rank every candidate it produced, whatever profile's objective placed it; the profile is retained on the
+candidate only as provenance of how it was obtained, never as its own scoring weight. Implemented as
+`analysis.ranking.DefaultRanker(weights=...)`, constructed once per run with that one vector.
+
 ---
 
 ## Dominance
