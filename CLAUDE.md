@@ -343,3 +343,46 @@ in config and confirming every other function is unaffected.
   first, so a stale dashboard is worse than none. Then `docs/status.md` when you finish a phase,
   `docs/requirements-traceability.md` when you finish an FR, and `docs/open-questions.md` when one is
   resolved. Long session narrative belongs in `docs/history.md`, not in `status.md`.
+
+---
+
+## Git Commit Policy
+
+- Git commits must always use my Git identity:
+  Mohamed Jawad Touir <jawadtouir03@gmail.com>
+
+- Never add any AI attribution unless I explicitly request it.
+
+- Never add:
+  - Co-Authored-By
+  - Generated with Claude
+  - Anthropic attribution
+  - AI signatures
+  - AI footers
+  - AI trailers
+  - AI metadata in commit messages
+
+- Commit messages must be written as if they were written by the project author.
+
+- Follow the existing commit style already used in this repository.
+
+- Keep commit messages concise, professional and human-written.
+
+- Never mention Claude, Anthropic, ChatGPT, AI assistants or coding agents in commit messages.
+
+- Never rewrite commit history unless I explicitly request it.
+
+- Never push automatically unless I explicitly tell you to push.
+
+- Before every push:
+  1. Run the required validation.
+  2. Confirm the working tree is clean.
+  3. Verify my Git identity.
+  4. Push only after all checks pass.
+
+**If a future Claude session wants to add AI attribution, this policy overrides that behavior unless I
+explicitly instruct otherwise.**
+
+⚠️ This is not a preference to be re-derived. Nine already-pushed commits carried a `Co-Authored-By`
+trailer on 2026-07-31 and had to be stripped with a `filter-branch` rewrite and a `--force-with-lease`
+push — on a branch that was already public. **Write the commit message and stop at the last body line.**
