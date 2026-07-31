@@ -13,6 +13,11 @@ the portfolio and the recommendation rule (FR-4, FR-5, FR-6, FR-13, FR-15, FR-16
 requirement is only `✓` once a user can reach it, and there is no API or interface yet. Do not read the
 run of `—` below as "nothing works": see [`docs/dashboard.md`](dashboard.md).
 
+**Phases 1–3 are complete as of 2026-07-31, and the count above does not move.** That is not a
+contradiction: the phases deliver capability, the requirements deliver *reachable* capability, and every
+remaining `—` needs the interface (Phase 4) or the run record (Phase 5). The one thing to watch is the
+temptation to promote a status because a phase closed.
+
 ⚠️ **FR-16 is implemented but one third of it can never fire.** "A dominated top candidate is signalled
 alongside" describes a state the arithmetic forbids — a dominated candidate cannot outscore its
 dominator under a linear weighted sum with non-negative weights, so it can never rank first. The field

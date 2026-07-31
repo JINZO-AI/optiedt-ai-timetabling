@@ -327,7 +327,10 @@ attributed to low parallelism when it was actually caused by the warm start.
 
 - `interleave_search` is documented as making the search *"deterministic (independently of
   num_workers!)"*, and measurement confirms it — deterministic in every configuration tested, at full
-  parallelism.
+  parallelism. ⚠️ **It has one measured side effect, found 2026-07-31**: `CpSolver.objective_value` can
+  be reported above the objective at the solution actually returned, on solves that stop before proving
+  optimality. It changes nothing here — no score or ranking reads that field — and **ADR-011 is the
+  authority on it**, not this section.
 - The warm start was pinning all three profiles to one timetable: identical score **78.076** at total
   budgets 15, 45 *and* 90, across three different objectives. Withholding it under an objective
   restores diversity.
@@ -708,12 +711,16 @@ techniques tried against it - is archived in [`docs/history.md`](history.md). It
 only because the measurements are real and the reasoning error is instructive.
 
 
-**Still open from the superseded analysis, on its own merits:** the deterministic-time calibration in
-the last paragraph above. `max_deterministic_time` did not tightly bound parallel search, and that
-observation stands independently of C-13 — it was measured on runs that happened to be searching an
-infeasible model, but nothing about the finding depends on that. The repaired instance now solves in
-~0.2 deterministic units, far below any configured budget, so the question is no longer urgent; it
-becomes urgent again when the objective goes in and solves get long enough to reach a budget.
+⚠️ **One leftover of the superseded analysis was itself wrong, and is corrected here.** This section
+used to end by carrying forward, "on its own merits", the claim that `max_deterministic_time` did not
+tightly bound parallel search — 60 requested against 247.98 consumed. **It binds exactly, per worker.**
+`CpSolver.deterministic_time` reports the *sum across workers*, so a 16-core machine legitimately
+reports ~11× the budget and nothing was overshooting. Measured 2026-07-30 and recorded in C-2 and
+ADR-011; `tests/integration/test_reproducibility.py` pins the ratio so the misreading cannot return.
+
+That the erroneous figure survived *twice* — once inside a wrong diagnosis, then again as the one piece
+of it judged sound enough to keep — is the part worth remembering. Salvaging a measurement from a
+refuted analysis is exactly when it is least likely to be re-derived.
 
 ---
 

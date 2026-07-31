@@ -88,8 +88,11 @@ docs/            Working documentation. Start at CLAUDE.md, then docs/dashboard.
   specifications/  The three PDFs — the contract. Not the working reference
   decisions/       ADRs. Read before reopening a settled question
 backend/         FastAPI app, CP-SAT model, analysis layer
+  src/optiedt/validation/   The ITC-2007 benchmark harness. Runs against the
+                            product, never inside it — no shipped code imports it
 frontend/        React interface
 data/            Instance generator, the 13 instance files, verification checks
+  reference/       Published benchmark archives. Gitignored; see PROVENANCE.md
 scripts/         Bootstrap and maintenance
 ```
 
@@ -105,10 +108,15 @@ catalogued in `docs/open-questions.md` rather than resolved silently.
 
 ## Status
 
-**Increment 1 of 2 · Phases 1–2 complete.** The decision layer is built: all twelve hard constraints
+**Increment 1 of 2 · Phases 1–3 complete.** The decision layer is built: all twelve hard constraints
 are implemented and the reference instance produces a conflict-free timetable in about three seconds,
 with every constraint re-verified from the raw data rather than trusted from the solver's own status.
-Phase 3 — scoring, ranking and the portfolio — is next and is waiting on two specification decisions.
+The analysis layer is built on top of it: seven quality criteria, an exact weighted score, ranking,
+the term-by-term decomposition, dominance, and a portfolio that returns three distinct candidates
+reproducibly. The engine is also validated on the 21 published ITC-2007 instances.
+
+**Phase 4 — the web interface — is next**, and is what turns all of the above into something a user
+can reach. Nothing is blocked.
 
 **[`docs/dashboard.md`](docs/dashboard.md) is the one page that answers "where is this project".**
 `docs/status.md` holds the detail, `docs/open-questions.md` what is still undecided.

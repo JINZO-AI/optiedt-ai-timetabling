@@ -92,6 +92,105 @@ which takes 0.088 s.
 
 ---
 
+## Session log — 2026-07-30/31: Phase 3, from two undecided formulas to a closed phase
+
+Phase 3 began blocked on **C-4** (no soft criterion had a defined raw value or bounds) and **C-12**
+(S5 carried weight 0.20 and had no input data at all). Both were resolved in `docs/open-questions.md`
+*before* any code, per CLAUDE.md — and that order mattered: writing the formulas down first is what
+made the S6 scale bug findable later, because there was a stated intention to compare the code against.
+
+**Built:** `analysis/instance_view.py`, `analysis/criteria.py` (the seven criteria),
+`analysis/scoring.py`, `analysis/ranking.py` (rank, decompose, dominance, and FR-16's recommendation),
+`solver/objective.py` (the same seven formulas as CP-SAT expressions), `recommendations/translator.py`,
+`services/portfolio.py`, and `optiedt/validation/itc2007/` (the benchmark harness). Tests went from 27 to 125.
+
+### Five things worth not rediscovering
+
+**S6 was priced 28× too high, and the shapes matched perfectly.** `analysis/criteria.py` measured a sum
+of fractions; `solver/objective.py` measured the same quantity in periods. Both were structurally
+correct, and reading them side by side showed nothing — the factor was `open_slot_count`. It was caught
+only by `tests/integration/test_objective_matches_analysis.py`, which requires the two layers to agree
+*numerically* on the same placements. **When one formula is implemented twice on purpose, the guard has
+to compare values, not read code.** Fixing it moved S2 19→2, S7 29→14, score 83.6→85.5: the
+over-weighting had been consuming search effort belonging to criteria that actually carry weight.
+
+**The warm start was pinning the whole portfolio.** All three weight profiles returned the *same*
+timetable at total budgets 15, 45 *and* 90, scoring an identical 78.076 every time. Six times the
+budget and three different objectives producing one candidate is not a tuning problem, and it was
+misread as one for most of a session. The hint is an attractor the objective cannot pull the search
+away from; withholding it under an objective gives three distinct candidates. It is kept for
+feasibility-only solves, where it is pure acceleration.
+
+**The "~11× deterministic-time overshoot" never existed.** `max_deterministic_time` binds *exactly*,
+per worker; `CpSolver.deterministic_time` reports the **sum across workers**, and ~11 was the worker
+count on a 16-core machine. The figure had survived two sessions, including one in which it was
+deliberately salvaged from an analysis known to be wrong — see C-13's entry below and the note now
+appended to it. **Salvaging a measurement from a refuted analysis is exactly when it is least likely to
+be re-derived.**
+
+**C-16 was diagnosed twice, wrongly, before it was diagnosed right.** Reproducibility failed at
+production worker counts — three identical requests, three different timetables, every one proving
+optimality. First recommendation: fix `workers = 1`. Second: declare it a specification conflict the
+supervisor had to resolve. Both wrong, and for one traceable reason: **every configuration compared
+had moved two variables at once**, worker count *and* search strategy, so the diversity collapse was
+attributed to low parallelism when the warm start was causing it. `interleave_search` makes the
+parallel search deterministic; ADR-011 was amended rather than reversed, and the result was *faster*
+(306 s → 147–150 s) as well as reproducible. The option that turned out to be half the answer —
+"remove the warm start" — had been listed and dismissed as speculative.
+
+**A blocker was asserted that did not exist.** Portfolio orchestration was recorded as blocked on C-5
+and belonging to Phase 4–5. `docs/open-questions.md`, the authority, records C-5 against *Phase 6
+acceptance*; SRS Table 29 already fixes the implementation behaviour. Nothing was blocked. Same shape
+as C-13: a plausible blocker nobody tried to falsify.
+
+### Closing the phase
+
+Six closure items: portfolio orchestration, the portfolio measurement, reproducibility and ADR-011's
+overdue calibration, FR-16, a documentation sweep, and validation on the published instances.
+
+**ITC-2007 validation** was built last (2026-07-31) as `optiedt/validation/itc2007/` — a *separate*
+model of a *different* problem, deliberately. Forcing ITC-2007 through the reference instance's schema
+would have validated an adapter and been reported as validating an engine. The cost function is
+transcribed from the archive's own bundled validator and then **checked against seven solutions the
+archive ships**, reproducing every published component cost exactly; without that check every figure
+the harness prints would be merely self-consistent.
+
+**21 of 21 valid. The cost gap is large — median 1269 % — and saying so plainly is the point.** The
+references are metaheuristics tuned for this exact problem, several run without a time limit, against
+roughly fifty seconds of exact search; the strategy document says outright that beating them was never
+the objective. What keeps that number from being an indictment is separate evidence that the *model* is
+right: `comp11` solved to **cost 0, proven optimal**, and `comp01` reached the published optimum of 5
+given more search. Without those two, "the gap is search budget, not modelling" would have been a
+comfortable assumption rather than a measured one — and this project has already paid three sessions
+for one of those. Results in `docs/status.md`.
+
+**And it immediately earned its place.** The harness's own encoding check fired on 2 of the 21
+instances. The encoding turned out to be right: under `interleave_search`, `CpSolver.objective_value`
+is reported a few units **above** the objective evaluated at the very solution the solver hands back,
+on solves that stop before proving optimality — with the parameter off, they agree exactly. Nothing in
+the project is affected, and the reason is worth stating plainly: **no score, ranking or display reads
+`SolverOutput.cost`**, because `analysis/` may not import `solver/` and must recompute from the
+placements. A solver misreporting its own answer is precisely the failure that layer boundary was drawn
+to survive, and it survived it without a code change. Recorded in ADR-011.
+
+The audit that closed the phase found **five** live documentation errors, four of the same kind — a fact
+corrected in one file and left standing in another:
+
+1. `constraint-model.md` recorded the objective's auxiliary count as unmeasured; `status.md` gave 5,249.
+2. `open-questions.md` still carried the refuted deterministic-time claim as open — and had explicitly
+   *salvaged* it from the wrong C-13 analysis as the one part worth keeping.
+3. `README.md` still said Phase 3 awaited two specification decisions resolved the day before.
+4. `status.md`'s portfolio measurement said "✅ target < 5 min met" and "recorded as missed" in the
+   same cell.
+5. Three documents said `origin/main` was at `0dc0078`. It is at `acf9aa0` — its child. **A repository
+   fact that `git rev-parse` answers in a second had been wrong in three places for two sessions.**
+
+The pattern is worth naming: none was a *disagreement about a decision*. Every one was a number or a
+state that moved in one file and not in the others. That is what a documentation sweep is for, and it
+is why the sweep has to re-derive rather than re-read.
+
+---
+
 ## Session log — 2026-07-30, fifth continuation: C-7 resolved, Phase 2's modelling complete
 
 **Resolved C-7 in `docs/open-questions.md` before writing any code**, per CLAUDE.md. The specification

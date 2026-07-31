@@ -57,6 +57,29 @@ documentation, because an OR-Tools upgrade that regressed it would otherwise sta
 published timetable failed to reproduce. **Pin the OR-Tools version, and treat a failure in that file
 as blocking.**
 
+### One measured side effect, found 2026-07-31
+
+**Under `interleave_search`, `CpSolver.objective_value` can disagree with the solution the solver
+returns.** Measured on the ITC-2007 harness (`optiedt/validation/itc2007`), instances comp02, comp18 and
+comp21: the reported objective sat **5 to 15 units above** the objective expression evaluated at the
+very placements handed back, on solves that stopped on the budget **without proving optimality**. With
+the parameter off, the two agree exactly on the same instances and budgets.
+
+**Nothing in this project is affected, and the reason is architectural.** No score, ranking, comparison
+or displayed figure reads `SolverOutput.cost`: `analysis/criteria.py` recomputes every criterion from
+the returned placements, which is precisely what the ban on `analysis` importing `solver` forces
+(`docs/architecture.md`). A solver reporting a number that does not match its own answer is exactly the
+failure the layer separation was drawn to survive, and it survived it without a change.
+
+Two guards were adjusted so they cannot become flaky for this reason:
+`tests/integration/test_objective_matches_analysis.py` already required `proven_optimal` before
+comparing — that requirement now carries this second justification in writing — and the ITC-2007
+harness compares the **encoding** (each auxiliary's value against the recomputed component) rather than
+the reported objective.
+
+**Do not start ranking, comparing or displaying `SolverOutput.cost`.** If a future change needs a
+trustworthy objective figure, take it only from a solve reporting `proven_optimal`.
+
 Disabling worker information sharing (`share_binary_clauses`, `share_level_zero_bounds`,
 `share_objective_bounds`) was also measured and does **not** help — the race is in the scheduling, not
 in the sharing.

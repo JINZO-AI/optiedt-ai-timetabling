@@ -233,8 +233,12 @@ Each criterion is implemented through the `Criterion` Protocol, which requires `
 non-cumulative room, a `deviation` integer (S6); per (leaf group, course, day) triple with ≥2 candidate
 sessions, an `excess` integer (S7). S10 needs no new variable — its occupancy sum is already 0/1 by
 construction. All of this is built **only** for criteria carrying a non-zero weight in the profile being
-solved, so a profile that zeroes a criterion pays nothing for it. The exact count on the reference
-instance under the catalogue's default weights has not yet been measured and recorded here.
+solved, so a profile that zeroes a criterion pays nothing for it.
+
+**Measured on the reference instance, 2026-07-30: 5,249 auxiliaries** under the catalogue's default
+weights, and **0** when every weight is zero — which is what makes "pays nothing for it" a fact rather
+than an intention. Per criterion alone: S3 2,376 · S4 1,628 · S2 1,620 · S7 984 · S5 218 · S6 7 · S10 0.
+Full table in `docs/status.md`. This closes the last open half of C-7.
 
 ---
 

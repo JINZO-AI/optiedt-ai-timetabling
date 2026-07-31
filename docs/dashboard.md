@@ -3,9 +3,10 @@
 **The handoff file. Read this second, after `CLAUDE.md`.** It carries the whole project state; every
 other document is detail you fetch only when you need it.
 
-**Last updated 2026-07-30**, during Phase 3 closure: portfolio orchestration and FR-16 landed, ADR-011's
-overdue calibration discharged and the ADR amended, C-16 raised and resolved (`interleave_search`), C-15
-deferred by decision. Only ITC-2007 validation remains.
+**Last updated 2026-07-31. Phase 3 is COMPLETE.** Validation on the published ITC-2007 instances closed
+the last item; before it, portfolio orchestration and FR-16 landed, ADR-011's overdue calibration was
+discharged and the ADR amended, C-16 was raised and resolved (`interleave_search`), and C-15 was
+deferred by decision. **Phase 4 — the web interface — has not started.**
 
 ---
 
@@ -14,29 +15,29 @@ deferred by decision. Only ITC-2007 validation remains.
 | | |
 |---|---|
 | **Project** | OptiEDT — generates, ranks and explains weekly university timetables (Tunisian public faculty, LMD) |
-| **Overall progress** | **~55 % of budgeted effort** (Phases 1–2 = 8 of 20 days, plus Phase 3). By *delivered product* it is lower — **3 of 9 acceptance criteria** met, 0 of 25 requirements finished, because the user-facing path is Phases 4–5. Both numbers are real; quote the measure with the number |
-| **Current phase** | **Phase 3 — closure in progress, 5 of 6 checklist items done.** Criteria, scoring, ranking, decomposition, dominance, the objective, the recommendation translator, the **portfolio** and **FR-16** are implemented and tested; ADR-011's overdue calibration is discharged. **Remaining: ITC-2007 validation** (`docs/status.md`, "Next, in order") |
+| **Overall progress** | **55 % of budgeted effort** — Phases 1–3 complete, 11 of 20 days budgeted. By *delivered product* it is lower: **3 of 9 acceptance criteria** met, 0 of 25 requirements finished, because the user-facing path is Phases 4–5. Both numbers are real; quote the measure with the number |
+| **Current phase** | **Phase 3 — COMPLETE 2026-07-31.** Criteria, scoring, ranking, decomposition, dominance, the objective, the recommendation translator, the **portfolio**, **FR-16** and **validation on the 21 published ITC-2007 instances** are all implemented and tested; ADR-011's calibration is discharged. Phase 4 is next and not started |
 | **Current milestone** | Several candidates produced, ordered, and one difference decomposed — met **at the code level**; not yet reachable by a user (no run record, no endpoint) |
-| **Current goal** | Close Phase 3 (ITC-2007 validation), then Phase 4: the web interface |
-| **Next task** | Validation on the published ITC-2007 instances — the last Phase 3 closure item, and on the never-reduced list in `docs/status.md` |
-| **Branch** | `main` — **5 commits ahead of `origin/main`, unpushed** |
-| **Latest commit** | [`7d489c3`](https://github.com/JINZO-AI/optiedt-ai-timetabling/commit/7d489c3) — Phase 3 closure work. **Local only, not pushed**; `origin/main` is still at `0dc0078` |
-| **Repository status** | **Ahead of `origin/main` by 5 local commits**, none pushed. Working tree clean |
-| **Project health** | 🟢 **Green.** `scripts/run-checks.ps1` green, 95 tests pass. **C-16 resolved** — reproducibility and three distinct candidates now hold simultaneously at production settings, and the portfolio is ~2× faster than before. **3 of 9 acceptance criteria met**, up from 1 |
+| **Current goal** | **Phase 4 — the web interface.** The complete path from a teacher declaring availability to a published timetable |
+| **Next task** | Start Phase 4: the availability grid, the generation screen, the comparison screen, the four timetable views. ⚠️ Settle **C-14** before building the comparison screen's dominance signal |
+| **Branch** | `main` — **8 commits ahead of `origin/main`, unpushed** |
+| **Latest commit** | Phase 3 closure: ITC-2007 validation, then the closing audit. **Local only, not pushed** |
+| **Repository status** | **Ahead of `origin/main` by 8 local commits**, none pushed. Working tree clean. `origin/main` is at [`acf9aa0`](https://github.com/JINZO-AI/optiedt-ai-timetabling/commit/acf9aa0) — ⚠️ three documents said `0dc0078` until 2026-07-31; that is its *parent*. **Read this off `git rev-parse origin/main`, never off a document** |
+| **Project health** | 🟢 **Green.** `scripts/run-checks.ps1` green, **125 tests** pass, 8/8 layer contracts kept. **C-16 resolved** — reproducibility and three distinct candidates hold simultaneously at production settings, and the portfolio is ~2× faster than before. **3 of 9 acceptance criteria met**, up from 1. The engine is validated on all 21 published ITC-2007 instances |
 
 ```
-Increment 1   ███████████░░░░░░░░░  ~55 % of budgeted days
+Increment 1   ███████████░░░░░░░░░  55 % of budgeted days
 
 Phase 1  Needs, specification, instance verification   ████████████████████  ✅ done
 Phase 2  Modelling H1–H12, first valid timetable       ████████████████████  ✅ done
-Phase 3  Score, ranking, portfolio, recommendations    ██████████████████░░  🟡 closure 5 of 6 — only ITC-2007 validation remains
-Phase 4  Web interface — grid, generation, comparison  ░░░░░░░░░░░░░░░░░░░░  ⬜ not started
+Phase 3  Score, ranking, portfolio, recommendations    ████████████████████  ✅ done
+Phase 4  Web interface — grid, generation, comparison  ░░░░░░░░░░░░░░░░░░░░  ⬜ not started  ← next
 Phase 5  Pre-analysis in-app, diagnosis, auth, runs    ░░░░░░░░░░░░░░░░░░░░  ⬜ not started
 Phase 6  Tests, documentation, presentation            ░░░░░░░░░░░░░░░░░░░░  ⬜ not started
 ```
 
 *Progress is measured in delivered phases against the 20-day increment-1 plan (Phase 1 = 3 d,
-2 = 5 d, 3 = 3 d, 4 = 4 d, 5 = 2 d, 6 = 3 d). Phases 1–2 = 8 of 20 days budgeted, delivered in ~2.*
+2 = 5 d, 3 = 3 d, 4 = 4 d, 5 = 2 d, 6 = 3 d). Phases 1–3 = 11 of 20 days budgeted, delivered in ~3.*
 
 ---
 
@@ -44,15 +45,15 @@ Phase 6  Tests, documentation, presentation            ░░░░░░░░�
 
 | Area | State |
 |---|---|
-| **Architecture** | 🟢 Stable. Four layers, boundaries enforced by `import-linter` — **7/7 contracts kept**. No layer edge has been weakened |
+| **Architecture** | 🟢 Stable. Four layers, boundaries enforced by `import-linter` — **8/8 contracts kept**. No layer edge has been weakened. The eighth, added 2026-07-31, keeps the ITC-2007 benchmark harness out of the product and was verified to fire before being relied on |
 | **Solver** | 🟢 H1–H12 built and demonstrated correct. Reference instance solves in **2.8–3.3 s** (deterministic 0.13–0.21) across 7 seeds, all 218 sessions placed. C-7 fully closed — accounting (`x[s,t₀]`, `y[s,t]`) built on demand, auxiliaries measured at **5,249**. `solver/objective.py` (new) encodes S2–S10 as CP-SAT expressions; `engine.py` posts it — and builds occupancy at all — only when a criterion carries weight, so an all-zero profile is genuinely equivalent to a feasibility solve. **Deterministic budget calibrated 2026-07-30** — it binds exactly, per worker; 1 unit ≈ 4.8 s wall at one worker, ≈ 19 s at all sixteen. **`interleave_search = true` is set and is required for reproducibility** (C-16, ADR-011 amended); the warm start is withheld when an objective is posted, because it pinned all three profiles to one timetable |
 | **Objective** | 🟡 Encoded for S2–S5, S7, S10 in full; **S6 only for non-cumulative room types** (Salle) — cumulative types (Amphi, Lab_Info, Lab_Sciences) have no per-room CP-SAT variable to optimise against, only a post-hoc labeller (C-13). `analysis/criteria.py` still scores S6 correctly for every room after the fact |
 | **Analysis / scoring** | 🟢 Implemented and tested. `analysis/criteria.py` (7 criteria), `analysis/scoring.py` (`DefaultScorer`, `evaluate_candidate`), `analysis/ranking.py` (`DefaultRanker`: rank/decompose/dominance/**recommend** — FR-16). All four properties pass (`tests/property/test_scoring_properties.py`) |
 | **Portfolio** | 🟢 `services/portfolio.py` — the only module importing both `solver` and `analysis`, which is what `services` is for. Defines the three profiles, divides the total budget between them, solves sequentially under one fixed seed, removes duplicate timetables and ranks the survivors under one weight vector. 16 unit tests pin the rules against a recording fake solver. Measured on the reference instance: **3 distinct candidates in 147–150 s**, reproducibly, total budget 90 (C-16) |
 | **API · frontend · persistence** | ⬜ Scaffold only. Phases 4–5. The solver reads CSVs through `optiedt.instance`; PostgreSQL is not needed until runs must survive a restart |
 | **Assistant** | ⬜ Scaffold only. Increment 1 (ADR-010), Phase 4+ |
-| **Validation** | 🟢 `scripts/run-checks.ps1` green: 7/7 contracts · ruff · format · mypy strict on 39 files · tests · instance verification · frontend `tsc` |
-| **Tests** | 🟢 **95 passing** (78 fast + 17 solver-marked). New this phase: `tests/integration/test_reproducibility.py` (FR-19/ADR-011 — reproducibility **at production settings**, and the per-worker budget binding), `tests/property/test_scoring_properties.py` (10 hypothesis properties), `tests/unit/test_criteria.py` (the seven formulas against a hand-computable instance), `tests/integration/test_objective_matches_analysis.py` (**the cross-layer guard** — CP-SAT's objective value must equal the analysis layer's recomputation on the same placements), `tests/unit/test_portfolio.py` (16 orchestration rules against a recording fake solver), `tests/unit/test_recommendation.py` (FR-16, including the proof that a dominated candidate can never be recommended) |
+| **Validation** | 🟢 `scripts/run-checks.ps1` green: **8/8 contracts** · ruff · format · mypy strict on 48 files · tests · instance verification · frontend `tsc`. Separately, `scripts/validate-itc2007.ps1` runs the engine against the 21 published ITC-2007 instances — not in `run-checks` because a full sweep takes tens of minutes |
+| **Tests** | 🟢 **125 passing** (103 fast + 22 solver-marked), up from 27 at the end of Phase 2. New this phase: `tests/integration/test_reproducibility.py` (FR-19/ADR-011 — reproducibility **at production settings**, and the per-worker budget binding), `tests/property/test_scoring_properties.py` (10 hypothesis properties), `tests/unit/test_criteria.py` (the seven formulas against a hand-computable instance), `tests/integration/test_objective_matches_analysis.py` (**the cross-layer guard** — CP-SAT's objective value must equal the analysis layer's recomputation on the same placements), `tests/unit/test_portfolio.py` (16 orchestration rules against a recording fake solver), `tests/unit/test_recommendation.py` (FR-16, including the proof that a dominated candidate can never be recommended), `tests/unit/test_itc2007_cost.py` and `tests/integration/test_itc2007_validation.py` (ITC-2007's rules against hand-computed values, and against seven solutions the archive publishes) |
 | **Documentation** | 🟢 Current as of this commit. Session history archived to `docs/history.md` |
 
 ---
@@ -87,58 +88,62 @@ favourable measurement cannot settle — but the acceptance test would pass toda
 | **~2.5 unbudgeted assistant days** | ≈12 % overrun on 20 days | Confirmed, not contingent. Release valve is scope-reduction step 1 |
 | **91 % laboratory occupancy** (of two-period windows) | A modelling regression looks like an infeasible instance — **and an infeasible instance looks like a slow model** | Pre-analysis first, always. Read the *window* figure, not the period figure |
 | **A check that is necessary but not sufficient** | Passes an infeasible instance, so the next failure is blamed on the model. Cost three sessions on C-13 | Both bounds now checked. **FR-12's port must carry both** |
-| ⚠️ **`interleave_search` is marked "Experimental" upstream** | Reproducibility — a written acceptance criterion — now rests on one OR-Tools parameter whose guarantee could change between releases | **Pin the OR-Tools version.** `tests/integration/test_reproducibility.py` verifies it at production settings rather than trusting the docs; a failure there is blocking, not flaky |
+| ⚠️ **`interleave_search` is marked "Experimental" upstream** | Reproducibility — a written acceptance criterion — now rests on one OR-Tools parameter whose guarantee could change between releases. **And it already has one measured side effect**: `CpSolver.objective_value` can be reported 5–15 units above the objective at the solution actually returned, on solves that stop before proving optimality (found 2026-07-31 on ITC-2007 comp02/18/21) | **Pin the OR-Tools version.** `tests/integration/test_reproducibility.py` verifies reproducibility at production settings rather than trusting the docs; a failure there is blocking, not flaky. The objective-reporting quirk **affects nothing**, because no score, ranking or display reads `SolverOutput.cost` — the analysis layer recomputes from the placements, which is what the ban on `analysis → solver` forces. **Do not start ranking on `cost`.** Full account in ADR-011 |
 | ~~**Deterministic-time calibration**~~ | ~~"the budget does not bind, ~11× over-run"~~ | **RESOLVED 2026-07-30 — the claim was false.** The budget binds *exactly*, per worker; `deterministic_time` reports the sum across workers and ~11 was the worker count on a 16-core machine. Calibrated figures in `docs/status.md`; correction in C-2 |
 | **Raw-weight objective lets a large-scale criterion swamp a small one** | S5's raw value is ~100 (session count) while S3's is ~15 (idle periods). Inside teacher-favouring, S5 contributes 0.4×~80 ≈ 32 to the objective against S3's 0.3×~15 ≈ 4.5, so the profile is effectively S5-only. Measured: raising the budget improves S5 (101 → 72, better than balanced's 81) while S3 *degrades* (13 → 18) | The profile raises both weights exactly as documented, so this is not an implementation defect — it is a consequence of `minimise Σ(weight_i × violations_i)` using **raw** weights across criteria with incomparable scales. **"Teacher-favouring" does not currently favour teachers on S3.** Needs a decision (normalise the objective's weights, or set EMPHASIS per criterion); not resolved here |
 | **S6 cannot be optimised for cumulative room types** | The CP-SAT objective only covers Salle (non-cumulative); Amphi/Lab_Info/Lab_Sciences rooms are chosen by a post-solve labeller the objective cannot see | Scored correctly after the fact regardless (`analysis/criteria.py`). Closing this needs `solver/variables.py` changes — out of scope this session |
 | **`recommendations/translator.py` cannot build a full `SolverInput`** | `Run`/`Candidate` carry no instance reference, no base profile weights, no prior locks/exclusions | Returns a `RunOverride` (plain domain data) instead; a later layer (`services/`, Phase 4–5) must assemble the actual `SolverInput` |
+| **On ITC-2007, cost quality is far from the published best on the larger instances** | Every timetable produced is *valid* — that is the claim `docs/testing-strategy.md` §1 makes first, and it holds 21 of 21. But at a minute or so per instance, CP-SAT is barely past feasibility on the big ones, and the costs are multiples of the published best | Expected, and the strategy document says so: **"the objective is not to beat published results."** Exact methods are known to trail metaheuristics tuned for this problem at short budgets. The *model* is demonstrably right — comp11 solved to **cost 0**, and comp01 reaches the published optimum of **5** given more search. Quote validity first and cost second, always with the budget |
 | **Exam multi-room assignment** (R-6) | Breaks a shared `room[s]` abstraction | Keep it out of shared solver code from the start |
 
 ---
 
 ## Roadmap — remaining phases
 
-### Phase 3 — Score, ranking, portfolio, recommendations · 🟡 **core algorithms done, integration remains**
+### Phase 3 — Score, ranking, portfolio, recommendations · ✅ **complete 2026-07-31**
 
 **Purpose.** Turn one valid timetable into *several*, ordered, with the difference between any two
 explained term by term. This is the half of the product that makes it defensible rather than merely
 automatic.
 
-**Completion criteria.**
+**Completion criteria — all four met.**
 - Three weight profiles produce candidates; each carries an overall score /100 and its sub-scores.
-  ✅ **Met** — `services/portfolio.py` (new). On the reference instance it returns **3 distinct
-  candidates, 0 duplicates removed**, each scored /100 with its seven sub-scores. ⚠️ It does so in
-  **9.2 minutes against a < 5 min target**, and the profiles do not yet steer as their names promise —
-  see the two risks below; the *mechanism* is complete, its *calibration* is not.
+  ✅ **Met** — `services/portfolio.py`. On the reference instance it returns **3 distinct candidates,
+  0 duplicates removed, in 147–150 s**, each scored /100 with its seven sub-scores. ⚠️ The profiles do
+  not yet *steer* as their names promise — "teacher-favouring" improves S5 and not S3, for the
+  documented reason (C-15, deferred by decision). The mechanism is complete; that calibration is not,
+  and it is recorded rather than hidden.
 - The displayed contributions **sum exactly** to the score difference, to display precision. ✅ **Met**
   at the code level — `analysis/ranking.py`'s `decompose()`, verified by
-  `tests/property/test_scoring_properties.py::test_decomposition_is_exact`.
+  `tests/property/test_scoring_properties.py::test_decomposition_is_exact` and, on three real portfolio
+  candidates, agreeing to 9 decimal places. The acceptance criterion stays unticked because *displayed*
+  needs Phase 4's comparison screen.
 - Dominance is detected and reported. ✅ **Met** — `DefaultRanker.dominance()`, property-tested.
 - Two runs with the same data, weights and seed produce identical candidates in the same order.
-  🟡 **Solver-side reproducibility is Phase 2's ADR-011 treatment, unchanged**; scoring/ranking are pure
-  functions of the placements, so determinism follows once the solve itself is deterministic. Not
-  independently re-measured with the objective posted this session — see the deterministic-time risk
-  above.
+  ✅ **Met at production settings** — via `interleave_search` (C-16, ADR-011 amended). Verified on
+  candidate ids, order, placements, scores and sub-scores, and guarded at the production worker count
+  by `tests/integration/test_reproducibility.py`. It was **not** true before 2026-07-30: three
+  identical requests returned three different timetables, every one proving optimality.
 
 **Dependencies.** ✅ **C-4** and **C-12** resolved 2026-07-30 — see `docs/open-questions.md` for the
 formulas and reasoning. Phase 2 was otherwise a complete foundation.
 
-**Status.** `analysis/criteria.py` (S2–S7, S10), `analysis/scoring.py`, `analysis/ranking.py`,
-`solver/objective.py` (new), `recommendations/translator.py` (new) are implemented and tested — see
-"Status by area" above for what each one does and does not yet cover (S6's cumulative-room-type gap,
-the translator's inability to build a full `SolverInput`). **Not done:** portfolio orchestration (loop
-over profiles, remove duplicates — needs C-5 decided first, see above), persistence of runs/candidates,
-validation on the published ITC-2007 instances, H10's target-slot/room gap in `solver/variables.py`.
+**Status.** Complete. See "Phase 3 — complete 2026-07-31" below for the module-by-module account, the
+two limitations carried forward (S6's cumulative-room-type gap, and regeneration's second half waiting
+on Phase 5's run record), and the ITC-2007 results. Persistence of runs and candidates was never Phase
+3 work — it is Phase 5's run record.
 
-### Phase 4 — Web interface · ⬜ 4 days
+### Phase 4 — Web interface · ⬜ 4 days · **next**
 
 **Purpose.** The complete path from a teacher declaring availability to a published timetable.
 **Completion criteria.** Availability grid filled in under 5 minutes without training; generation
 screen; side-by-side comparison with contributions; timetable views by teacher, group, room, lab.
-**Dependencies.** Phase 3's algorithms exist to compare against; the portfolio orchestration and
-persistence Phase 3 left undone will most likely be built as part of this phase's `services`/`db` work
-rather than a separate pass. Also **C-12** — the grid needs a three-state cell if a real preferred-window
-column (option (a), not yet built) is added.
+**Dependencies.** Phase 3 is complete and its algorithms — score, ranking, decomposition, dominance,
+the recommendation rule and the portfolio — exist to build the screens on. Persistence of runs and
+candidates is Phase 5 and will most likely be built alongside this phase's `services`/`db` work rather
+than as a separate pass. Two open questions land here: **C-14**, which must be settled before the
+comparison screen builds a dominance signal that can never fire, and **C-12** — the availability grid
+needs a three-state cell if a real preferred-window column (option (a), not yet built) is added.
 **Status.** Not started. React + Vite scaffold only.
 
 ### Phase 5 — Pre-analysis in-app, diagnosis, auth, run record · ⬜ 2 days
@@ -169,7 +174,11 @@ constraint entry is **not undertaken** — see `docs/ai-integration.md`.
 
 ---
 
-## Phase 3 — what was built 2026-07-30, and what Phase 4 inherits
+## Phase 3 — complete 2026-07-31. What was built, and what Phase 4 inherits
+
+**Completed 2026-07-31.** All four completion criteria met, the milestone met, six closure items done,
+and the audit that closed the phase left no known contradiction between documents. Two acceptance
+criteria moved from unmet to met (three candidates; reproducibility), taking the total to **3 of 9**.
 
 **What it set out to achieve.** A *portfolio*, not a timetable. Several valid timetables produced under
 different weight profiles, ranked by an exact weighted sum, with the difference between any two
@@ -186,28 +195,51 @@ and S6's target). S5 uses a labeled proxy (edge-of-day placement), not real pref
 as a deliberate, scope-driven stand-in for the real fix (a genuine preferred-window column), not a
 definition of teacher preference.
 
-**Built, this session.** `analysis/instance_view.py` (shared hierarchy/day-period lookups),
-`analysis/criteria.py` (the seven `Criterion` implementations), `analysis/scoring.py` (`DefaultScorer`,
-`evaluate_candidate`), `analysis/ranking.py` (`DefaultRanker` — rank/decompose/dominance),
-`solver/objective.py` (new — the same seven formulas as CP-SAT expressions), `solver/engine.py` (wired
-to call `build_occupancy` + the objective when `request.profile is not None`),
-`recommendations/translator.py` (new), `tests/property/test_scoring_properties.py` (the four
-properties, hypothesis-based).
+**Built.**
 
-**Portfolio orchestration, added 2026-07-30 (closure item 1).** `services/portfolio.py` builds the
-three profiles from the catalogue, divides the total budget between them, solves sequentially under one
-fixed seed, removes duplicate timetables and ranks the survivors under a single weight vector. An
-earlier revision of this page claimed it was blocked on **C-5** and belonged to Phase 4–5. Both claims
-were wrong: `docs/open-questions.md` — the authority — records C-5 as blocking *Phase 6 acceptance*,
-and SRS Table 29 already specifies the implementation behaviour ("at most 3, duplicates removed"), so
-nothing was blocked. `services` needs no database to run a portfolio.
+| Module | What it does |
+|---|---|
+| `analysis/instance_view.py` | Shared hierarchy and day/period lookups, built once |
+| `analysis/criteria.py` | The seven `Criterion` implementations over realised placements |
+| `analysis/scoring.py` | `DefaultScorer`, `evaluate_candidate`, weight renormalisation |
+| `analysis/ranking.py` | `DefaultRanker` — rank, decompose, dominance, **recommend** (FR-16) |
+| `solver/objective.py` | The same seven formulas as CP-SAT expressions |
+| `solver/engine.py` | Posts the objective, and builds occupancy at all, only when a criterion carries weight; sets `interleave_search`; withholds the warm start under an objective |
+| `recommendations/translator.py` | The closed 3-action catalogue translated to a `RunOverride` |
+| `services/portfolio.py` | The three profiles, one seed, sequential solves, duplicates removed, survivors ranked under one weight vector |
+| `validation/itc2007/` | The benchmark harness — **not product code**, and nothing shipped may import it |
 
-**Not built, and why.** Validation on the published ITC-2007 instances (`docs/testing-strategy.md` §1)
-has still not been run against the objective. H10's target-slot/room gap in `solver/variables.py` was
-**not** closed — it needs `solver/variables.py` and `solver/interfaces.py` changes, and nothing before
-Phase 5's run record can exercise it. `recommendations/translator.py` therefore returns a `RunOverride`
-(plain domain data), not a `SolverInput` — see "Known risks" above for why the existing `Run`/`Candidate`
-schema cannot support building one directly.
+**Tests went from 27 to 125** (103 fast + 22 solver-marked). The two that carry the most weight are
+`tests/integration/test_objective_matches_analysis.py`, which requires the solver's objective and the
+analysis layer's recomputation to agree *numerically* on the same placements — it is what caught S6's
+28× scale error, which reading the two implementations side by side did not — and
+`tests/integration/test_reproducibility.py`, which pins reproducibility at the **production** worker
+count rather than at a safe proxy.
+
+**Validated on published instances (`docs/testing-strategy.md` §1).** `optiedt/validation/itc2007/`
+models ITC-2007 Track 3 separately — a different problem, so no code is shared with `solver/` and the
+eighth import contract keeps the dependency one-way. Its cost function reproduces the published cost of
+seven solutions the archive ships, exactly, component by component; that agreement is what makes the
+rest of its output checkable rather than merely self-consistent.
+
+**Result: 21 of 21 timetables violate no hard constraint**, judged by re-deriving all four ITC-2007
+constraints rather than trusting CP-SAT's status. **The cost gap is large — median 1269 % against the
+seven instances the archive gives figures for — and that is expected**: the references are
+metaheuristics tuned for this problem, several with no time limit, against ~50 s of exact search, and
+the strategy document states plainly that beating them was never the objective. What makes the gap
+interpretable is that **the model is demonstrably correct**: `comp11` solved to **cost 0, proven
+optimal**, and `comp01` reaches the published optimum of **5** given more search. Both sweeps returned
+**identical costs on all 21 instances** despite per-instance wall clock differing by up to 2× — ADR-011's
+deterministic budget doing its job on instances the project did not design. Figures in `docs/status.md`.
+
+**Not built, and why.** H10's target-slot/room gap in `solver/variables.py` is **not** closed — it needs
+`solver/variables.py` and `solver/interfaces.py` changes, and nothing before Phase 5's run record can
+exercise it. `recommendations/translator.py` therefore returns a `RunOverride` (plain domain data), not
+a `SolverInput` — see "Known risks" above for why the existing `Run`/`Candidate` schema cannot support
+building one directly. **Regeneration is consequently half-built**: the catalogue and the translation
+of all three actions exist and are tested; turning an accepted recommendation into an actual new run
+needs run/instance context that arrives with Phase 5's run record. That split is deliberate and
+recorded, not an omission — but do not read the phase's work row as claiming end-to-end regeneration.
 
 **S6 (room efficiency) is scored fully but optimised only partially.** `analysis/criteria.py` scores
 every room correctly after the fact. `solver/objective.py` can only post a CP-SAT term for
@@ -225,6 +257,8 @@ objective cannot see or influence. Closing this would mean changing `solver/vari
 | Which variables the objective may read | [`docs/constraint-model.md`](constraint-model.md), C-7 section |
 | Layer permissions | [`docs/architecture.md`](architecture.md) + `backend/.importlinter` |
 | Recommendations and regeneration | [`docs/ai-integration.md`](ai-integration.md) |
+| What the ITC-2007 figures do and do not prove | [`docs/testing-strategy.md`](testing-strategy.md) §1 |
+| ITC-2007 reference costs | The archive's own bundled report — transcribed in `validation/itc2007/published.py`, **never from an outside lookup** |
 
 **Constraints already implemented.** All twelve hard constraints. H1, H3, H7, H12 are real CP-SAT
 postings and carry assumption literals; H4, H5, H6, H8, H9, H10 are domain restrictions applied at
@@ -249,4 +283,5 @@ increment 2.
 | Why a past decision was taken | [`docs/decisions/`](decisions/) — 11 ADRs |
 | What happened, session by session | [`docs/history.md`](history.md) — archive, read only for forensics |
 | "Is FR-15 built?" | [`docs/requirements-traceability.md`](requirements-traceability.md) |
+| How the engine is validated, and against what | [`docs/testing-strategy.md`](testing-strategy.md) |
 | Everything else | The table in `CLAUDE.md` |

@@ -99,10 +99,17 @@ React ──HTTPS/JSON/token──► FastAPI ──► PostgreSQL
 | `recommendations/` | Closed catalogue, translation to solver input | `domain`, `analysis` |
 | `assistant/` | Adapter, context builder, answer verifier | `domain`, `analysis` |
 | `tasks/` | Background run executor | `services` |
+| `validation/` | **Not product code.** The ITC-2007 benchmark harness | nothing in `optiedt` |
 
 `preanalysis`, `recommendations` and `assistant` are separate packages **because they have different
 permissions**, not for tidiness — analysis may write nothing, recommendations may write exactly three
 fields, the assistant must be removable without affecting anything else.
+
+`validation/` is the one package that runs **against** the product rather than inside it. It models
+ITC-2007, a different problem, so it shares no code with `solver/`; the eighth import contract fails the
+build if anything shipped ever depends on it. **Do not describe the ITC-2007 results as validating
+`optiedt.solver`** — they validate the modelling approach and ADR-011's configuration on instances the
+project did not design. Both halves belong in the report (`docs/testing-strategy.md` §1).
 
 ### The generation pipeline — three stages
 
@@ -171,9 +178,15 @@ code-review comment.
    `slot.is_open = 0` and H9 does the rest; a shortened-day window shifts *displayed* hours only.
    Adding a CP-SAT constraint for Ramadan or a closed Saturday is a bug (ADR-003).
 
-**Invariants 1 and 3 fail the build.** `backend/.importlinter` forbids `analysis → solver`,
-`analysis → db`, `assistant → db`; the recommendation catalogue is a union type so a fourth variant is
-a type error. Both are verified to fire. **Do not weaken either to make a change compile.**
+**Invariants 1 and 3 fail the build.** `backend/.importlinter` carries **eight** contracts and forbids
+`analysis → solver`, `analysis → db`, `assistant → db`, and any product package importing
+`optiedt.validation`; the recommendation catalogue is a union type so a fourth variant is a type error.
+Every contract is verified to fire before being relied on. **Do not weaken either to make a change
+compile.**
+
+Invariant 1 earned its keep on 2026-07-31 in a way worth knowing: OR-Tools was found to report an
+objective value that did not match the solution it returned. Nothing broke, because `analysis` cannot
+read the solver's objective and must recompute the score from the placements. See ADR-011.
 
 ---
 
@@ -266,11 +279,16 @@ From the root:
 | PostgreSQL | `docker compose up -d` |
 | **Everything CI runs** | `scripts/run-checks.ps1` |
 | **Verify the instance** | `scripts/verify-instance.ps1` |
+| **Validate on ITC-2007** | `scripts/validate-itc2007.ps1` — 21 published instances, tens of minutes |
 | Reference archives status | `scripts/check-reference-data.ps1` |
 
 Run `verify-instance.ps1` after any change to `data/instance/` or the generator. It checks the
 instance against figures the PDFs state as facts; a failure means either the data changed or the
 documentation is now false.
+
+`validate-itc2007.ps1` is **not** in `run-checks.ps1` — a full sweep runs for tens of minutes. Its fast
+half is: the cost function must reproduce the published cost of seven solutions the archive ships, which
+runs on every `run-checks.ps1` and is what makes any other figure it prints checkable.
 
 **Any test that invokes the solver must fix the seed *and* use a deterministic budget.** A test bounded
 by wall clock passes on one machine and fails on another, and the failure looks like a solver bug.
