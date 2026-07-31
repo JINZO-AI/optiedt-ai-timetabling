@@ -182,8 +182,9 @@ condition that would change the answer.
 | `optiedt.recommendations` | Catalogue, translation to solver input | `domain`, `analysis` |
 | `optiedt.assistant` | Adapter, context builder, verifier | `domain`, `analysis` |
 | `optiedt.tasks` | Background run executor | `services` |
+| `optiedt.validation` | **Not product code.** The ITC-2007 benchmark harness | nothing in `optiedt` |
 
-Four boundaries carry design weight rather than convenience:
+Five boundaries carry design weight rather than convenience:
 
 - **`preanalysis` is not inside `solver`.** It needs no solver by definition, it is stage 1 of every
   run, and it is how a near-critical instance stays debuggable.
@@ -193,6 +194,12 @@ Four boundaries carry design weight rather than convenience:
   must remove text and nothing else.
 - **`domain` is pure.** It is imported by the solver, the analysis layer and the ORM alike; a framework
   import there would leak into all three.
+- **`validation` runs *against* the product, never inside it.** It models ITC-2007 — a different
+  problem, with room capacities instead of room types, curricula instead of a group hierarchy and four
+  soft costs that are none of S2–S10 — so it shares no code with `solver`, and the contract
+  `benchmark-validation-is-not-product-code` fails the build if anything shipped comes to depend on it.
+  It sits under `src/` rather than under `tests/` for one reason: mypy strict and ruff cover `src/`, and
+  a validation harness whose arithmetic is wrong reports a wrong verdict with full confidence.
 
 ## Deployment
 

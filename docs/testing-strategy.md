@@ -14,6 +14,9 @@ of the same pyramid — they establish different kinds of claim.
 
 ## 1 · Validation on published instances
 
+**Built 2026-07-31, closing Phase 3.** `backend/src/optiedt/validation/itc2007/`, run by
+`scripts/validate-itc2007.ps1`.
+
 The engine is tested on the **curriculum-based track of ITC-2007**, for which results are published.
 
 Two things are examined: that no timetable produced violates a hard constraint, and the distance
@@ -23,12 +26,67 @@ between the cost obtained and the best known results.
 to show that the engine produces valid timetables of reasonable quality **on instances it was not built
 around**. An engine validated only on its own generated instance has demonstrated nothing.
 
+### What is validated, and what is not
+
+⚠️ **This is a separate model of a different problem, not `optiedt.solver` pointed at foreign data.**
+ITC-2007 has room *capacities* where OptiEDT has room *types*, curricula where OptiEDT has a
+promotion → TD → TP hierarchy, per-course lecture counts and minimum working days where OptiEDT has
+individual sessions, and four soft costs none of which is one of S2–S10. Forcing the reference
+instance's schema onto it would have validated an adapter and been reported as validating an engine.
+
+**Validated:** the modelling approach (ADR-001 — CP-SAT for assignment, correct by construction), the
+solve configuration ADR-011 fixes (deterministic budget, `interleave_search`, fixed seed), and the
+discipline of re-deriving every constraint from the instance rather than trusting the solver's status.
+**Not validated:** `optiedt.solver`'s own H1–H12 code paths — those are covered by
+`tests/integration/test_h1_h12.py` on the reference instance. Quote both halves.
+
+### Why the cost figures can be trusted
+
+The cost function is not asserted, it is **checked against the archive's own published results**. The
+archive ships seven solutions produced by a third-party solver years before this project existed, and
+`cost.py` re-evaluates them to exactly the cost the bundled report records — all four components, all
+seven instances. That test needs no solver and therefore runs on every `scripts/run-checks.ps1`
+(`tests/integration/test_itc2007_validation.py`). Without it, every number the harness prints would be
+merely self-consistent.
+
+The harness checks its own model the same way the product does: **the value CP-SAT gives each auxiliary
+must equal the component `cost.py` derives from the placements**, component by component, because a
+total can agree while two components cancel. That check found nothing wrong with the encoding — but it
+did surface something about the solver, recorded in ADR-011: under `interleave_search`,
+`CpSolver.objective_value` can sit a few units above the objective at the solution actually returned.
+No figure here depends on it; every one is re-derived from the placements.
+
+`published.py` transcribes the reference costs from
+`data/reference/itc2007-cct-master/.../docs/latex/itc2007.tex` — the report bundled with the archive,
+which cites the competition finalists' page and Müller (2008). **The archive publishes figures for
+`comp01`–`comp07` only**; the other fourteen are solved and reported on validity alone rather than
+compared against a number nobody can trace.
+
+### What it found, 2026-07-31
+
+**21 of 21 timetables violate no hard constraint.** That is the claim this section makes first, and it
+holds on every competition instance, judged by re-deriving all four ITC-2007 constraints rather than
+trusting CP-SAT's status.
+
+**The cost gap is large and expected.** Against the seven instances the archive gives figures for, the
+gap runs 255 %–9985 %, median 1269 %, at a deterministic budget of 60 per instance. The references are
+metaheuristics tuned for this exact problem — several with no time limit at all — against roughly fifty
+seconds of exact search. **The objective was never to beat them.**
+
+**The model itself is demonstrably right**, which is what makes the gap interpretable: `comp11` solved
+to **cost 0 and proven optimal**, and `comp01` reaches the published optimum of **5** when the same
+model is given more search. The distance on the larger instances is search budget, not modelling.
+Per-instance figures are in [`docs/status.md`](status.md). **Quote validity first, cost second, and
+always with the budget.**
+
 For the examination module, the same procedure on Track 1 instances — after verifying them. Track 1 has
 not been opened yet; **assume no property of it before that verification**.
 
 Archives live in `data/reference/`, gitignored and **already present** — 21 ITC-2007 Track 3 instances
 and 25 XHSTT instances, verified. Run `scripts/check-reference-data.ps1` to confirm, and see
-[`PROVENANCE.md`](../data/reference/PROVENANCE.md) for what verification found.
+[`PROVENANCE.md`](../data/reference/PROVENANCE.md) for what verification found. Because they are
+gitignored, **every test that touches them skips when they are absent** — a suite that failed on a
+fresh clone would teach the next reader to ignore it.
 
 ---
 
@@ -132,6 +190,13 @@ backend/tests/
   integration/  API + database. Solver with a small deterministic budget
   acceptance/   One test per FR acceptance criterion
 ```
+
+The ITC-2007 harness itself lives in `backend/src/optiedt/validation/`, not under `tests/`, so that
+mypy strict and ruff cover it — a validation harness whose arithmetic is wrong reports a wrong verdict
+with full confidence. Its tests are in `tests/unit/test_itc2007_cost.py` (the rules, against
+hand-computed values) and `tests/integration/test_itc2007_validation.py` (the archive's own solutions,
+and a solve). The `benchmark-validation-is-not-product-code` import contract keeps the dependency
+one-way.
 
 Reproducibility note: every test that invokes the solver must fix the seed **and** use
 `max_deterministic_time`, never a wall-clock bound (ADR-011). A test bounded by wall clock will pass on

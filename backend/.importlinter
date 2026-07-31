@@ -90,6 +90,7 @@ forbidden_modules =
     optiedt.assistant
     optiedt.recommendations
     optiedt.tasks
+    optiedt.validation
     fastapi
     sqlalchemy
     ortools
@@ -113,3 +114,30 @@ forbidden_modules =
     optiedt.tasks
     optiedt.api
     optiedt.db
+
+# ── The benchmark harness runs against the product, never inside it ─
+# optiedt.validation solves ITC-2007, a DIFFERENT problem with different
+# entities and a different cost function (docs/testing-strategy.md 1).
+# It lives under src/ only so that mypy --strict and ruff cover it: a
+# validation harness whose arithmetic is wrong reports a wrong verdict
+# with full confidence. Nothing shipped may depend on it, and the day
+# something does, "validated on published instances" would have quietly
+# become a claim about the product's own code.
+[importlinter:contract:benchmark-validation-is-not-product-code]
+name = No product package may import the benchmark validation harness
+type = forbidden
+source_modules =
+    optiedt.domain
+    optiedt.core
+    optiedt.db
+    optiedt.api
+    optiedt.services
+    optiedt.instance
+    optiedt.preanalysis
+    optiedt.solver
+    optiedt.analysis
+    optiedt.recommendations
+    optiedt.assistant
+    optiedt.tasks
+forbidden_modules =
+    optiedt.validation

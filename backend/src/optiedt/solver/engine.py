@@ -34,6 +34,20 @@ e.g. the Phase 2 tests) are unaffected - occupancy is not built and
 (see solver/objective.py's _WEIGHT_SCALE) and is informational only. It is NOT
 the displayed score: the analysis layer recomputes every criterion
 independently from the returned placements, and nothing ranks on this field.
+
+⚠️ That separation is load-bearing, and 2026-07-31 it paid. Measured on the
+ITC-2007 harness (optiedt/validation/itc2007): under ``interleave_search``,
+``CpSolver.objective_value`` can be reported a few units ABOVE the objective
+expression evaluated at the very solution the solver returns, on solves that
+stop on the budget without proving optimality. With the parameter off the two
+agree exactly on the same instances; it is marked Experimental upstream.
+
+Nothing in this project is affected, because nothing reads this field to make a
+decision - the score comes from analysis/criteria.py re-derived from the
+placements, which is what docs/architecture.md's ban on analysis importing the
+solver forces. **Do not start ranking, comparing or displaying ``cost``.** If a
+future change needs a trustworthy objective figure, take it only from a solve
+that reports ``proven_optimal``.
 """
 
 from __future__ import annotations

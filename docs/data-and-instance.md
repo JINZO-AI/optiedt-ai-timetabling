@@ -95,7 +95,7 @@ More decisively, **none contains what the project needs most**:
 
 | Source | Role | Loaded into the database |
 |---|---|---|
-| ITC-2007, Track 3 | Validate the course engine against published results | **No** |
+| ITC-2007, Track 3 | Validate the course engine against published results — **used, 2026-07-31**: `optiedt.validation.itc2007`, `docs/testing-strategy.md` §1 | **No** |
 | XHSTT-2014 | Catalogue of constraint types to support | **No** — transcribed into `constraint_catalogue.csv` |
 | Kaggle, University Exam Scheduling | Reference for the examination model; rooms and enrolments only | **No** — increment 2 |
 | ITC-2007, Track 1 | Validate the examination engine | **No** — increment 2, **not yet opened** |
@@ -115,7 +115,11 @@ opening the files. Measured figures and the full record are in
   students, only per-course counts. Does not distinguish CM/TD/TP. What is held is a **source
   repository bundling the instances with a third-party solver**, not the competition archive itself —
   describe it that way. Its bundled validator and published results are what make the benchmark
-  comparison possible.
+  comparison possible, and 2026-07-31 they did exactly that: the validator's cost rules were
+  transcribed into `optiedt/validation/itc2007/cost.py`, and the seven solutions it ships were
+  re-evaluated to exactly the cost the bundled report publishes for them. **That agreement is what
+  licenses quoting any figure from the benchmark.** The reference costs come from the report's own
+  tables (`docs/latex/itc2007.tex`), which cover `comp01`–`comp07` only.
 - **XHSTT-2014** — complete, but concerns secondary schools and is heavy to read. Its value is the
   *list of constraint types*. **25 instances in the version held** — announced counts vary between
   archive versions, so cite the catalogue that was read directly, never a count from a summary.

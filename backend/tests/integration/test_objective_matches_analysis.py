@@ -61,6 +61,15 @@ def test_objective_value_equals_the_analysis_measurement(tiny_instance, code):
     result = _solve(tiny_instance, weights)
 
     assert not result.infeasible
+    # ⚠️ Two reasons this must hold before the comparison below means anything,
+    # and only the first was known when it was written. (1) An optimal solve
+    # confirms the idle-time encoding is tight. (2) Measured 2026-07-31 on the
+    # ITC-2007 harness: under `interleave_search`, CpSolver.objective_value can
+    # sit a few units ABOVE the objective expression evaluated at the solution
+    # the solver actually returns, on solves that stop before proving
+    # optimality. On an optimal solve the two agree. Do not relax this to
+    # `result.cost > 0` or drop it because the budget got tight - that would
+    # make this guard flaky for a reason unrelated to what it guards.
     assert result.proven_optimal, (
         f"{code}: the tiny instance did not solve to optimality, so the objective "
         "value cannot be compared against a recomputation - raise the budget"
