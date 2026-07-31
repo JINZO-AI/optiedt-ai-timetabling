@@ -17,7 +17,7 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 
 ## Index — what is actually still open
 
-**Five.** Everything else on this page is resolved and kept for its reasoning.
+**Four.** Everything else on this page is resolved and kept for its reasoning.
 
 | # | Still open | Blocks | Owner |
 |---|---|---|---|
@@ -25,10 +25,9 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 | **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
 | **C-14** | Dominance uses the strict reading; S10's zero weight makes ties common. **Also: the "dominated *top* candidate" signal both documents require is provably unreachable** | Phase 4 comparison screen | Technical lead |
 | **C-15** | The objective weights raw violation counts of incomparable scale, so "teacher-favouring" favours only S5, not S3. **Deferred by decision 2026-07-30** — recorded, objective unchanged | FR-13's `✓`; Phase 4 comparison screen | Technical lead |
-| **C-16** | **Reproducibility and "at least three candidates" cannot both hold.** Reproducibility needs 1 worker, diversity needs many. Proposed ADR-011 revision recorded, not applied | FR-19 acceptance; the three-candidate criterion | Technical lead (+ supervisor for one option) |
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
-**C-8, C-11** · **C-4, C-12** (2026-07-30, implemented). The sections below keep their full reasoning;
+**C-8, C-11** · **C-4, C-12** · **C-16** (2026-07-30, implemented). The sections below keep their full reasoning;
 headings say which is which.
 
 ⚠️ C-4 and C-12 **were** one bug waiting to happen, before they were resolved together on 2026-07-30:
@@ -73,7 +72,7 @@ Consequences, all documentation rather than code:
   is an unvalidated guess.
 - The diagnosis run inherits the same treatment, which also gives it the budget it never had.
 
-#### ⚠️ Calibrated 2026-07-30 — the mechanism works, the conclusion does not. See C-16
+#### ⚠️ Calibrated 2026-07-30 — the mechanism works; the conclusion needed one more parameter. See C-16
 
 The calibration this ADR demanded in Phase 2 was never done. It is done now, and it corrects one
 recorded belief and refutes one of this ADR's own claims.
@@ -114,9 +113,11 @@ race. A fixed seed does not either.
 Note also that 4 workers reproduced on the tiny instance and failed on the reference one — **a worker
 count that looks deterministic on a small instance is not evidence about a real one.**
 
-**What survives of ADR-011:** the deterministic budget as the primary bound, which is sound, measured
-and now calibrated. **What does not:** the claim that this buys reproducibility while keeping all
-workers. That decision is reopened as **C-16**, not silently amended here.
+**What survives of ADR-011:** all of it. The deterministic budget is sound, measured and calibrated;
+and the reproducibility claim is true once `interleave_search = true` is also set — a parameter the ADR
+never named. Deterministic time bounds the *amount of work*; interleaving orders the *race*. Both are
+needed and the ADR only had one. Resolved and implemented under **C-16**; ADR-011 is amended, not
+reversed.
 
 ### C-3 — Normalisation bounds · RESOLVED → instance-derived · ADR-009
 
@@ -311,7 +312,46 @@ produce scored candidates, which they do (3 distinct, 0 duplicates). What it blo
 **Blocks:** FR-13's eventual `✓`; the Phase 4 comparison screen, which would otherwise explain a
 difference by a cause that is not the real one. **Owner:** technical lead.
 
-### C-16 — Reproducibility and portfolio diversity cannot both hold · **NEW, OPEN — proposed ADR-011 revision, not applied**
+### C-16 — Reproducibility and portfolio diversity · **RESOLVED 2026-07-30 → both, via `interleave_search` and withholding the hint**
+
+**The conflict was not real.** It was an engineering defect with an engineering fix, and the analysis
+below — which concluded the two criteria were mutually exclusive — was wrong. It is kept in full
+because the measurements are real and the reasoning error is instructive: **every configuration tested
+had two variables changed at once**, worker count and search strategy, so the diversity collapse was
+attributed to low parallelism when it was actually caused by the warm start.
+
+#### The resolution
+
+**Set `interleave_search = true` and withhold the warm start when an objective is posted.** Both are in
+`solver/engine.py`; ADR-011 is amended accordingly.
+
+- `interleave_search` is documented as making the search *"deterministic (independently of
+  num_workers!)"*, and measurement confirms it — deterministic in every configuration tested, at full
+  parallelism.
+- The warm start was pinning all three profiles to one timetable: identical score **78.076** at total
+  budgets 15, 45 *and* 90, across three different objectives. Withholding it under an objective
+  restores diversity.
+
+**Verified against every Phase 3 criterion before adoption**, plus H1–H12 re-derived from the raw CSVs
+for all three candidates and the feasibility path — 32 hard-constraint checks, all passing:
+
+| | before | after |
+|---|---|---|
+| Portfolio wall clock | 306 s | **147–150 s** |
+| Distinct candidates | 3 | **3** |
+| Reproducible | ❌ | **✅** |
+| Best score | 82.23 | 80.31 |
+
+Twice as fast, reproducible, three candidates, at ~1.9 score points — the luck of a racing search,
+given up deliberately. **No acceptance criterion needed to change.**
+
+⚠️ `interleave_search` is marked **Experimental** upstream. `tests/integration/test_reproducibility.py`
+verifies the behaviour at production settings rather than trusting the documentation; pin the OR-Tools
+version and treat a failure there as blocking.
+
+---
+
+#### The superseded analysis, kept for its reasoning error
 
 Two increment-1 acceptance criteria are in direct conflict at every setting measured on 2026-07-30
 (evidence in C-2 above):
@@ -353,17 +393,17 @@ more, not by respecting the profiles better.
 - **(d) Remove the warm start for favouring profiles**, so they diverge without needing parallelism.
   Speculative — it attacks the cause of the collapse rather than the symptom, and is untested.
 
-**Recommendation, not a decision: (c).** It is the only option that does not give up a written
-acceptance criterion, and the run record Phase 5 already plans is the natural place to mark which solve
-was the reproducible one. (a) is the cheapest if the supervisor accepts a slower published run.
+~~**Recommendation, not a decision: (c).**~~ **Superseded.** None of (a)–(d) was needed. Option (d)
+— "remove the warm start for favouring profiles" — was dismissed above as "speculative"; it was in fact
+half the answer, and the half nobody tested. The other half was a solver parameter none of these
+options considered.
 
 ⚠️ **This interacts with C-5.** At one worker the reference instance produced **one** candidate, not
 three — so C-5's "duplicates removed leaves fewer than three" stops being hypothetical and becomes the
 observed behaviour. Whatever C-5 decides must hold at the worker count C-16 selects.
 
-**Blocks:** the FR-19 acceptance test, and the "at least three candidates" criterion, at whichever
-setting is chosen. Does not block Phase 3's completion criteria, which require three profiles to
-produce scored candidates — they do. **Owner:** technical lead, with the supervisor for option (b).
+**Blocked:** nothing now. Both acceptance criteria are satisfied simultaneously at production
+settings. **Resolved by:** technical lead, 2026-07-30, on measurement.
 
 ### C-5 — "At least three candidates" can fail when duplicates are removed
 

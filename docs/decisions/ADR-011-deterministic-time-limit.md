@@ -25,15 +25,68 @@ requirement and its own acceptance test contradict each other.
 
 **Keep all workers. Bound the solve by `max_deterministic_time` rather than `max_time_in_seconds`.**
 
+**AMENDED 2026-07-30 — and `interleave_search = true`, without which none of this holds.**
+
 A wall-clock ceiling is retained **as a hang backstop only**, not as the primary bound. Reaching it is
 an anomaly to log, not a normal exit path.
 
 The diagnosis run inherits the same treatment.
 
+### The amendment, and why it was needed
+
+This ADR originally stated the decision as deterministic time alone, and concluded that reproducibility
+followed. **Measurement refuted that conclusion while confirming the mechanism.** Deterministic time
+bounds the *amount of work*; it does not order the race between workers. Three identical requests
+produced **three different timetables** — every one of them proving optimality, so the workers were not
+being cut short. They were finding *different optimal solutions* and returning whichever reported
+first.
+
+`interleave_search` is the missing element. OR-Tools documents it as: *"we interleave all our major
+search strategy and distribute the work amongst num_workers. **The search is deterministic
+(independently of num_workers!)**"*. With it set, the reproducibility this ADR claimed is real —
+verified on the reference instance, three profiles, paired runs agreeing on candidate ids, order,
+placements, scores and sub-scores.
+
+**The original decision therefore stands unchanged** — all workers, deterministic bound. What was
+missing was one parameter it never named, and the claim was false in the implementation until that
+parameter was set.
+
+⚠️ **`interleave_search` is marked "Experimental" upstream.** The reproducibility guarantee is verified
+by `tests/integration/test_reproducibility.py` at production settings rather than trusted from the
+documentation, because an OR-Tools upgrade that regressed it would otherwise stay invisible until a
+published timetable failed to reproduce. **Pin the OR-Tools version, and treat a failure in that file
+as blocking.**
+
+Disabling worker information sharing (`share_binary_clauses`, `share_level_zero_bounds`,
+`share_objective_bounds`) was also measured and does **not** help — the race is in the scheduling, not
+in the sharing.
+
+### A second change, outside this ADR
+
+The warm start had to be **withheld when an objective is posted**. With the hint in place all three
+weight profiles returned the same timetable at total budgets 15, 45 *and* 90, scoring an identical
+78.076 every time — six times the budget and three different objectives yielding one candidate, because
+the hint is an attractor the objective could not pull the search away from. Withholding it gives three
+distinct candidates. The hint is kept for feasibility-only solves, where it is pure acceleration.
+Implemented in `solver/engine.py`; this is the re-evaluation `docs/status.md` asked for "when the
+objective lands".
+
 ## Consequences
 
-Reproducibility holds, FR-19's acceptance test passes unchanged, and the search keeps its parallelism.
-All the costs are documentation rather than code.
+Reproducibility holds, FR-19's acceptance test passes unchanged, and the search keeps its parallelism —
+**all three now verified rather than asserted.** Measured on the reference instance:
+
+| | before the amendment | after |
+|---|---|---|
+| Portfolio wall clock | 306 s | **147–150 s** |
+| Distinct candidates | 3 | 3 |
+| Reproducible | **no** | **yes** |
+| Best score | 82.23 | 80.31 |
+
+The configuration is roughly **twice as fast** and reproducible, at a cost of **~1.9 score points** —
+the luck of a racing parallel search, given up deliberately. H1–H12 were re-derived from the raw CSVs
+for every candidate and for the feasibility path; no hard constraint is affected. The feasibility-only
+solve moved from ~3 s to ~4.4 s, still far inside its 60 s target.
 
 **The 60-second and 5-minute figures become estimates, not wall-clock promises.** This narrows a hedge
 the documents already carry rather than breaking a commitment — both state these are "objectives to be
@@ -45,6 +98,12 @@ a deterministic budget is a *unit of work*, and its wall-clock cost varies by ma
 instance during Phase 2**, then recorded in `docs/status.md`. **Until that calibration exists, the
 user-facing time limit is an unvalidated guess.** A user setting "5 minutes" must get something close to
 five minutes on the machine they are using.
+
+> **DISCHARGED 2026-07-30** (late — it was owed in Phase 2). 1 deterministic unit per worker ≈ 4.8 s
+> wall at one worker, ≈ 19 s at sixteen. The budget binds **exactly**, per worker: budget 5 reports
+> 5.00 at `workers=1`, ratio 1.00. `CpSolver.deterministic_time` reports the **sum across workers**, so
+> a 16-core machine legitimately reports ~54 for a 5-unit budget — an aggregate that was once recorded
+> in `docs/status.md` as an "~11× overshoot" and is nothing of the kind. Full table in that file.
 
 **The diagnosis run finally gets a budget.** PPM said its limit was "separate" but never stated one,
 leaving an unbounded wait on the worst-case path — the user pays for the optimisation run reaching

@@ -162,17 +162,34 @@ class CpSatSolver:
         for builder in ALL_HARD_CONSTRAINTS:
             builder.apply(model, variables, request.instance)
 
-        if self.use_warm_start:
-            _apply_warm_start(model, variables, request)
-
         # Gate on has_active_criteria(), NOT merely on profile is not None:
         # build_occupancy() adds 10,048 variables and costs the solve about
         # 2.5x (docs/constraint-model.md), so a profile whose weights are all
         # zero must skip it entirely to stay equivalent to the Phase 2
         # feasibility solve. Checking only build_objective()'s return value
         # would be too late - occupancy would already have been built.
+        wants_objective = request.profile is not None and has_active_criteria(
+            request.profile.weights
+        )
+
+        # ⚠️ The warm start is withheld when an objective is posted. Measured
+        # 2026-07-30 (C-16): with the hint in place, all three weight profiles
+        # returned the SAME timetable at total budgets 15, 45 and 90, scoring
+        # an identical 78.076 every time - six times the budget and three
+        # different objectives producing one candidate. The hint is a strong
+        # attractor, and under an objective the search does not escape it, so
+        # duplicate removal collapses the portfolio to a single candidate.
+        # Withholding it yields 3 distinct candidates at budget 90.
+        #
+        # It is KEPT for feasibility-only solves, where there is no objective
+        # to be pulled away from and the hint is pure acceleration - which is
+        # the role docs/status.md always assigned it, and the re-evaluation
+        # that file asked for "when the objective lands".
+        if self.use_warm_start and not wants_objective:
+            _apply_warm_start(model, variables, request)
+
         objective_posted = False
-        if request.profile is not None and has_active_criteria(request.profile.weights):
+        if wants_objective:
             occupancy = build_occupancy(model, variables, request.instance)
             objective_posted = (
                 build_objective(
@@ -186,6 +203,31 @@ class CpSatSolver:
         solver.parameters.max_time_in_seconds = self.wall_clock_ceiling_seconds
         solver.parameters.random_seed = request.seed
         solver.parameters.num_workers = self.workers
+
+        # ⚠️ REQUIRED for reproducibility. Without it the solve is NOT
+        # deterministic at production worker counts, whatever the seed and
+        # whatever the deterministic budget - measured 2026-07-30, three
+        # identical requests produced three different timetables, all of them
+        # proving optimality. The workers were not being cut short; they were
+        # finding different optimal solutions and returning whichever reported
+        # first.
+        #
+        # OR-Tools documents this field as: "If this is true, then we
+        # interleave all our major search strategy and distribute the work
+        # amongst num_workers. The search is deterministic (independently of
+        # num_workers!)". Verified on the reference instance: deterministic in
+        # every configuration tested, and roughly 2x faster end-to-end than
+        # the racing search it replaces.
+        #
+        # Disabling worker information sharing (share_binary_clauses,
+        # share_level_zero_bounds, share_objective_bounds) was also tried and
+        # does NOT help - the race is in the scheduling, not the sharing.
+        #
+        # The field is marked "Experimental" upstream, which is why
+        # tests/integration/test_reproducibility.py pins the behaviour against
+        # the production settings rather than trusting the documentation.
+        # See ADR-011 and C-16 in docs/open-questions.md.
+        solver.parameters.interleave_search = True
 
         status = solver.solve(model)
         if status not in _TERMINAL_STATUSES:

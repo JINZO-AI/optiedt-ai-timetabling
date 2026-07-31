@@ -4,7 +4,8 @@
 other document is detail you fetch only when you need it.
 
 **Last updated 2026-07-30**, during Phase 3 closure: portfolio orchestration and FR-16 landed, ADR-011's
-overdue calibration discharged, and C-15/C-16 opened.
+overdue calibration discharged and the ADR amended, C-16 raised and resolved (`interleave_search`), C-15
+deferred by decision. Only ITC-2007 validation remains.
 
 ---
 
@@ -13,7 +14,7 @@ overdue calibration discharged, and C-15/C-16 opened.
 | | |
 |---|---|
 | **Project** | OptiEDT — generates, ranks and explains weekly university timetables (Tunisian public faculty, LMD) |
-| **Overall progress** | **~55 % of budgeted effort** (Phases 1–2 = 8 of 20 days, plus Phase 3's 3 days of core algorithm work). By *delivered product* it is lower — **1 of 9 acceptance criteria** met, 0 of 25 requirements finished, because the user-facing path is Phases 4–5. Both numbers are real; quote the measure with the number |
+| **Overall progress** | **~55 % of budgeted effort** (Phases 1–2 = 8 of 20 days, plus Phase 3). By *delivered product* it is lower — **3 of 9 acceptance criteria** met, 0 of 25 requirements finished, because the user-facing path is Phases 4–5. Both numbers are real; quote the measure with the number |
 | **Current phase** | **Phase 3 — closure in progress, 5 of 6 checklist items done.** Criteria, scoring, ranking, decomposition, dominance, the objective, the recommendation translator, the **portfolio** and **FR-16** are implemented and tested; ADR-011's overdue calibration is discharged. **Remaining: ITC-2007 validation** (`docs/status.md`, "Next, in order") |
 | **Current milestone** | Several candidates produced, ordered, and one difference decomposed — met **at the code level**; not yet reachable by a user (no run record, no endpoint) |
 | **Current goal** | Close Phase 3 (ITC-2007 validation), then Phase 4: the web interface |
@@ -21,7 +22,7 @@ overdue calibration discharged, and C-15/C-16 opened.
 | **Branch** | `main` — **5 commits ahead of `origin/main`, unpushed** |
 | **Latest commit** | [`7d489c3`](https://github.com/JINZO-AI/optiedt-ai-timetabling/commit/7d489c3) — Phase 3 closure work. **Local only, not pushed**; `origin/main` is still at `0dc0078` |
 | **Repository status** | **Ahead of `origin/main` by 5 local commits**, none pushed. Working tree clean |
-| **Project health** | 🟡 **Amber.** No failing check — `scripts/run-checks.ps1` green, 95 tests pass. But **two written acceptance criteria are now known to be mutually exclusive** (C-16: reproducibility needs one worker, three candidates need many), which is a specification conflict rather than a defect, and it is the technical lead's to resolve |
+| **Project health** | 🟢 **Green.** `scripts/run-checks.ps1` green, 95 tests pass. **C-16 resolved** — reproducibility and three distinct candidates now hold simultaneously at production settings, and the portfolio is ~2× faster than before. **3 of 9 acceptance criteria met**, up from 1 |
 
 ```
 Increment 1   ███████████░░░░░░░░░  ~55 % of budgeted days
@@ -44,14 +45,14 @@ Phase 6  Tests, documentation, presentation            ░░░░░░░░�
 | Area | State |
 |---|---|
 | **Architecture** | 🟢 Stable. Four layers, boundaries enforced by `import-linter` — **7/7 contracts kept**. No layer edge has been weakened |
-| **Solver** | 🟢 H1–H12 built and demonstrated correct. Reference instance solves in **2.8–3.3 s** (deterministic 0.13–0.21) across 7 seeds, all 218 sessions placed. C-7 fully closed — accounting (`x[s,t₀]`, `y[s,t]`) built on demand, auxiliaries measured at **5,249**. `solver/objective.py` (new) encodes S2–S10 as CP-SAT expressions; `engine.py` posts it — and builds occupancy at all — only when a criterion carries weight, so an all-zero profile is genuinely equivalent to a feasibility solve. A real solve under catalogue weights takes ~49 s wall (up from ~3 s with no objective). **Deterministic budget calibrated 2026-07-30** — it binds exactly, per worker; 1 unit ≈ 4.8 s wall at one worker, ≈ 19 s at all sixteen |
+| **Solver** | 🟢 H1–H12 built and demonstrated correct. Reference instance solves in **2.8–3.3 s** (deterministic 0.13–0.21) across 7 seeds, all 218 sessions placed. C-7 fully closed — accounting (`x[s,t₀]`, `y[s,t]`) built on demand, auxiliaries measured at **5,249**. `solver/objective.py` (new) encodes S2–S10 as CP-SAT expressions; `engine.py` posts it — and builds occupancy at all — only when a criterion carries weight, so an all-zero profile is genuinely equivalent to a feasibility solve. **Deterministic budget calibrated 2026-07-30** — it binds exactly, per worker; 1 unit ≈ 4.8 s wall at one worker, ≈ 19 s at all sixteen. **`interleave_search = true` is set and is required for reproducibility** (C-16, ADR-011 amended); the warm start is withheld when an objective is posted, because it pinned all three profiles to one timetable |
 | **Objective** | 🟡 Encoded for S2–S5, S7, S10 in full; **S6 only for non-cumulative room types** (Salle) — cumulative types (Amphi, Lab_Info, Lab_Sciences) have no per-room CP-SAT variable to optimise against, only a post-hoc labeller (C-13). `analysis/criteria.py` still scores S6 correctly for every room after the fact |
 | **Analysis / scoring** | 🟢 Implemented and tested. `analysis/criteria.py` (7 criteria), `analysis/scoring.py` (`DefaultScorer`, `evaluate_candidate`), `analysis/ranking.py` (`DefaultRanker`: rank/decompose/dominance/**recommend** — FR-16). All four properties pass (`tests/property/test_scoring_properties.py`) |
-| **Portfolio** | 🟢 `services/portfolio.py` — the only module importing both `solver` and `analysis`, which is what `services` is for. Defines the three profiles, divides the total budget between them, solves sequentially under one fixed seed, removes duplicate timetables and ranks the survivors under one weight vector. 16 unit tests pin the rules against a recording fake solver. Measured on the reference instance: **3 distinct candidates in 306 s** at `workers=0`, total budget 15. Calibration now discharged; what remains is a *specification* conflict (C-16), not a mechanism gap |
+| **Portfolio** | 🟢 `services/portfolio.py` — the only module importing both `solver` and `analysis`, which is what `services` is for. Defines the three profiles, divides the total budget between them, solves sequentially under one fixed seed, removes duplicate timetables and ranks the survivors under one weight vector. 16 unit tests pin the rules against a recording fake solver. Measured on the reference instance: **3 distinct candidates in 147–150 s**, reproducibly, total budget 90 (C-16) |
 | **API · frontend · persistence** | ⬜ Scaffold only. Phases 4–5. The solver reads CSVs through `optiedt.instance`; PostgreSQL is not needed until runs must survive a restart |
 | **Assistant** | ⬜ Scaffold only. Increment 1 (ADR-010), Phase 4+ |
 | **Validation** | 🟢 `scripts/run-checks.ps1` green: 7/7 contracts · ruff · format · mypy strict on 39 files · tests · instance verification · frontend `tsc` |
-| **Tests** | 🟢 **95 passing** (78 fast + 17 solver-marked). New this phase: `tests/integration/test_reproducibility.py` (FR-19/ADR-011 — reproducibility at a fixed worker count, and the per-worker budget binding), `tests/property/test_scoring_properties.py` (10 hypothesis properties), `tests/unit/test_criteria.py` (the seven formulas against a hand-computable instance), `tests/integration/test_objective_matches_analysis.py` (**the cross-layer guard** — CP-SAT's objective value must equal the analysis layer's recomputation on the same placements), `tests/unit/test_portfolio.py` (16 orchestration rules against a recording fake solver), `tests/unit/test_recommendation.py` (FR-16, including the proof that a dominated candidate can never be recommended) |
+| **Tests** | 🟢 **95 passing** (78 fast + 17 solver-marked). New this phase: `tests/integration/test_reproducibility.py` (FR-19/ADR-011 — reproducibility **at production settings**, and the per-worker budget binding), `tests/property/test_scoring_properties.py` (10 hypothesis properties), `tests/unit/test_criteria.py` (the seven formulas against a hand-computable instance), `tests/integration/test_objective_matches_analysis.py` (**the cross-layer guard** — CP-SAT's objective value must equal the analysis layer's recomputation on the same placements), `tests/unit/test_portfolio.py` (16 orchestration rules against a recording fake solver), `tests/unit/test_recommendation.py` (FR-16, including the proof that a dominated candidate can never be recommended) |
 | **Documentation** | 🟢 Current as of this commit. Session history archived to `docs/history.md` |
 
 ---
@@ -67,18 +68,15 @@ ever disagree, that file wins and this table is the bug. **Do not silently decid
 | **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
 | **C-14** | Dominance uses the strict reading ("improves on **every** criterion"); S10's zero weight makes ties common. **And the "dominated *top* candidate" signal both documents require is provably unreachable** — a dominated candidate cannot outscore its dominator, so it can never rank first. Phase 4 would otherwise build a signal that can never fire | Phase 4 comparison screen | Technical lead |
 | **C-15** | The objective weights raw violation counts of incomparable scale, so "teacher-favouring" favours only S5, not S3. **Deferred by decision 2026-07-30** — recorded, objective unchanged | FR-13's `✓`; Phase 4 comparison screen | Technical lead |
-| **C-16** | **Reproducibility and "at least three candidates" cannot both hold.** Reproducibility needs 1 worker, diversity needs many. ADR-011's mechanism survives; its conclusion does not. Revision proposed, **not applied** | FR-19 acceptance; the three-candidate criterion | Technical lead (+ supervisor for one option) |
 
-**Resolved, do not reopen without new evidence:** C-1, C-3, C-6, C-7, C-8, C-11, C-13, **C-4, C-12**
-(2026-07-30). **C-2 is resolved but has been partly refuted** — its mechanism (deterministic budget)
-is calibrated and sound; its claim that this delivers reproducibility with all workers is false, and
-that half is reopened as C-16.
+**Resolved, do not reopen without new evidence:** C-1, C-2, C-3, C-6, C-7, C-8, C-11, C-13, **C-4,
+C-12, C-16** (2026-07-30). ADR-011 was amended rather than reversed: deterministic time bounds the
+*work*, `interleave_search` orders the *race*, and both are required — see C-16.
 
-⚠️ **C-5 is still open, and the evidence now cuts both ways.** At `workers=0` the portfolio returns
-**3 distinct candidates, 0 duplicates** — the feared convergence does not occur. At `workers=1` it
-returns **one** candidate, two removed as duplicates. So whether C-5's failure mode is hypothetical or
-observed **depends entirely on the worker count C-16 selects**. Settle C-16 first; C-5 then has a
-concrete setting to be decided against.
+⚠️ **C-5 is still open, but the behaviour it worries about does not occur.** At production settings
+the portfolio returns **3 distinct candidates, 0 duplicates removed**, reproducibly. C-5 is a conflict
+in the specification's *wording* ("duplicates removed" vs "at least three candidates"), which a
+favourable measurement cannot settle — but the acceptance test would pass today.
 
 ---
 
@@ -89,8 +87,7 @@ concrete setting to be decided against.
 | **~2.5 unbudgeted assistant days** | ≈12 % overrun on 20 days | Confirmed, not contingent. Release valve is scope-reduction step 1 |
 | **91 % laboratory occupancy** (of two-period windows) | A modelling regression looks like an infeasible instance — **and an infeasible instance looks like a slow model** | Pre-analysis first, always. Read the *window* figure, not the period figure |
 | **A check that is necessary but not sufficient** | Passes an infeasible instance, so the next failure is blamed on the model. Cost three sessions on C-13 | Both bounds now checked. **FR-12's port must carry both** |
-| ⚠️ **Reproducibility does not hold at the production worker count** | Two identical portfolio runs at `workers=0` returned candidates in a different order with different scores; at `workers=1` they were identical. Every tiny-instance run proved optimality and still disagreed at 8+ workers — the solver finds *different optimal solutions* and returns whichever worker reported first. **This refutes ADR-011's claim that deterministic time buys reproducibility while keeping all workers** | **Open — C-16**, with four options and a recommendation. Revision proposed, deliberately **not applied**. The FR-19 acceptance criterion stays unticked |
-| ⚠️ **Reproducibility and "at least three candidates" are mutually exclusive today** | `workers=1` reproduces but yields 1–2 distinct candidates; `workers=0`/`4` yield 3 and do not reproduce. Both are written acceptance criteria | **Open — C-16.** Interacts with **C-5**: at one worker the reference instance produced *one* candidate, so C-5's failure mode is observed, not hypothetical |
+| ⚠️ **`interleave_search` is marked "Experimental" upstream** | Reproducibility — a written acceptance criterion — now rests on one OR-Tools parameter whose guarantee could change between releases | **Pin the OR-Tools version.** `tests/integration/test_reproducibility.py` verifies it at production settings rather than trusting the docs; a failure there is blocking, not flaky |
 | ~~**Deterministic-time calibration**~~ | ~~"the budget does not bind, ~11× over-run"~~ | **RESOLVED 2026-07-30 — the claim was false.** The budget binds *exactly*, per worker; `deterministic_time` reports the sum across workers and ~11 was the worker count on a 16-core machine. Calibrated figures in `docs/status.md`; correction in C-2 |
 | **Raw-weight objective lets a large-scale criterion swamp a small one** | S5's raw value is ~100 (session count) while S3's is ~15 (idle periods). Inside teacher-favouring, S5 contributes 0.4×~80 ≈ 32 to the objective against S3's 0.3×~15 ≈ 4.5, so the profile is effectively S5-only. Measured: raising the budget improves S5 (101 → 72, better than balanced's 81) while S3 *degrades* (13 → 18) | The profile raises both weights exactly as documented, so this is not an implementation defect — it is a consequence of `minimise Σ(weight_i × violations_i)` using **raw** weights across criteria with incomparable scales. **"Teacher-favouring" does not currently favour teachers on S3.** Needs a decision (normalise the objective's weights, or set EMPHASIS per criterion); not resolved here |
 | **S6 cannot be optimised for cumulative room types** | The CP-SAT objective only covers Salle (non-cumulative); Amphi/Lab_Info/Lab_Sciences rooms are chosen by a post-solve labeller the objective cannot see | Scored correctly after the fact regardless (`analysis/criteria.py`). Closing this needs `solver/variables.py` changes — out of scope this session |

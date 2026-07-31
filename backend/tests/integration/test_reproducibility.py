@@ -15,27 +15,23 @@ overshooting by 11x. An earlier reading of that aggregate as an overshoot is
 recorded and corrected in docs/status.md; the ratio test below exists so the
 distinction cannot be lost again.
 
-⚠️⚠️ **These tests deliberately do NOT run at the production worker count.**
-Measured 2026-07-30, and the two instances disagree in a way worth stating:
-on the TINY instance 1, 2 and 4 workers all reproduced and 8 and 0 did not;
-on the REFERENCE instance only **1** reproduced - 4 workers produced two
-candidates on one run and one on the next. So a worker count that looks
-deterministic on a small instance is not evidence it is deterministic on a
-real one, and the safe count is the one where there is no parallelism to
-race at all.
+⚠️⚠️ **These tests run at the PRODUCTION settings, and that is the point.**
+Reproducibility here rests on one solver parameter - ``interleave_search``,
+set in engine.py - and without it the production path is NOT reproducible:
+measured 2026-07-30, three identical requests produced three different
+timetables, every one of them proving optimality. The workers were not being
+cut short; they found *different optimal solutions* and returned whichever
+reported first. Bounding deterministic time makes the amount of work
+deterministic, nothing more.
 
-On the tiny instance every run proved optimality, so the solves are not
-being cut short - they find *different optimal solutions* and return
-whichever worker reported first. Bounding the deterministic time does not
-remove that race; it only makes the amount of work deterministic.
+The parameter is documented as "deterministic (independently of
+num_workers!)" but marked **Experimental** upstream, so this file exists to
+verify the behaviour rather than trust the documentation - an OR-Tools
+upgrade that regressed it would otherwise be invisible until a published
+timetable failed to reproduce. See ADR-011 and C-16.
 
-So ADR-011's mechanism is sound and its conclusion - "Reproducibility holds
-... and the search keeps its parallelism" - is not. Pinning reproducibility
-here at ``workers=1`` verifies that the ENGINE and the portfolio add no
-nondeterminism of their own, which is the part this codebase controls. The
-production path is knowingly not covered, and the acceptance criterion it
-serves stays unticked in docs/status.md rather than being quietly
-reinterpreted. Proposed revision is recorded there; it is not applied here.
+Disabling worker information sharing was also tried and does not help. The
+race is in the scheduling, not the sharing.
 
 These run on the tiny instance, not the reference one: six full reference
 solves at the production setting take ~18 minutes, too slow to guard a
@@ -58,20 +54,12 @@ SEED = 42
 BUDGET = 2.0
 WALL_CLOCK_CEILING = 120.0
 
-REPRODUCIBLE_WORKERS = 1
-"""Worker count at which CP-SAT is measurably reproducible on this project.
-
-NOT the production default (``CpSatSolver.workers = 0``, meaning all cores).
-Pinned at 1 rather than at the highest count that happened to reproduce,
-because 1 is the only setting whose determinism follows from there being no
-parallelism to race - every other count reproduced on the tiny instance and
-then failed on the reference one (see the module docstring). A number that
-holds by measurement can stop holding when the machine or the instance
-changes; a number that holds by construction cannot.
-"""
+PRODUCTION_WORKERS = 0
+"""The production default - all cores. Deterministic because engine.py sets
+``interleave_search``; see the module docstring."""
 
 
-def _solver(workers: int = REPRODUCIBLE_WORKERS) -> CpSatSolver:
+def _solver(workers: int = PRODUCTION_WORKERS) -> CpSatSolver:
     return CpSatSolver(workers=workers, wall_clock_ceiling_seconds=WALL_CLOCK_CEILING)
 
 
@@ -158,11 +146,13 @@ def test_the_deterministic_budget_binds_per_worker(tiny_instance):
 
 @pytest.mark.solver
 def test_the_engine_adds_no_nondeterminism_of_its_own(tiny_instance):
-    """Separates "CP-SAT races at high worker counts" from "our code is
-    sloppy". Five repeats at the reproducible worker count must agree
-    exactly; if this ever fails, the cause is in this repository - a set
-    iterated somewhere, a dict ordering leaking into a placement, an
-    unsorted room labeller - and not in the solver."""
+    """Five repeats at production settings must agree exactly.
+
+    A failure here has two possible causes and both matter: either
+    ``interleave_search`` has regressed upstream (it is marked Experimental),
+    or this repository introduced nondeterminism of its own - a set iterated
+    somewhere, dict ordering leaking into a placement, an unsorted room
+    labeller."""
     from optiedt.services.portfolio import default_profiles
 
     balanced = default_profiles(tiny_instance)[0]
@@ -176,8 +166,9 @@ def test_the_engine_adds_no_nondeterminism_of_its_own(tiny_instance):
     signatures = {placement_signature(_solver().solve(request).placements) for _ in range(5)}
 
     assert len(signatures) == 1, (
-        "five identical requests produced more than one timetable at a worker "
-        "count that is measurably deterministic - the nondeterminism is ours"
+        "five identical requests produced more than one timetable at production "
+        "settings - either interleave_search regressed upstream, or this "
+        "repository introduced nondeterminism of its own"
     )
 
 
