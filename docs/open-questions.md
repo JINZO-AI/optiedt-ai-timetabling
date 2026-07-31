@@ -17,13 +17,15 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 
 ## Index — what is actually still open
 
-**Three.** Everything else on this page is resolved and kept for its reasoning.
+**Five.** Everything else on this page is resolved and kept for its reasoning.
 
 | # | Still open | Blocks | Owner |
 |---|---|---|---|
 | **C-5** | "At least three candidates" can fail when duplicates are removed | Phase 6 acceptance | Lead + supervisor |
 | **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
 | **C-14** | Dominance uses the strict reading; S10's zero weight makes ties common. **Also: the "dominated *top* candidate" signal both documents require is provably unreachable** | Phase 4 comparison screen | Technical lead |
+| **C-15** | The objective weights raw violation counts of incomparable scale, so "teacher-favouring" favours only S5, not S3. **Deferred by decision 2026-07-30** — recorded, objective unchanged | FR-13's `✓`; Phase 4 comparison screen | Technical lead |
+| **C-16** | **Reproducibility and "at least three candidates" cannot both hold.** Reproducibility needs 1 worker, diversity needs many. Proposed ADR-011 revision recorded, not applied | FR-19 acceptance; the three-candidate criterion | Technical lead (+ supervisor for one option) |
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
 **C-8, C-11** · **C-4, C-12** (2026-07-30, implemented). The sections below keep their full reasoning;
@@ -70,6 +72,51 @@ Consequences, all documentation rather than code:
   reference instance in Phase 2**, then recorded in `docs/status.md`. Until then the user-facing limit
   is an unvalidated guess.
 - The diagnosis run inherits the same treatment, which also gives it the budget it never had.
+
+#### ⚠️ Calibrated 2026-07-30 — the mechanism works, the conclusion does not. See C-16
+
+The calibration this ADR demanded in Phase 2 was never done. It is done now, and it corrects one
+recorded belief and refutes one of this ADR's own claims.
+
+**Corrected: there is no "11× overshoot".** `docs/status.md` recorded that a 30-unit budget consumed
+~325 units and concluded the budget "does not bind". It binds **exactly** — per worker. What
+`CpSolver.deterministic_time` reports is the **sum across workers**, so on a 16-core machine a 5-unit
+budget legitimately reports ~54. Measured, reference instance, budget 5:
+
+| workers | reported | ratio | wall |
+|---|---|---|---|
+| 1 | **5.00** | **1.00** | 24.1 s |
+| 2 | 8.79 | 1.76 | 17.2 s |
+| 4 | 13.70 | 2.74 | 17.5 s |
+| 8 | 30.26 | 6.05 | 57.2 s |
+| 0 (=16) | 53.63 | 10.73 | 94.8 s |
+
+At one worker the ratio is 1.00 to two decimals, and a whole-portfolio run at total budget 15 consumed
+exactly 15.0. **`max_deterministic_time` was never failing.** The earlier reading mistook an aggregate
+for an overrun — the same error shape as C-13: a plausible reading nobody tried to falsify.
+
+**Refuted: "Reproducibility holds … and the search keeps its parallelism."** These cannot both be true.
+Two identical portfolio runs on the reference instance, same seed, same weights, same budget:
+
+| workers | wall | distinct candidates | identical across two runs |
+|---|---|---|---|
+| 1 | 78 s | 1 | **yes** |
+| 1 | 255 s | 2 | **yes** |
+| 4 | 61–76 s | 2 then 1 | **no** |
+| 4 | 262 s | 3 | **no** |
+| 0 (=16) | 306 s | 3 | **no** |
+
+On the tiny instance *every* run proved optimality and still disagreed at 8+ workers: the solver is not
+being cut short, it is finding **different optimal solutions** and returning whichever worker reported
+first. Bounding deterministic time makes the *amount of work* deterministic; it does not order the
+race. A fixed seed does not either.
+
+Note also that 4 workers reproduced on the tiny instance and failed on the reference one — **a worker
+count that looks deterministic on a small instance is not evidence about a real one.**
+
+**What survives of ADR-011:** the deterministic budget as the primary bound, which is sound, measured
+and now calibrated. **What does not:** the claim that this buys reproducibility while keeping all
+workers. That decision is reopened as **C-16**, not silently amended here.
 
 ### C-3 — Normalisation bounds · RESOLVED → instance-derived · ADR-009
 
@@ -225,6 +272,98 @@ Three things follow, none of which is a decision:
 (Phase 4) presents the signal to a user — and note that Phase 4 would otherwise implement a signal
 that can never fire. **Owner:** technical lead, with the supervisor if the wording in the specification
 is to change.
+
+### C-15 — The objective weights raw violation counts of incomparable scale · **NEW, OPEN — deferred 2026-07-30 by decision**
+
+`docs/constraint-model.md` specifies the objective as `minimise Σ ( weight_i × violations_i )`, in
+**raw** units. The seven criteria do not share a scale: on the reference instance S5 measures ~100
+(a count of sessions) while S3 measures ~15 (idle periods). A weight therefore does not mean the same
+thing from one criterion to the next.
+
+**The visible consequence.** The teacher-favouring profile raises S3 and S5 (0.15 → 0.30, 0.20 → 0.40,
+`services/portfolio.py`). Inside the objective S5 then contributes ≈ 0.4 × 80 = 32 against S3's
+≈ 0.3 × 15 = 4.5, so the profile behaves as an S5-only profile. Measured across budgets on the
+reference instance: S5 improves 101 → 72 (beating balanced's 81) while S3 *degrades* 13 → 18.
+**"Teacher-favouring" does not currently favour teachers on S3.**
+
+This is not an implementation defect. `analysis/criteria.py` scores both criteria correctly,
+`solver/objective.py` encodes both correctly, the profile raises both weights as documented, and the
+cross-layer test (`tests/integration/test_objective_matches_analysis.py`) passes. Every part is right
+and the composition still does not do what the profile's name promises.
+
+Three ways this can go:
+
+- **(a) Normalise the objective's weights** by each criterion's instance-derived bound range, so a
+  weight means the same thing everywhere. Closest to what the profiles claim. Cost: the solver's
+  objective and the displayed score become two different scales, which `solver/objective.py` currently
+  documents as a deliberate separation — that reasoning would need revisiting, not merely editing.
+- **(b) Per-criterion emphasis factors** instead of the flat `EMPHASIS = 2.0`. Cheap, keeps the raw
+  objective, but the factors are arbitrary and need justifying one by one.
+- **(c) Accept it and rename the profile.** If it is an S5-optimising profile, "teacher-favouring"
+  oversells it and the comparison screen would mislead.
+
+**DEFERRED 2026-07-30 by decision of the technical lead.** Recorded, not resolved; the objective is
+unchanged and the calibration work of the Phase 3 closure checklist proceeds against current
+behaviour. **Nothing is blocked by this** — Phase 3's completion criterion is that three profiles
+produce scored candidates, which they do (3 distinct, 0 duplicates). What it blocks is calling
+**FR-13** finished, because the profiles do not yet differentiate for the documented reason.
+
+**Blocks:** FR-13's eventual `✓`; the Phase 4 comparison screen, which would otherwise explain a
+difference by a cause that is not the real one. **Owner:** technical lead.
+
+### C-16 — Reproducibility and portfolio diversity cannot both hold · **NEW, OPEN — proposed ADR-011 revision, not applied**
+
+Two increment-1 acceptance criteria are in direct conflict at every setting measured on 2026-07-30
+(evidence in C-2 above):
+
+> - [ ] At least three candidates, each with its overall score and sub-scores
+> - [ ] Two runs with the same data, weights and seed produce the same candidates in the same order
+
+**Reproducibility requires one worker. Three distinct candidates require many.** No tested
+configuration delivers both:
+
+| workers | total budget | wall | candidates | reproducible | which criterion fails |
+|---|---|---|---|---|---|
+| 1 | 15 | 78 s | 1 | ✅ | three candidates |
+| 1 | 45 | 255 s | 2 | ✅ | three candidates |
+| 4 | 45 | 262 s | 3 | ❌ | reproducibility |
+| 0 (=16) | 15 | 306 s | 3 | ❌ | reproducibility |
+
+The trend at one worker is real — 15 units gave 1 candidate, 45 gave 2 — so a larger budget may reach
+three while staying reproducible. That is **untested**, and it costs wall-clock: extrapolating, three
+distinct candidates at one worker is roughly 6–9 minutes, past the *estimated* < 5 min figure (which
+ADR-011 already demoted from a promise, so exceeding it is not itself a failure).
+
+**Why one worker produces fewer candidates.** The warm start hands every profile the same greedy
+solution. At a small per-worker budget the objective cannot move far from it, so all three profiles
+return the same timetable and duplicate removal collapses them. Parallelism hides this by exploring
+more, not by respecting the profiles better.
+
+#### Options
+
+- **(a) Fix the worker count at 1 for published runs.** Reproducibility by construction, not by
+  measurement. Costs parallelism and needs a budget large enough to differentiate the profiles.
+  ADR-011's "Workers (stage 2): all available" becomes "1", and the ADR's stated consequence
+  ("the search keeps its parallelism") is withdrawn.
+- **(b) Keep all workers and withdraw the reproducibility guarantee.** FR-19's acceptance test and
+  SRS §7.2 would have to be restated — that is a delivered commitment, so it needs the supervisor.
+- **(c) Two modes.** Exploratory runs parallel and unreproducible; a published run re-solved at one
+  worker and recorded as the reproducible one. Honest and satisfies both criteria in the place each
+  matters, at the cost of a second solve and a more complex run lifecycle.
+- **(d) Remove the warm start for favouring profiles**, so they diverge without needing parallelism.
+  Speculative — it attacks the cause of the collapse rather than the symptom, and is untested.
+
+**Recommendation, not a decision: (c).** It is the only option that does not give up a written
+acceptance criterion, and the run record Phase 5 already plans is the natural place to mark which solve
+was the reproducible one. (a) is the cheapest if the supervisor accepts a slower published run.
+
+⚠️ **This interacts with C-5.** At one worker the reference instance produced **one** candidate, not
+three — so C-5's "duplicates removed leaves fewer than three" stops being hypothetical and becomes the
+observed behaviour. Whatever C-5 decides must hold at the worker count C-16 selects.
+
+**Blocks:** the FR-19 acceptance test, and the "at least three candidates" criterion, at whichever
+setting is chosen. Does not block Phase 3's completion criteria, which require three profiles to
+produce scored candidates — they do. **Owner:** technical lead, with the supervisor for option (b).
 
 ### C-5 — "At least three candidates" can fail when duplicates are removed
 

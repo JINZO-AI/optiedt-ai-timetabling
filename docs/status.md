@@ -1,7 +1,7 @@
 # Status
 
-**Increment 1 of 2 · Phase 2 complete · Phase 3 core algorithms done (C-4, C-12 resolved 2026-07-30);
-portfolio orchestration, persistence and ITC-2007 validation remain, in Phase 4-5's scope.**
+**Increment 1 of 2 · Phase 2 complete · Phase 3 closure 5 of 6 done — only ITC-2007 validation remains.**
+**C-4, C-12 resolved; C-15 deferred by decision; C-16 opened (reproducibility vs three candidates).**
 **Last updated 2026-07-30.**
 
 Keep this file current. A stale status file is worse than none, because the next session trusts it.
@@ -17,10 +17,10 @@ Keep this file current. A stale status file is worse than none, because the next
 | | |
 |---|---|
 | **Current phase** | **Phase 2 complete**, committed and pushed. H1–H12 built and demonstrated correct — the reference instance produces a conflict-free timetable in ~3 s with every hard constraint re-verified from the raw CSVs. C-13 resolved (the model was correct; the *instance* was infeasible and has been repaired). C-7 resolved (`y[s][t]` channelled, tested, built on demand). **Phase 3's core algorithms are now built**: the seven criteria, the scorer, the ranker (decomposition + dominance), the CP-SAT objective and the recommendation translator — see below |
-| **Next step** | Port the five pre-analysis checks into the application (FR-12), or start Phase 4 (web interface). Neither is blocked. Portfolio orchestration (loop over 3 profiles, remove duplicates) needs **C-5** decided first and belongs to `services/`, not this pass |
+| **Next step** | **Validation on the published ITC-2007 instances** — the last Phase 3 closure item, and protected from scope cuts by the never-reduced list below. Then Phase 4 |
 | **Days used** | ~2 of 20 for Phases 1–2, plus this session's Phase 3 work. Phases 1–2 were budgeted 8, Phase 3 budgeted 3 |
-| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · **15 commits** on `origin/main`, plus this session's Phase 3 work committed locally, not yet pushed · latest pushed commit `0dc0078` |
-| **Blocked on** | Nothing inside Phase 3's given scope. **C-5** blocks portfolio orchestration and the FR-13 acceptance test; **C-9** blocks Phase 6 acceptance |
+| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · **15 commits** on `origin/main` · **5 further commits local only, not pushed** · latest pushed `0dc0078` |
+| **Blocked on** | Nothing in Phase 3's remaining work. **C-16** blocks the FR-19 and three-candidate acceptance criteria; **C-5** blocks the FR-13 acceptance test; **C-9** blocks Phase 6; **C-15** blocks FR-13's `✓` |
 
 ---
 
@@ -56,10 +56,16 @@ instead).
 
 ### Still open, blocking something later
 
-**C-5 — "at least three candidates" can fail when duplicates are removed.** Blocks portfolio
-orchestration (looping over the 3 profiles and deduplicating candidates, which is `services/`, Phase
-4–5) and the FR-13 acceptance test. Resolving C-12 lowers the risk of hitting this on the reference
-instance but does not resolve the specification's own wording conflict.
+**C-16 — reproducibility and "at least three candidates" cannot both hold.** The sharpest of the
+open items: both are written acceptance criteria and no measured setting satisfies both. An ADR-011
+revision is proposed in `docs/open-questions.md` and deliberately not applied.
+
+**C-5 — "at least three candidates" can fail when duplicates are removed.** Blocks the FR-13
+acceptance test. **Now depends on C-16**: at `workers=0` the reference instance yields three distinct
+candidates and C-5 is hypothetical; at `workers=1` it yields one and C-5 is observed.
+
+**C-15 — the objective weights raw counts of incomparable scale.** Deferred by decision 2026-07-30;
+blocks FR-13's `✓` because the profiles do not differentiate for the documented reason.
 
 **C-9 — four requirements have no detailed specification.** Blocks Phase 6 acceptance tests.
 
@@ -92,10 +98,14 @@ instance but does not resolve the specification's own wording conflict.
    `recommendations/translator.py` already reads a `lock_session`'s target slot/room out of the
    candidate correctly (`LockedPlacement`); what is missing is downstream — `SolverInput` needs a way to
    carry that target, and `build_variables` needs to honour it.
-6. **Recalibrate the deterministic-time budget.** A real solve under the objective took ~92
-   deterministic units / ~50s wall against a 30s deterministic-budget target (`num_workers=0`) — the
-   same C-2/C-13 under-bounding, now actually reached. Measure across seeds and profiles before Phase 4
-   exposes a user-facing time limit.
+6. ~~**Recalibrate the deterministic-time budget.**~~ **Done 2026-07-30.** The budget was never
+   failing: it binds exactly per worker, and the "~11× over-run" was `deterministic_time` reporting the
+   sum across workers. Calibration in Measurements below; correction in C-2. What the calibration
+   *did* uncover is **C-16** — reproducibility does not survive parallel workers, which refutes half of
+   ADR-011 and is not mine to decide.
+7. **Validation on the published ITC-2007 instances** — the last Phase 3 closure item. Needs a reader
+   for the `.ectt` format and ITC-2007's own cost function, since `docs/testing-strategy.md` asks for
+   both hard-constraint validity *and* distance from best-known results.
 
 Persistence can wait: the solver reads the CSVs through the loader, and PostgreSQL is only needed once
 runs, candidates and publication have to survive a restart.
@@ -145,8 +155,9 @@ its decomposition, and validation on the published instances.
 | **A pre-analysis check that is necessary but not sufficient** | Passes an infeasible instance, so the next failure is attributed to the model. Cost three sessions on C-13 | Both bounds now checked in `verify_instance.py`. Any new check must state whether it is sufficient, and FR-12 must port both |
 | **The cumulative reformulation and the warm-start were built for a problem that did not exist** | Two committed mechanisms (`cumulative_room_types`, `solver/warm_start.py`) are carried for a reason now known to be wrong. Both are correct and tested, neither is load-bearing: the model solves with the warm start off, and the greedy now reaches 218/218 in 0.04 s | **Still not removed.** The objective has now landed and confirmed a real cost: `cumulative_room_types` also means S6 (room efficiency) cannot be optimised for those room types at all, only scored after the fact — see below. **Whether the plain per-room encoding would now serve for every type remains untested** |
 | **Objective encoding — done, with one gap** | S2–S5, S7, S10 are fully encoded in `solver/objective.py`. **S6 only covers non-cumulative room types (Salle)** — cumulative types (Amphi, Lab_Info, Lab_Sciences) have no per-room CP-SAT variable, only a post-solve labeller the objective cannot influence | `analysis/criteria.py` still scores S6 correctly for every room. Closing the solver-side gap needs `solver/variables.py` changes (out of the scope this landed in) |
-| **Deterministic-time calibration — the budget does not bind** | Measured 2026-07-30 with the objective posted, `num_workers=0`, reference instance: **10 units requested → 111.1 consumed** (191.6 s wall); **30 requested → 325.4 consumed** (600.7 s wall, stopped by the *wall-clock ceiling*, not the budget). A consistent ~11× over-run. ADR-011 adopted deterministic time precisely so that the wall clock would not be what ends a solve; today it is | **Open — closure checklist item 3.** Until this is fixed, no time bound in this system is trustworthy, and the reproducibility criterion that ADR-011 exists to guarantee is unverified |
-| **The portfolio misses its < 5 min target** | 3 profiles at total budget 30 took **9.2 minutes** (551 s) on the reference instance. `services/portfolio.py` divides the budget exactly as docs/constraint-model.md requires (10 units each); the solver then over-runs each allocation ~11× | Mechanism is correct, calibration is not. Measurement is closure checklist item 2; the fix is item 3 |
+| ~~**Deterministic-time calibration — the budget does not bind**~~ | ~~a consistent ~11× over-run~~ | **RESOLVED 2026-07-30 — the claim was false.** The budget binds exactly, per worker; `deterministic_time` reports the sum across workers, and ~11 was the worker count. Calibration recorded in Measurements below. See C-2 |
+| **⚠️ Reproducibility does not hold at the production worker count** | Two identical portfolio runs at `workers=0` returned candidates in a different order with different scores. At `workers=1` they were identical. On the tiny instance every run proved optimality and still disagreed at 8+ workers — the solver finds *different optimal solutions* and returns whichever worker reported first. Bounding deterministic time makes the amount of work deterministic; it does not order the race | **Open — C-16.** ADR-011's mechanism survives; its claim that "reproducibility holds … and the search keeps its parallelism" does not. A revision is proposed there and deliberately **not applied**. The acceptance criterion stays unticked |
+| **⚠️ Reproducibility and three candidates are mutually exclusive today** | `workers=1` reproduces but yields 1–2 distinct candidates; `workers=0`/`4` yield 3 but do not reproduce. Both are written acceptance criteria | **Open — C-16**, with four options and a recommendation. Interacts with **C-5**: at one worker the reference instance produced *one* candidate, so C-5's failure mode is now observed rather than hypothetical |
 | **Raw-weight objective lets a large-scale criterion swamp a small one** | The objective minimises `Σ(weight_i × violations_i)` in **raw** units, and the criteria have incomparable scales — S5 ~100 (session count) against S3 ~15 (idle periods). In teacher-favouring, S5 contributes ≈32 to the objective against S3's ≈4.5, so it behaves as an S5-only profile. Measured across budgets: S5 improves 101 → 72 (beating balanced's 81) while S3 *degrades* 13 → 18. **"Teacher-favouring" does not currently favour teachers on S3** | Not an implementation defect — the profile raises both weights exactly as documented, and the analysis layer scores both correctly. It is a consequence of the objective's raw-weight formulation meeting criteria of different magnitudes. Needs a decision: normalise the objective's weights by each criterion's bound range, or set the emphasis factor per criterion. **Not decided here** |
 | **Exam multi-room assignment** (R-6) | Breaks a shared `room[s]` abstraction | Keep it out of shared solver code from the start |
 | ~~`uv` not installed~~ | — | **Resolved.** uv 0.12.0 installed; the whole toolchain runs |
@@ -176,12 +187,15 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 
 | Measurement | Value | Taken on | Notes |
 |---|---|---|---|
-| **Toolchain** | **all green** | 2026-07-30 | **7/7** layer contracts kept · ruff · format · mypy strict on **39** source files · **90 tests** (78 fast + 12 solver-marked) · instance verified · frontend `tsc` clean |
+| **Toolchain** | **all green** | 2026-07-30 | **7/7** layer contracts kept · ruff · format · mypy strict on **39** source files · **95 tests** (78 fast + 17 solver-marked) · instance verified · frontend `tsc` clean |
 | **Python** | **3.14.2** | 2026-07-29 | Resolved by uv 0.12.0 |
 | **OR-Tools CP-SAT imports and solves** | **yes** | 2026-07-29 | On Python 3.14. `max_deterministic_time` **is accepted by the solver parameters** — ADR-011 is implementable, not just plausible |
-| Deterministic time → wall clock, reference instance | **not a clean ratio under `num_workers=0`** | 2026-07-30 | `max_deterministic_time=60` consumed 247.98 units before the 360s wall-clock ceiling stopped the run. Measured while searching an infeasible model, but the finding does not depend on that. Not urgent now — the repaired instance solves in ~0.2 deterministic units, far below any budget — and becomes urgent again once the objective makes solves long enough to reach one |
+| **Deterministic time → wall clock, reference instance** | **1 deterministic unit per worker ≈ 4.8 s wall at `workers=1`; ≈ 19 s at `workers=0` (16 cores)** | 2026-07-30 | ✅ **ADR-011's overdue Phase 2 calibration, discharged.** Budget 5, objective posted, catalogue weights. `workers=1` → 24.1 s · `2` → 17.2 s · `4` → 17.5 s · `8` → 57.2 s · `0` → 94.8 s. More workers cost *more* wall clock for the same per-worker budget, because the budget is per worker and the total work scales with the count |
+| **Does `max_deterministic_time` bind?** | **Yes — exactly, per worker** | 2026-07-30 | ⚠️ **This corrects a recorded error.** Budget 5 → reported 5.00 at `workers=1` (ratio **1.00**); 8.79 at 2, 13.70 at 4, 30.26 at 8, 53.63 at 0. `CpSolver.deterministic_time` reports the **sum across workers**, so the "~11× overshoot" previously recorded here was an aggregate misread as an overrun. A whole portfolio at total budget 15 consumed exactly 15.0 at one worker. The budget was never failing |
+| ~~Deterministic time → wall clock (superseded)~~ | ~~"not a clean ratio"~~ | ~~2026-07-30~~ | **Superseded by the two rows above.** The original observation — 60 requested, 247.98 consumed — was the same aggregate artefact, measured on an infeasible model. Kept so the correction is traceable |
 | **First valid timetable** | **2.84–3.30 s wall · 0.13–0.21 deterministic** | 2026-07-30 | ✅ **Target < 60 s met with a wide margin.** Seven seeds (1, 7, 42, 123, 999, 2026, 31337), production defaults (`num_workers=0`, warm start on); all seven placed 218/218. Full pipeline: warm-start construction, solve, and independent re-verification of every hard constraint from the raw CSVs (`tests/integration/test_h1_h12.py`). Measured on the repaired instance — see C-13; the earlier `UNKNOWN` results were an infeasible instance, not a slow model |
-| Portfolio of 3 candidates | *not yet measured* | — | Target < 5 min |
+| **Portfolio of 3 candidates** | **306 s (5.1 min) at `workers=0`, total budget 15** — 3 distinct candidates, 0 duplicates. Target < 5 min **marginally missed** | 2026-07-30 | Reference instance, seed 42, three profiles, budget divided 5 per profile. At total budget 30 it takes 551 s (9.2 min), so the target is reachable by lowering the budget rather than by any code change. ⚠️ **The target is an estimate, not an acceptance criterion** — ADR-011 demoted the 60 s and 5 min figures to "estimates, not wall-clock promises", and no acceptance criterion names a portfolio time bound. Recorded as missed, not as a failure |
+| **Portfolio reproducibility** | **✅ at `workers=1`; ❌ at `workers=4` and `workers=0`** | 2026-07-30 | Two identical runs compared on candidate ids, order, placements, scores and sub-scores. `workers=1`: identical (78 s, 1 candidate; 255 s, 2 candidates). `workers=0`: **different order and different scores** (306 s, 3 candidates both times). See **C-16** — reproducibility and "at least three candidates" cannot both hold at any setting measured |
 | Diagnosis run on an infeasible instance | *not yet measured* | — | Single worker, no objective — expect it to be slow |
 | **Effective `y[s][t]` count after pruning** | **5,328** of 6,104 | 2026-07-30 | 87.3% of the upper bound. Start indicators `x[s,t₀]`: **4,720**. Together 10,048 variables (C-7) |
 | **Cost of building the C-7 accounting** | **2.9–4.1 s → 7.6–8.0 s** | 2026-07-30 | Same configuration, three seeds; deterministic time 0.4–1.9 → ~6.1. Why `build_occupancy()` is called on demand and not by the feasibility solve |
@@ -222,9 +236,9 @@ Track these as they are met; the project is accepted requirement by requirement.
 - [x] **No hard-constraint violation on the reference instance** — met 2026-07-30. Every one of H1–H12
       re-derived from the raw CSVs and checked against the returned placements, independently of
       CP-SAT's own status (`tests/integration/test_h1_h12.py`)
-- [ ] At least three candidates, each with its overall score and sub-scores *(see C-5)*
+- [ ] At least three candidates, each with its overall score and sub-scores — ⚠️ **holds at `workers=0` (3 distinct), FAILS at `workers=1` (1 candidate). Mutually exclusive with the criterion below. See C-16, C-5**
 - [ ] The sum of displayed contributions equals the score difference, to display precision
-- [ ] Two runs with the same data, weights and seed produce the same candidates in the same order
+- [ ] Two runs with the same data, weights and seed produce the same candidates in the same order — ⚠️ **holds at `workers=1`, FAILS at the production `workers=0`. See C-16**
 - [ ] An instance without a solution produces a report naming the rules in conflict
 - [ ] A teacher account obtains only its own availability and timetable
 - [ ] Closing a half-day in configuration removes those slots from every timetable, **with no code change**
