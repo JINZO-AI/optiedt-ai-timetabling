@@ -7,11 +7,17 @@ built?" without reading code.
 
 Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 
-**Where the project actually is: 7 of 25 requirements are under way, none is finished.** Phase 2 built
-the decision layer (FR-3) and Phase 3 built the objective, scoring, ranking, decomposition, dominance
-and the portfolio (FR-4, FR-5, FR-6, FR-13, FR-15, FR-17) — but a requirement is only `✓` once a user
-can reach it, and there is no API or interface yet. Do not read the run of `—` below as "nothing
-works": see [`docs/dashboard.md`](dashboard.md).
+**Where the project actually is: 8 of 25 requirements are under way, none is finished.** Phase 2 built
+the decision layer (FR-3) and Phase 3 built the objective, scoring, ranking, decomposition, dominance,
+the portfolio and the recommendation rule (FR-4, FR-5, FR-6, FR-13, FR-15, FR-16, FR-17) — but a
+requirement is only `✓` once a user can reach it, and there is no API or interface yet. Do not read the
+run of `—` below as "nothing works": see [`docs/dashboard.md`](dashboard.md).
+
+⚠️ **FR-16 is implemented but one third of it can never fire.** "A dominated top candidate is signalled
+alongside" describes a state the arithmetic forbids — a dominated candidate cannot outscore its
+dominator under a linear weighted sum with non-negative weights, so it can never rank first. The field
+exists, is tested, and is provably always empty. See C-14 in [`docs/open-questions.md`](open-questions.md);
+the specification wording needs revising, which is not a keyboard decision.
 
 **FR-3 is `WIP`, not `✓`, deliberately.** H1–H12 are implemented and demonstrated on the reference
 instance, with every hard constraint re-derived from the raw CSVs rather than trusted from CP-SAT's
@@ -54,7 +60,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs; `solver` | `unit/test_portfolio` ✓, `acceptance/test_fr13` ⚠️ | **WIP** |
 | **FR-14** | Compare two candidates criterion by criterion | Necessary | `features/comparison` | `integration` | — |
 | **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition | `property` ✓, `acceptance/test_fr15` | **WIP** |
-| **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking | `unit` | — |
+| **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking | `unit/test_recommendation` ✓ | **WIP** |
 | **FR-17** | Signal a recommended candidate that another dominates | Expected | `analysis` — dominance | `property` ✓ | **WIP** |
 | **FR-18** | Display occupancy of each classroom and laboratory | Expected | `features/timetable` | `integration` | — |
 | **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db`, `services` | `acceptance/test_fr19` | — |

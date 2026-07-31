@@ -106,6 +106,33 @@ class DominanceVerdict:
     dominated_by: str | None
 
 
+@dataclass(frozen=True, slots=True)
+class Recommendation:
+    """The candidate the system puts forward, and why — FR-16.
+
+    docs/scoring-and-explanation.md states the whole rule: "The recommendation
+    designates the candidate of highest score, and states the rule that
+    produced it. A dominated top candidate is signalled alongside."
+
+    ``rule`` is carried as text rather than left for the interface to invent,
+    because the point of the rule is that it can be CHECKED: "recommended
+    because it has the highest score under the weights in force" is a sentence
+    the department can verify against the sub-scores recorded with the run. An
+    interface that phrased it differently on each screen would lose that.
+
+    ⚠️ ``dominated_by`` is the part that must not be dropped in display. A
+    dominated top candidate means the weights are *concealing* a compromise
+    rather than expressing one, and the person in charge has to decide knowing
+    that. Recommending it silently would be worse than not recommending at
+    all.
+    """
+
+    candidate: str
+    rule: str
+    score: float
+    dominated_by: str | None
+
+
 class Scorer(Protocol):
     """Computes sub-scores and the overall score out of 100.
 
@@ -132,3 +159,5 @@ class Ranker(Protocol):
     def decompose(self, a: Candidate, b: Candidate) -> Decomposition: ...
 
     def dominance(self, candidates: list[Candidate]) -> list[DominanceVerdict]: ...
+
+    def recommend(self, candidates: list[Candidate]) -> Recommendation | None: ...

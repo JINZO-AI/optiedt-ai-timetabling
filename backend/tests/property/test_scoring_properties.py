@@ -238,6 +238,51 @@ def test_a_candidate_with_no_sub_scores_is_never_dominated(weight_values):
     assert verdicts["empty"] is None
 
 
+@given(
+    base_values=st.tuples(
+        *[st.floats(min_value=0.0, max_value=0.8, allow_nan=False) for _ in CODES]
+    ),
+    margin=st.floats(min_value=1e-3, max_value=0.19, allow_nan=False),
+    weight_values=st.tuples(*[_weight for _ in CODES]),
+)
+def test_a_dominated_candidate_is_never_recommended(base_values, margin, weight_values):
+    """FR-16's third sentence describes an unreachable state, and this is the
+    universal form of that claim.
+
+    docs/scoring-and-explanation.md says "a dominated top candidate is
+    signalled alongside" - but under a linear weighted sum with non-negative
+    weights a dominated candidate cannot BE the top candidate:
+
+        score(B) - score(A) = 100 * sum( w_i * (n_i(B) - n_i(A)) )
+
+    with every term non-negative when B dominates A, and renormalised weights
+    summing to 1 so at least one is positive. Hence score(B) > score(A).
+
+    The signal is therefore dead code today. It is kept because the
+    specification requires it and because C-14 (the dominance rule) or any
+    change to the scoring function could revive it - but it must be dead
+    provably, not by accident. Tested as a property rather than an example
+    because the claim is universal over weights and sub-scores.
+    """
+    dominated_values = base_values
+    dominator_values = tuple(min(1.0, v + margin) for v in base_values)
+    if dominator_values == dominated_values:
+        return  # margin vanished at the ceiling; nothing dominates anything
+
+    weights = _weights(weight_values)
+    ranker = DefaultRanker(weights=weights)
+    dominated = _candidate("dominated", dominated_values)
+    dominator = _candidate("dominator", dominator_values)
+
+    recommendation = ranker.recommend([dominated, dominator])
+
+    assert recommendation is not None
+    assert recommendation.dominated_by is None, (
+        "a dominated candidate was recommended - either the weights went "
+        "negative or the score stopped being a linear weighted sum"
+    )
+
+
 @given(weight_values=st.tuples(*[_weight for _ in CODES]))
 def test_a_negative_weight_is_refused_rather_than_ranked_on(weight_values):
     """Monotonicity follows from weight non-negativity and nothing else, so a

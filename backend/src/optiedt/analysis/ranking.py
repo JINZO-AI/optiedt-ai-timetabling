@@ -31,6 +31,7 @@ from optiedt.analysis.interfaces import (
     Contribution,
     Decomposition,
     DominanceVerdict,
+    Recommendation,
     Scorer,
 )
 from optiedt.analysis.scoring import DefaultScorer, renormalised
@@ -40,6 +41,16 @@ from optiedt.domain.entities import Candidate, ConstraintCode
 # descending (S2 .25, S5 .20, S3 .15, S4/S6/S7 .10, S10 0), ties among equal
 # defaults broken by code. See docs/scoring-and-explanation.md, "Ordering".
 TIE_BREAK_ORDER: tuple[ConstraintCode, ...] = ("S2", "S5", "S3", "S4", "S6", "S7", "S10")
+
+RECOMMENDATION_RULE = "highest score under the weights in force"
+"""The entire rule behind a recommendation, FR-16.
+
+A constant, not a formatted string, because docs/scoring-and-explanation.md
+makes checkability the point: "'recommended because it has the highest score
+under the weights in force' is a sentence the department can check." A rule
+that varied per candidate would not be one rule the department could check
+once - it would be a caption.
+"""
 
 
 def _sub_scores_by_code(candidate: Candidate) -> dict[ConstraintCode, float]:
@@ -150,3 +161,38 @@ class DefaultRanker:
                 dominated_by = best.id
             verdicts.append(DominanceVerdict(candidate=candidate.id, dominated_by=dominated_by))
         return verdicts
+
+    def recommend(self, candidates: list[Candidate]) -> Recommendation | None:
+        """The candidate of highest score, the rule that produced it, and a
+        dominance flag if the top candidate is itself dominated - FR-16.
+
+        docs/scoring-and-explanation.md states the whole rule and then says
+        "That is the entire rule." There is deliberately no tie-break policy,
+        no minimum-score floor and no second-choice logic here: anything of
+        that kind would be an unstated rule the department could not check.
+
+        The top candidate is taken from ``rank()`` rather than from a fresh
+        ``max()``, so the recommendation inherits rank()'s documented
+        tie-break (criteria in weight order, then id) and cannot disagree with
+        the order displayed beside it. A recommendation that named a candidate
+        the list did not show first would be indefensible however correct its
+        arithmetic.
+
+        Returns None for an empty portfolio - there is nothing to recommend,
+        which is different from recommending nothing in particular. An
+        infeasible run reaches here with no candidates at all (see
+        services/portfolio.py) and must not produce a recommendation.
+        """
+        if not candidates:
+            return None
+
+        top = self.rank(candidates)[0]
+        dominated_by = next(
+            (v.dominated_by for v in self.dominance(candidates) if v.candidate == top.id), None
+        )
+        return Recommendation(
+            candidate=top.id,
+            rule=RECOMMENDATION_RULE,
+            score=self.scorer.score(top, self.weights),
+            dominated_by=dominated_by,
+        )

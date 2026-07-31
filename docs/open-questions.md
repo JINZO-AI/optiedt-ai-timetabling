@@ -23,7 +23,7 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 |---|---|---|---|
 | **C-5** | "At least three candidates" can fail when duplicates are removed | Phase 6 acceptance | Lead + supervisor |
 | **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
-| **C-14** | Dominance uses the strict reading; S10's zero weight makes ties common | Phase 4 comparison screen | Technical lead |
+| **C-14** | Dominance uses the strict reading; S10's zero weight makes ties common. **Also: the "dominated *top* candidate" signal both documents require is provably unreachable** | Phase 4 comparison screen | Technical lead |
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
 **C-8, C-11** · **C-4, C-12** (2026-07-30, implemented). The sections below keep their full reasoning;
@@ -191,9 +191,40 @@ The implemented behaviour follows the written specification, is documented in `r
 so nobody "fixes" the `>` to `>=` without meaning to. **Changing it is a specification decision, not a
 keyboard one** — hence recorded rather than silently switched.
 
+#### New evidence, 2026-07-30 (found while implementing FR-16): the "dominated top candidate" signal is unreachable
+
+`docs/scoring-and-explanation.md` says the interface signals dominance "when it happens to the
+top-ranked candidate", and FR-16 repeats it: "a dominated top candidate is signalled alongside".
+**That state cannot occur.** If `B` dominates `A` then `n_i(B) > n_i(A)` for every criterion, so
+
+```
+score(B) − score(A) = 100 × Σ ( w_i × ( n_i(B) − n_i(A) ) )
+```
+
+is a sum of non-negative terms, and renormalised weights sum to 1 so at least one weight is positive.
+Therefore `score(B) > score(A)` **strictly**, and `A` can never be top-ranked. Confirmed by search over
+200,000 random dominated pairs and random weight vectors: zero counterexamples. It holds under the
+Pareto reading too, because `TIE_BREAK_ORDER` covers all seven criteria, so a tie on score still
+resolves in the dominator's favour.
+
+Three things follow, none of which is a decision:
+
+1. **`Recommendation.dominated_by` is dead code today** — provably, not incidentally. It is kept
+   because the specification requires the signal and because resolving C-14, or any change that makes
+   the score non-linear or admits a negative weight, would revive it. Pinned by
+   `tests/property/test_scoring_properties.py::test_a_dominated_candidate_is_never_recommended` and by
+   two unit tests, so it stays dead *visibly*.
+2. **Dominance itself is not dead.** Only the *top-candidate* case is unreachable. A dominated
+   runner-up is ordinary and the comparison screen can still report it.
+3. **The stated rationale for surfacing it does not survive.** "If the highest-scoring candidate is
+   dominated, the weights are concealing a compromise" describes a situation the arithmetic forbids.
+   Whatever C-14 decides, that sentence in `docs/scoring-and-explanation.md` needs rewording — the
+   useful signal is a dominated candidate *anywhere* in the portfolio, not at its head.
+
 **Blocks:** nothing today; dominance is reported, not acted on. Decide before the comparison screen
-(Phase 4) presents the signal to a user. **Owner:** technical lead, with the supervisor if the wording
-in the specification is to change.
+(Phase 4) presents the signal to a user — and note that Phase 4 would otherwise implement a signal
+that can never fire. **Owner:** technical lead, with the supervisor if the wording in the specification
+is to change.
 
 ### C-5 — "At least three candidates" can fail when duplicates are removed
 

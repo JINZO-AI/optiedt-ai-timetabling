@@ -14,12 +14,14 @@ from optiedt.analysis.interfaces import (
     Decomposition,
     DominanceVerdict,
     Ranker,
+    Recommendation,
     Scorer,
 )
-from optiedt.analysis.ranking import DefaultRanker
+from optiedt.analysis.ranking import RECOMMENDATION_RULE, DefaultRanker
 from optiedt.analysis.scoring import DefaultScorer, evaluate_candidate, normalise, renormalised
 
 __all__ = [
+    "RECOMMENDATION_RULE",
     "Bounds",
     "Contribution",
     "Criterion",
@@ -28,6 +30,7 @@ __all__ = [
     "DefaultScorer",
     "DominanceVerdict",
     "Ranker",
+    "Recommendation",
     "Scorer",
     "build_criteria",
     "evaluate_candidate",
