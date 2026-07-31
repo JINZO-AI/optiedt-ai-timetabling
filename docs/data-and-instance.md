@@ -29,7 +29,9 @@ This matters beyond tidiness: ADR-008 accepts generated data **on condition that
 condition is now met by measurement rather than by assertion.
 
 The *generator* itself remains a stated deliverable (PPM §10) and does not exist. That is a
-reproducibility task, not a blocker.
+reproducibility task, not a blocker — **and it is scheduled**: item 9 of `docs/status.md`'s "Next, in
+order", latest sensible point Phase 6. It must reproduce *the* documented instance, not merely a valid
+one (ADR-008), because every measured figure in these documents is measured against that one.
 
 ## Schema — as the files actually are
 

@@ -30,13 +30,20 @@ status (`backend/tests/integration/test_h1_h12.py`). What is missing is the path
 no run record, no interface. H10 is also registered but dormant — `build_variables` refuses to run if
 any session is locked, which is safe only because the reference instance has none.
 
-**FR-4, FR-5, FR-6, FR-13, FR-15 and FR-17 are `WIP` as of 2026-07-30 (Phase 3), for the same reason as
-FR-3.** The seven soft criteria (`analysis/criteria.py`), the scorer and ranker (`analysis/scoring.py`,
-`analysis/ranking.py`), the CP-SAT objective (`solver/objective.py`) and the portfolio
-(`services/portfolio.py`) are implemented and tested — nine analysis properties pass in
-`tests/property/test_scoring_properties.py`, and a real portfolio run on the reference instance returns
-three distinct candidates, each scored /100 with its seven sub-scores. What is missing is the path *to*
-it: no run record, no endpoint, no comparison screen — Phases 4–5.
+**FR-4, FR-5, FR-6, FR-13, FR-15, FR-16 and FR-17 are `WIP` as of Phase 3's close (2026-07-31), for the
+same reason as FR-3** — all seven of them, which is every Phase 3 requirement. The seven soft criteria
+(`analysis/criteria.py`), the scorer and ranker (`analysis/scoring.py`, `analysis/ranking.py`, including
+`recommend()` for FR-16), the CP-SAT objective (`solver/objective.py`) and the portfolio
+(`services/portfolio.py`) are implemented and tested — the four properties the specification requires
+pass, verified by ten hypothesis tests in `tests/property/test_scoring_properties.py`, and a real
+portfolio run on the reference instance returns three distinct candidates, each scored /100 with its
+seven sub-scores. What is missing is the path *to* it: no run record, no endpoint, no comparison
+screen — Phases 4–5.
+
+**FR-16 is on that list and stays `WIP` for the ordinary reason** — no user can reach the
+recommendation yet. The ⚠️ note above is about something else: one *clause* of FR-16 describes a state
+that can never occur. Do not read that note as the reason FR-16 is unfinished, and do not let it delay
+FR-16's `✓` once the interface exists; C-14 governs the clause, not the requirement.
 
 ⚠️ **FR-13 is `WIP`, not `✓`, for a second reason beyond the missing interface.** It produces candidates
 under distinct profiles, but the profiles do not yet differentiate for the documented reason:

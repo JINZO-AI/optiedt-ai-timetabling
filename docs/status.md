@@ -7,8 +7,9 @@
 Keep this file current. A stale status file is worse than none, because the next session trusts it.
 
 > **Read [`docs/dashboard.md`](dashboard.md) first.** It carries the project state, the roadmap and the
-> Phase 3 brief in one page. This file is the detail behind it: blockers, measurements, phases,
-> acceptance criteria. Session-by-session history is archived in [`docs/history.md`](history.md).
+> brief for whichever phase is current — **Phase 4** — in one page. This file is the detail behind it:
+> blockers, measurements, phases, acceptance criteria. Session-by-session history is archived in
+> [`docs/history.md`](history.md).
 
 ---
 
@@ -16,10 +17,11 @@ Keep this file current. A stale status file is worse than none, because the next
 
 | | |
 |---|---|
-| **Current phase** | **Phase 3 complete.** Phase 2 delivered H1–H12 with every hard constraint re-verified from the raw CSVs; Phase 3 delivered the seven criteria, the scorer, the ranker (decomposition, dominance, FR-16's recommendation), the CP-SAT objective, the recommendation translator, the portfolio, and validation on the published ITC-2007 instances. C-13, C-7, C-4, C-12 and C-16 are all resolved |
-| **Next step** | **Phase 4 — the web interface.** Not started; React + Vite scaffold only |
+| **Current phase** | **Phase 4 — the web interface. Not started.** React + Vite scaffold only |
+| **Last completed phase** | **Phase 3, closed 2026-07-31.** Delivered the seven criteria, the scorer, the ranker (decomposition, dominance, FR-16's recommendation), the CP-SAT objective, the recommendation translator, the portfolio, and validation on the 21 published ITC-2007 instances. C-4, C-7, C-12, C-13 and C-16 all resolved along the way |
+| **Next step** | Begin Phase 4: availability grid, generation screen, comparison screen, the four timetable views. ⚠️ Settle **C-14** before building the comparison screen's dominance signal |
 | **Days used** | ~3 of 20 across Phases 1–3, which were budgeted 3 + 5 + 3 = 11 |
-| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · **8 commits local only, not pushed** · latest pushed **`acf9aa0`**. ⚠️ This line said `0dc0078` until 2026-07-31, which is `acf9aa0`'s parent — check with `git rev-parse origin/main` rather than trusting a document |
+| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · **9 commits local only, not pushed** · latest pushed **`acf9aa0`**. ⚠️ This line said `0dc0078` until 2026-07-31, which is `acf9aa0`'s parent — check with `git rev-parse origin/main` rather than trusting a document |
 | **Blocked on** | Nothing. **C-5** blocks the FR-13 acceptance test and **C-9** the Phase 6 acceptance tests, both in Phase 6; **C-14** blocks the Phase 4 comparison screen's dominance signal; **C-15** blocks FR-13's `✓`. None blocks starting Phase 4 |
 
 ---
@@ -107,7 +109,7 @@ empty.
    constraints and four soft costs, and models the problem in CP-SAT. Run it with
    `scripts/validate-itc2007.ps1`. Results in Measurements below.
 
-**Phase 3 is closed.** What follows belongs to Phases 4–5, in this order:
+**Phase 3 is closed.** What follows belongs to Phases 4–6, in this order:
 
 6. **Phase 4 — the web interface.** Availability grid, generation screen, comparison screen, the four
    timetable views. Also the first consumer of the portfolio and the decomposition, which exist and are
@@ -124,6 +126,15 @@ empty.
    `recommendations/translator.py` already reads a `lock_session`'s target slot/room out of the
    candidate correctly (`LockedPlacement`); what is missing is downstream — `SolverInput` needs a way to
    carry that target, and `build_variables` needs to honour it.
+9. **Write the instance generator** (`data/generator/`), a stated deliverable of PPM §10 that does not
+   exist. The 13 files in `data/instance/` were produced without it, so the application is unaffected
+   and nothing is blocked — but the deliverable is owed, and it must **reproduce *the* documented
+   instance, not merely a valid one** (ADR-008), because every figure in these documents is measured
+   against that specific instance. It imports nothing from `backend/`: the 13 files are the contract
+   between generator and application (`docs/data-and-instance.md`).
+   ⚠️ **Added to this list 2026-07-31.** It had been recorded in three places — `data-and-instance.md`,
+   ADR-008, and C-11's body — and scheduled in none, which is how a deliverable inside a section headed
+   *RESOLVED* goes missing. Latest sensible point is Phase 6, with the documentation.
 
 Persistence can wait until Phase 5: the solver reads the CSVs through the loader, and PostgreSQL is
 only needed once runs, candidates and publication have to survive a restart.

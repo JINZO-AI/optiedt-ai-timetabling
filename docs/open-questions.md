@@ -30,6 +30,11 @@ Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-
 **C-8, C-11** · **C-4, C-12** · **C-16** (2026-07-30, implemented). The sections below keep their full reasoning;
 headings say which is which.
 
+**Eleven resolved plus four open is fifteen, and the codes run C-1 to C-16 — there is no C-10, and that
+is not a lost question.** The number was never assigned. Recorded here for the same reason the retired
+soft-criterion codes S1/S8/S9 are recorded in the errata: a gap in a sequence invites someone to go
+looking for what fell through it.
+
 ⚠️ C-4 and C-12 **were** one bug waiting to happen, before they were resolved together on 2026-07-30:
 had S5 measured identically zero, the teacher-favouring profile would have differed from the others by
 S3 alone, risking two candidates converging under duplicate removal and failing the three-candidate
@@ -147,7 +152,7 @@ otherwise if the institution expects an approval step in the application.
 
 ---
 
-## RAISED AFTER THE FIRST READING — four still open, four since resolved
+## RAISED AFTER THE FIRST READING — four still open, seven since resolved
 
 *Kept in discovery order rather than re-sorted, so cross-references from other documents and from
 commit messages still land on the right section. **Every heading states its own status** — trust the
@@ -304,10 +309,10 @@ Three ways this can go:
   oversells it and the comparison screen would mislead.
 
 **DEFERRED 2026-07-30 by decision of the technical lead.** Recorded, not resolved; the objective is
-unchanged and the calibration work of the Phase 3 closure checklist proceeds against current
-behaviour. **Nothing is blocked by this** — Phase 3's completion criterion is that three profiles
-produce scored candidates, which they do (3 distinct, 0 duplicates). What it blocks is calling
-**FR-13** finished, because the profiles do not yet differentiate for the documented reason.
+unchanged, and Phase 3 was closed on 2026-07-31 against that current behaviour rather than waiting for
+this. **Phase 3 was not blocked by it** — its completion criterion is that three profiles produce
+scored candidates, which they do (3 distinct, 0 duplicates). What this still blocks is calling **FR-13**
+finished, because the profiles do not yet differentiate for the documented reason.
 
 **Blocks:** FR-13's eventual `✓`; the Phase 4 comparison screen, which would otherwise explain a
 difference by a cause that is not the real one. **Owner:** technical lead.
@@ -563,9 +568,13 @@ The documentation's factual claims are therefore **verified, not merely asserted
 condition the whole "generated data is acceptable if verified" argument rests on (ADR-008).
 
 **What remains of C-11:** the *generator* is still a stated deliverable (PPM §10) and does not exist.
-That is now a documentation and reproducibility task, **not a blocker** — the instance it would produce
-is already here and checked. Re-run the checks any time with
-`scripts/verify-instance.ps1`.
+That is a documentation and reproducibility task, **not a blocker** — the instance it would produce is
+already here and checked. Re-run the checks any time with `scripts/verify-instance.ps1`.
+
+⚠️ **It is now scheduled**, as item 9 of `docs/status.md`'s "Next, in order", latest sensible point
+Phase 6. Until 2026-07-31 it was stated here, in `docs/data-and-instance.md` and in ADR-008, and
+scheduled nowhere — an owed deliverable living inside a section headed **RESOLVED**, which is a good
+way to lose one. **A section marked resolved may still carry work; say where that work is tracked.**
 
 ### C-12 — S5 carries weight 0.20 and has no input data · **RESOLVED 2026-07-30 → option (b), a labeled proxy**
 

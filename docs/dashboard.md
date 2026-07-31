@@ -16,13 +16,14 @@ deferred by decision. **Phase 4 — the web interface — has not started.**
 |---|---|
 | **Project** | OptiEDT — generates, ranks and explains weekly university timetables (Tunisian public faculty, LMD) |
 | **Overall progress** | **55 % of budgeted effort** — Phases 1–3 complete, 11 of 20 days budgeted. By *delivered product* it is lower: **3 of 9 acceptance criteria** met, 0 of 25 requirements finished, because the user-facing path is Phases 4–5. Both numbers are real; quote the measure with the number |
-| **Current phase** | **Phase 3 — COMPLETE 2026-07-31.** Criteria, scoring, ranking, decomposition, dominance, the objective, the recommendation translator, the **portfolio**, **FR-16** and **validation on the 21 published ITC-2007 instances** are all implemented and tested; ADR-011's calibration is discharged. Phase 4 is next and not started |
-| **Current milestone** | Several candidates produced, ordered, and one difference decomposed — met **at the code level**; not yet reachable by a user (no run record, no endpoint) |
-| **Current goal** | **Phase 4 — the web interface.** The complete path from a teacher declaring availability to a published timetable |
+| **Current phase** | **Phase 4 — the web interface. NOT STARTED.** This is the phase to pick up. React + Vite scaffold only |
+| **Last completed phase** | **Phase 3 — COMPLETE 2026-07-31.** Criteria, scoring, ranking, decomposition, dominance, the objective, the recommendation translator, the **portfolio**, **FR-16** and **validation on the 21 published ITC-2007 instances** are all implemented and tested; ADR-011's calibration is discharged |
+| **Milestone reached** | Phase 3's: several candidates produced, ordered, and one difference decomposed — met **at the code level**; not yet reachable by a user (no run record, no endpoint). Phase 4's milestone is the complete path from declaring availability to publication |
+| **Current goal** | Deliver Phase 4: the complete path from a teacher declaring availability to a published timetable |
 | **Next task** | Start Phase 4: the availability grid, the generation screen, the comparison screen, the four timetable views. ⚠️ Settle **C-14** before building the comparison screen's dominance signal |
-| **Branch** | `main` — **8 commits ahead of `origin/main`, unpushed** |
-| **Latest commit** | Phase 3 closure: ITC-2007 validation, then the closing audit. **Local only, not pushed** |
-| **Repository status** | **Ahead of `origin/main` by 8 local commits**, none pushed. Working tree clean. `origin/main` is at [`acf9aa0`](https://github.com/JINZO-AI/optiedt-ai-timetabling/commit/acf9aa0) — ⚠️ three documents said `0dc0078` until 2026-07-31; that is its *parent*. **Read this off `git rev-parse origin/main`, never off a document** |
+| **Branch** | `main` — **9 commits ahead of `origin/main`, unpushed** |
+| **Latest commit** | The Phase 3 closure audit's own corrections. Before it: the closing audit, and ITC-2007 validation. **Local only, not pushed** |
+| **Repository status** | **Ahead of `origin/main` by 9 local commits**, none pushed. Working tree clean. `origin/main` is at [`acf9aa0`](https://github.com/JINZO-AI/optiedt-ai-timetabling/commit/acf9aa0) — ⚠️ three documents said `0dc0078` until 2026-07-31; that is its *parent*. **Read this off `git rev-parse origin/main`, never off a document** |
 | **Project health** | 🟢 **Green.** `scripts/run-checks.ps1` green, **125 tests** pass, 8/8 layer contracts kept. **C-16 resolved** — reproducibility and three distinct candidates hold simultaneously at production settings, and the portfolio is ~2× faster than before. **3 of 9 acceptance criteria met**, up from 1. The engine is validated on all 21 published ITC-2007 instances |
 
 ```
@@ -48,7 +49,7 @@ Phase 6  Tests, documentation, presentation            ░░░░░░░░�
 | **Architecture** | 🟢 Stable. Four layers, boundaries enforced by `import-linter` — **8/8 contracts kept**. No layer edge has been weakened. The eighth, added 2026-07-31, keeps the ITC-2007 benchmark harness out of the product and was verified to fire before being relied on |
 | **Solver** | 🟢 H1–H12 built and demonstrated correct. Reference instance solves in **2.8–3.3 s** (deterministic 0.13–0.21) across 7 seeds, all 218 sessions placed. C-7 fully closed — accounting (`x[s,t₀]`, `y[s,t]`) built on demand, auxiliaries measured at **5,249**. `solver/objective.py` (new) encodes S2–S10 as CP-SAT expressions; `engine.py` posts it — and builds occupancy at all — only when a criterion carries weight, so an all-zero profile is genuinely equivalent to a feasibility solve. **Deterministic budget calibrated 2026-07-30** — it binds exactly, per worker; 1 unit ≈ 4.8 s wall at one worker, ≈ 19 s at all sixteen. **`interleave_search = true` is set and is required for reproducibility** (C-16, ADR-011 amended); the warm start is withheld when an objective is posted, because it pinned all three profiles to one timetable |
 | **Objective** | 🟡 Encoded for S2–S5, S7, S10 in full; **S6 only for non-cumulative room types** (Salle) — cumulative types (Amphi, Lab_Info, Lab_Sciences) have no per-room CP-SAT variable to optimise against, only a post-hoc labeller (C-13). `analysis/criteria.py` still scores S6 correctly for every room after the fact |
-| **Analysis / scoring** | 🟢 Implemented and tested. `analysis/criteria.py` (7 criteria), `analysis/scoring.py` (`DefaultScorer`, `evaluate_candidate`), `analysis/ranking.py` (`DefaultRanker`: rank/decompose/dominance/**recommend** — FR-16). All four properties pass (`tests/property/test_scoring_properties.py`) |
+| **Analysis / scoring** | 🟢 Implemented and tested. `analysis/criteria.py` (7 criteria), `analysis/scoring.py` (`DefaultScorer`, `evaluate_candidate`), `analysis/ranking.py` (`DefaultRanker`: rank/decompose/dominance/**recommend** — FR-16). **The four properties the specification requires** (`docs/scoring-and-explanation.md`) all pass, verified by **ten** hypothesis tests in `tests/property/test_scoring_properties.py` — four specified, ten tests; the extra six cover edge cases the four imply but do not state |
 | **Portfolio** | 🟢 `services/portfolio.py` — the only module importing both `solver` and `analysis`, which is what `services` is for. Defines the three profiles, divides the total budget between them, solves sequentially under one fixed seed, removes duplicate timetables and ranks the survivors under one weight vector. 16 unit tests pin the rules against a recording fake solver. Measured on the reference instance: **3 distinct candidates in 147–150 s**, reproducibly, total budget 90 (C-16) |
 | **API · frontend · persistence** | ⬜ Scaffold only. Phases 4–5. The solver reads CSVs through `optiedt.instance`; PostgreSQL is not needed until runs must survive a restart |
 | **Assistant** | ⬜ Scaffold only. Increment 1 (ADR-010), Phase 4+ |
@@ -165,7 +166,10 @@ working logic already exists in `data/verification/verify_instance.py`.
 **Completion criteria.** The nine acceptance criteria in `docs/status.md` all ticked; documents complete.
 **Dependencies.** All previous phases. **C-5** and **C-9** must be settled before the acceptance tests
 are written, or they will fail for reasons that are not defects.
-**Status.** Not started. One of nine acceptance criteria is met.
+**Also lands here.** The **instance generator** (`data/generator/`), a stated PPM §10 deliverable that
+does not exist — item 9 of `docs/status.md`'s "Next, in order". It must reproduce *the* documented
+instance, not merely a valid one (ADR-008).
+**Status.** Not started. **Three of nine** acceptance criteria are met.
 
 ### Increment 2 — conditional on remaining time
 

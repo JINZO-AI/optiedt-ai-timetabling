@@ -189,6 +189,21 @@ The pattern is worth naming: none was a *disagreement about a decision*. Every o
 state that moved in one file and not in the others. That is what a documentation sweep is for, and it
 is why the sweep has to re-derive rather than re-read.
 
+**A second audit pass found five more, and a third found two beyond those** — after the first had
+declared itself finished. Between them: an open-questions heading claiming four resolved when seven
+were; a **"Current phase"** field naming a phase that had just closed, which is the first thing a cold
+session reads and the one `CLAUDE.md` sends it to; the **instance generator**, a stated PPM §10
+deliverable recorded in three documents and scheduled in none, sitting inside a section headed
+*RESOLVED*; "one of nine acceptance criteria is met" in a roadmap block while the same file's header
+said three; "all four properties pass" beside "10 hypothesis properties" in adjacent rows; and a
+missing C-10 that no document admitted was never assigned.
+
+**The lesson is about auditing, not about these particular errors.** Each pass fixed what it found and
+then looked again — and each time, looking again found more. An audit that runs once reports the errors
+it happened to notice; the count only stops falling when a pass comes back empty. **Repeat until a pass
+finds nothing.** Two of the three passes here would have signed off a repository that still contradicted
+itself.
+
 ---
 
 ## Session log — 2026-07-30, fifth continuation: C-7 resolved, Phase 2's modelling complete
