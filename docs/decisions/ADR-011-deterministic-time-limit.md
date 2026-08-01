@@ -143,8 +143,9 @@ elapsed time separately.
 
 **`num_workers = 1`** — reproducible under a wall-clock limit, and the diagnosis run already requires it.
 **Rejected**: noticeably slower search, which puts the 60-second first-timetable target at real risk on
-an instance already at 95% laboratory occupancy. Trading a large amount of search capability for a
-property obtainable another way.
+an instance already at 95% laboratory occupancy (the figure believed correct when this was decided; it
+is **91% of two-period windows**, 71% of periods, after the C-13 repair — the rejection stands either
+way). Trading a large amount of search capability for a property obtainable another way.
 
 **Keep wall-clock parallelism, weaken the requirement to "same objective value / same score"** —
 **rejected**: FR-19's acceptance test would need rewriting, "two executions give the same result" would

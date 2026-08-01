@@ -62,8 +62,9 @@ forbidden_modules =
 
 # ── Stage 1 independence ───────────────────────────────────────────
 # The pre-analysis exists to answer "is this instance solvable?"
-# WITHOUT a solver. At 95% laboratory occupancy it is the only way to
-# tell a modelling regression from a genuinely infeasible instance.
+# WITHOUT a solver. At 91% laboratory occupancy (of two-period windows)
+# it is the only way to tell a modelling regression from a genuinely
+# infeasible instance.
 # If it could call the solver, it would stop being that instrument.
 [importlinter:contract:preanalysis-needs-no-solver]
 name = Pre-analysis must not import the solver

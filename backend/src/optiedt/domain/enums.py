@@ -41,12 +41,18 @@ class RoomType(StrEnum):
     Kept in French, matching the instance files and the constraint catalogue.
     Renaming them in code alone would create a translation layer between the
     application and its own data, for no benefit. See docs/domain-model.md.
+
+    ⚠️ Counts below are the mix AFTER the C-13 repair of 2026-07-30 (Salle
+    10 → 7, Lab_Info 6 → 8, Lab_Sciences 2 → 3; total still 20). The original
+    mix made the instance infeasible, and these comments carried it until
+    2026-08-01. `rooms.csv` is the authority — verify with
+    scripts/verify-instance.ps1, never from a comment.
     """
 
     AMPHI = "Amphi"  # lecture theatre — 2 rooms, 150 and 250 places
-    SALLE = "Salle"  # ordinary classroom — 10
-    LAB_INFO = "Lab_Info"  # computer laboratory — 6. ⚠️ 95% occupied
-    LAB_SCIENCES = "Lab_Sciences"  # science laboratory — 2
+    SALLE = "Salle"  # ordinary classroom — 7
+    LAB_INFO = "Lab_Info"  # computer laboratory — 8. ⚠️ 91% of 2-period windows
+    LAB_SCIENCES = "Lab_Sciences"  # science laboratory — 3
 
 
 class AvailabilityState(StrEnum):
@@ -60,7 +66,16 @@ class AvailabilityState(StrEnum):
     highest of the seven criteria. SRS §4.1 nonetheless specifies a grid whose
     slots are marked available, unavailable *or preferred*.
 
-    Resolve C-12 before implementing S5 or the availability grid.
+    C-12 is RESOLVED for S5 (2026-07-30): it uses a labeled proxy — sessions
+    placed in the first or last period of the day — chosen because adding a
+    real preferred-window column was out of that pass's scope, not because it
+    is the better answer. PREFERRED therefore still has no representation in
+    the data.
+
+    ⚠️ What is still undecided is the AVAILABILITY GRID's cell model: two
+    states against the current schema, or three once option (a) adds a real
+    preferred-window column. That decision lands in Phase 4 and belongs to the
+    technical lead — see C-12 in docs/open-questions.md.
     """
 
     AVAILABLE = "AVAILABLE"

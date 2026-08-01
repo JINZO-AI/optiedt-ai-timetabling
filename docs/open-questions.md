@@ -545,21 +545,30 @@ line up when read literally.
 the instance as missing and instructed the next session to write a generator reproducing it. It was
 supplied on 2026-07-29 and is now in `data/instance/` — 13 CSVs, 36 KB.
 
-**Every documented figure was re-measured and matches.** Not approximately — exactly:
+**Every documented figure was re-measured and matches.** Not approximately — exactly. Figures below are
+**as of 2026-08-01**, re-run with `scripts/verify-instance.ps1`.
+
+⚠️ **Two rows moved on 2026-07-30 and this table did not follow until 2026-08-01** — the room mix and
+verification 2, the exact two the C-13 repair touched. The "Documented" column now carries the errata's
+corrected figures (see ERRATA, CdC Tables 10 and 11), not the superseded PDF values. **A verification
+table is the one place a stale number does the most damage**, because its whole purpose is to show the
+documentation is checked rather than asserted; for a day it certified a room mix the instance no longer
+had.
 
 | Claim | Documented | Measured |
 |---|---|---|
 | Sessions CM / TD / TP | 32 / 82 / 104 | ✅ 32 / 82 / 104 |
 | Durations 1-period / 2-period | 114 / 104 | ✅ 114 / 104 |
 | Groups PROMO / TD / TP | 6 / 15 / 30 | ✅ 6 / 15 / 30 |
-| Rooms Amphi / Salle / Lab_Info / Lab_Sciences | 2 / 10 / 6 / 2 | ✅ 2 / 10 / 6 / 2 |
+| Rooms Amphi / Salle / Lab_Info / Lab_Sciences | 2 / 7 / 8 / 3 (errata; total 20) | ✅ 2 / 7 / 8 / 3 |
 | Teachers by rank | 7 / 11 / 13 / 13 | ✅ 7 / 11 / 13 / 13 |
 | Students · courses · slots open | 425 · 32 · 28 of 30 | ✅ 425 · 32 · 28 of 30 |
 | Holidays, of which lunar | 18, 10 | ✅ 18, 10 |
 | Availability rows · teachers covered | 157 · 41 of 44 | ✅ 157 · 41, all `SYNTHETIC` |
 | Catalogue hard / soft · weight sum | 12 / 7 · 0.90 | ✅ 12 / 7 · 0.90 |
 | **Verification 1** sessions without a room | 0 | ✅ **0** |
-| **Verification 2** Amphi / Salle / Lab_Info / Lab_Sciences | 57% / 29% / **95%** / 86% | ✅ **57.1 / 29.3 / 95.2 / 85.7** |
+| **Verification 2** periods, Amphi / Salle / Lab_Info / Lab_Sciences | 57% / 42% / **71%** / 57% (errata) | ✅ **57.1 / 41.8 / 71.4 / 57.1** |
+| **Verification 2** two-period windows, Lab_Info / Lab_Sciences | **91%** / 73% — ⚠️ **the bound that binds** | ✅ **90.9 (80/88) / 72.7 (24/33)** |
 | **Verification 3** over rank limit · heaviest | 0 · 12 periods (18 h) | ✅ **0 · 12 / 18** |
 | **Verification 4** in difficulty · smallest margin | 0 · 11 free slots | ✅ **0 · 11** |
 | **Verification 5** invalid refs · students matching | 0 · 425 | ✅ **0 · 425** |

@@ -11,6 +11,22 @@
 /** Lecture (whole promotion) · tutorial (one group) · lab (one subgroup). */
 export type SessionType = 'CM' | 'TD' | 'TP'
 
+/**
+ * ⚠️ KNOWN WRONG — do not build on these values. Fix in Phase 4 before the
+ * first screen consumes them.
+ *
+ * The backend RoomType is a StrEnum whose values are the literals in
+ * rooms.csv: 'Amphi' | 'Salle' | 'Lab_Info' | 'Lab_Sciences'. The English
+ * constants below match nothing the API will ever send, so any room filter
+ * written against them silently matches zero rows.
+ *
+ * They also contradict a stated convention: French domain vocabulary is kept
+ * verbatim in code (CLAUDE.md, "Conventions"), because translating it creates
+ * a mapping layer between the application and its own data for no benefit.
+ *
+ * Left in place only because the pass that found this was restricted to
+ * documentation and comments; changing a type is implementation.
+ */
 export type RoomType =
   | 'LECTURE_THEATRE'
   | 'CLASSROOM'
@@ -97,8 +113,28 @@ export interface Decomposition {
 }
 
 /**
- * Surfaced when the TOP-ranked candidate is dominated, because that reveals the
- * weights are concealing a compromise rather than expressing one.
+ * A candidate another candidate improves on across the board.
+ *
+ * ⚠️ Do NOT build a "the top candidate is dominated" indicator from this. That
+ * state is PROVABLY UNREACHABLE, not merely rare: if B dominates A then
+ * n_i(B) > n_i(A) for every criterion, so
+ *
+ *   score(B) - score(A) = 100 * sum( w_i * ( n_i(B) - n_i(A) ) )
+ *
+ * is a sum of non-negative terms with at least one positive weight (weights
+ * are renormalised to sum to 1). So score(B) > score(A) strictly and A can
+ * never rank first. Confirmed over 200,000 random dominated pairs: zero
+ * counterexamples. It holds under the Pareto reading too, because
+ * TIE_BREAK_ORDER covers all seven criteria.
+ *
+ * Dominance itself is NOT dead — a dominated RUNNER-UP is ordinary, and the
+ * comparison screen can report it. Only the top-candidate case cannot fire,
+ * despite both specification documents asking for it.
+ *
+ * ⚠️ C-14 is OPEN and owned by the technical lead: whether dominance keeps the
+ * strict reading (`>` on every criterion, which S10's zero weight makes bite)
+ * or moves to the Pareto reading, and how the specification's wording is
+ * repaired. Settle it before this drives any UI. See docs/open-questions.md.
  */
 export interface DominanceVerdict {
   candidate: string

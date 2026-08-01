@@ -76,14 +76,23 @@ boundary does.
 
 ### Enforcement
 
-`backend/.importlinter` turns three of these into build failures:
+`backend/.importlinter` turns **eight** of these into build failures:
 
-- `optiedt.analysis` ⇸ `optiedt.solver`
+- `optiedt.analysis` ⇸ `optiedt.solver` — invariant 1
 - `optiedt.analysis` ⇸ `optiedt.db`
-- `optiedt.assistant` ⇸ `optiedt.db`
+- `optiedt.assistant` ⇸ `optiedt.db` — invariant 4
+- `optiedt.assistant` ⇸ `optiedt.solver`
+- `optiedt.preanalysis` ⇸ `optiedt.solver` — stage 1 independence
+- `optiedt.domain` ⇸ every other package, and ⇸ `fastapi`, `sqlalchemy`, `ortools` — purity
+- `optiedt.instance` ⇸ the decision and application layers — the loader is a leaf
+- every product package ⇸ `optiedt.validation` — the benchmark harness is not product code
 
 Run with `uv run lint-imports`. A specification sentence that is only prose decays; one that fails CI
 does not.
+
+⚠️ **Keep this list and `backend/.importlinter` in step.** This section said "three" until 2026-08-01,
+by which time the file carried eight — a contract that exists but is not documented gets weakened by
+someone who never knew it was load-bearing. The file is the authority; this list restates it.
 
 ---
 

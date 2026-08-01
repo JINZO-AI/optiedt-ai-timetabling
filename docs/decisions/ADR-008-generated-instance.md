@@ -52,6 +52,15 @@ a suitable room, 95% laboratory occupancy, heaviest load 12 periods, 425 student
 sizes. **The generator must therefore reproduce *the* documented instance, not merely a valid one**, or
 the delivered documentation becomes false. Tracked as C-11.
 
+> ⚠️ **Correction, 2026-07-30 (C-13) — read before writing the generator.** Two of the figures quoted
+> above are the PDFs' superseded values, kept here because this ADR records the reasoning as it stood.
+> The room mix is **Amphi 2 · Salle 7 · Lab_Info 8 · Lab_Sciences 3** (total still 20), not 2 / 10 / 6 / 2,
+> and laboratory occupancy is **91% of two-period windows** (71% of periods), not 95%. **The original mix
+> made the instance infeasible** — every laboratory session spans two periods, so a room offers 11
+> two-period windows a week, not 28 periods, and 6 computer laboratories offered 66 against 80 needed.
+> **A generator reproducing the figures as literally written above would emit an instance with no
+> solution.** The replacements are in the ERRATA table of `docs/open-questions.md` (CdC Tables 10 and 11).
+
 **Honesty markers.** Every generated availability row carries `SYNTHETIC` in its source column, so a
 generated declaration and a real one are distinguishable at any moment. The ITC-2007 Track 3 folder is
 described as **a source repository bundling the instances with a third-party solver**, not as the

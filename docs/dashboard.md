@@ -21,9 +21,9 @@ deferred by decision. **Phase 4 — the web interface — has not started.**
 | **Milestone reached** | Phase 3's: several candidates produced, ordered, and one difference decomposed — met **at the code level**; not yet reachable by a user (no run record, no endpoint). Phase 4's milestone is the complete path from declaring availability to publication |
 | **Current goal** | Deliver Phase 4: the complete path from a teacher declaring availability to a published timetable |
 | **Next task** | Start Phase 4: the availability grid, the generation screen, the comparison screen, the four timetable views. ⚠️ Settle **C-14** before building the comparison screen's dominance signal |
-| **Branch** | `main` — **9 commits ahead of `origin/main`, unpushed** |
-| **Latest commit** | The Phase 3 closure audit's own corrections. Before it: the closing audit, and ITC-2007 validation. **Local only, not pushed** |
-| **Repository status** | **Ahead of `origin/main` by 9 local commits**, none pushed. Working tree clean. `origin/main` is at [`acf9aa0`](https://github.com/JINZO-AI/optiedt-ai-timetabling/commit/acf9aa0) — ⚠️ three documents said `0dc0078` until 2026-07-31; that is its *parent*. **Read this off `git rev-parse origin/main`, never off a document** |
+| **Branch** | `main` — **1 commit ahead of `origin/main`**, as of 2026-08-01 |
+| **Latest commit** | [`061addf`](https://github.com/JINZO-AI/optiedt-ai-timetabling/commit/061addf) "Record the Git commit policy in CLAUDE.md" — **local only**. Everything before it, including the closure audit and ITC-2007 validation, is pushed |
+| **Repository status** | **Ahead of `origin/main` by 1 commit.** Working tree clean. `origin/main` is at [`bfe805a`](https://github.com/JINZO-AI/optiedt-ai-timetabling/commit/bfe805a) as of 2026-08-01. ⚠️ **This line has now been wrong twice**: it said `0dc0078` (that commit's *parent*) until 2026-07-31, then `acf9aa0` with "9 commits ahead" until 2026-08-01 — by which time eight of those nine had been pushed. **Read it off `git rev-parse origin/main`, never off a document, this one included** |
 | **Project health** | 🟢 **Green.** `scripts/run-checks.ps1` green, **125 tests** pass, 8/8 layer contracts kept. **C-16 resolved** — reproducibility and three distinct candidates hold simultaneously at production settings, and the portfolio is ~2× faster than before. **3 of 9 acceptance criteria met**, up from 1. The engine is validated on all 21 published ITC-2007 instances |
 
 ```

@@ -4,10 +4,10 @@ Their purpose is to distinguish two situations a solver reports identically:
 an instance that GENUINELY has no solution, and an ERROR IN THE MODEL.
 
 This is the primary debugging instrument of the project, not a nicety. The
-reference instance sits at 95% computer-laboratory occupancy; at that
-saturation a modelling regression surfaces as INFEASIBLE rather than as a slow
-solve, and without these checks you cannot tell which you are looking at.
-Run them first, always.
+reference instance sits at 91% computer-laboratory occupancy OF TWO-PERIOD
+WINDOWS — 8 spare in the whole week; at that saturation a modelling regression
+surfaces as INFEASIBLE rather than as a slow solve, and without these checks
+you cannot tell which you are looking at. Run them first, always.
 
 May NOT import the solver — enforced by .importlinter. If it could call the
 solver it would stop being the instrument described above.
@@ -50,9 +50,12 @@ class Check(Protocol):
 # reference instance, all passing:
 #
 #   ROOM_SUITABILITY    0 sessions without a suitable room
-#   SLOT_COVERAGE       lecture theatres 57% · classrooms 29%
-#                       · computer laboratories 95% ← the number to watch
-#                       · science laboratories 86%
+#   SLOT_COVERAGE       BY PERIOD, necessary but NOT sufficient:
+#                       lecture theatres 57% · classrooms 42%
+#                       · computer laboratories 71% · science laboratories 57%
+#                       BY TWO-PERIOD WINDOW, the bound that binds:
+#                       computer laboratories 91% ← the number to watch
+#                       · science laboratories 73%
 #   TEACHER_LOAD        0 teachers above the limit; heaviest 12 periods (18 h)
 #   TEACHER_FREE_SLOTS  0 teachers in difficulty; smallest margin 11 free slots
 #   GROUP_HIERARCHY     0 invalid references, 0 invalid chains;
@@ -64,13 +67,29 @@ CHECK_ROOM_SUITABILITY = "ROOM_SUITABILITY"
 CHECK_SLOT_COVERAGE = "SLOT_COVERAGE"
 """Open slots cover the demand for each room type.
 
-⚠️ This is the check to watch. Computer laboratories at 95% of available
-capacity are the tightest point of the instance: withdrawing one laboratory
-would very probably make it infeasible. Re-read this figure whenever the
-instance is modified.
+⚠️ This is the check to watch, and it MUST APPLY BOTH BOUNDS.
 
-Note that this duplicates H11 in arithmetic form — see C-6 on whether H11 should
-therefore carry its own assumption literal in the diagnosis run.
+The period bound (`sessions * duration <= rooms * open_slots`) is necessary but
+NOT sufficient. Every laboratory session spans two periods, a two-period
+session must fit inside one day (H8) and a 5-period day offers a room only two
+such windows — so what a room really offers is `Σ floor(L/2)` over the week's
+contiguous runs: 11 windows, not 28 periods. The contiguity bound is
+`sessions of duration d <= rooms * Σ floor(L/d)`.
+
+Computer laboratories are the tightest point at 91% OF TWO-PERIOD WINDOWS —
+8 spare in the week — against a reassuring 71% of periods. Withdrawing one
+laboratory removes 11 windows and makes the instance infeasible.
+
+⚠️ Shipping the period bound alone would put the C-13 blind spot inside the
+product: it passed a genuinely infeasible instance while reporting a
+comfortable 95%, and three sessions went looking for a solver bug that did not
+exist. FR-12 must port BOTH bounds. The working logic is already in
+data/verification/verify_instance.py.
+
+Note that this duplicates H11 in arithmetic form. C-6 is RESOLVED: H11 carries
+NO assumption literal, because it is implied by H3 once `room[s]` is assigned
+and there is no separate posting to attach one to. Only H1, H3, H7 and H12
+carry literals.
 """
 
 CHECK_TEACHER_LOAD = "TEACHER_LOAD"

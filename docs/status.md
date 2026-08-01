@@ -21,7 +21,7 @@ Keep this file current. A stale status file is worse than none, because the next
 | **Last completed phase** | **Phase 3, closed 2026-07-31.** Delivered the seven criteria, the scorer, the ranker (decomposition, dominance, FR-16's recommendation), the CP-SAT objective, the recommendation translator, the portfolio, and validation on the 21 published ITC-2007 instances. C-4, C-7, C-12, C-13 and C-16 all resolved along the way |
 | **Next step** | Begin Phase 4: availability grid, generation screen, comparison screen, the four timetable views. ⚠️ Settle **C-14** before building the comparison screen's dominance signal |
 | **Days used** | ~3 of 20 across Phases 1–3, which were budgeted 3 + 5 + 3 = 11 |
-| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · **9 commits local only, not pushed** · latest pushed **`acf9aa0`**. ⚠️ This line said `0dc0078` until 2026-07-31, which is `acf9aa0`'s parent — check with `git rev-parse origin/main` rather than trusting a document |
+| **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · **1 commit local only** · latest pushed **`bfe805a`**, as of 2026-08-01. ⚠️ This line has been wrong twice — `0dc0078` (a parent commit) until 2026-07-31, then `acf9aa0` with "9 commits" until 2026-08-01, after eight of them had been pushed. **Check with `git rev-parse origin/main` rather than trusting a document** |
 | **Blocked on** | Nothing. **C-5** blocks the FR-13 acceptance test and **C-9** the Phase 6 acceptance tests, both in Phase 6; **C-14** blocks the Phase 4 comparison screen's dominance signal; **C-15** blocks FR-13's `✓`. None blocks starting Phase 4 |
 
 ---
