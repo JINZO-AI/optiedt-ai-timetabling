@@ -12,26 +12,15 @@
 export type SessionType = 'CM' | 'TD' | 'TP'
 
 /**
- * ⚠️ KNOWN WRONG — do not build on these values. Fix in Phase 4 before the
- * first screen consumes them.
+ * Lecture theatre · classroom · computer lab · science lab.
  *
- * The backend RoomType is a StrEnum whose values are the literals in
- * rooms.csv: 'Amphi' | 'Salle' | 'Lab_Info' | 'Lab_Sciences'. The English
- * constants below match nothing the API will ever send, so any room filter
- * written against them silently matches zero rows.
- *
- * They also contradict a stated convention: French domain vocabulary is kept
- * verbatim in code (CLAUDE.md, "Conventions"), because translating it creates
- * a mapping layer between the application and its own data for no benefit.
- *
- * Left in place only because the pass that found this was restricted to
- * documentation and comments; changing a type is implementation.
+ * These are the literals in rooms.csv and the values the API sends, kept in
+ * French verbatim (CLAUDE.md, "Conventions"). They were English constants
+ * until Phase 4 — which matched nothing the API can send, so any room filter
+ * written against them would have matched zero rows while looking correct.
+ * Pinned on the wire by backend tests/unit/test_api_schemas.py.
  */
-export type RoomType =
-  | 'LECTURE_THEATRE'
-  | 'CLASSROOM'
-  | 'COMPUTER_LABORATORY'
-  | 'SCIENCE_LABORATORY'
+export type RoomType = 'Amphi' | 'Salle' | 'Lab_Info' | 'Lab_Sciences'
 
 export type AvailabilityState = 'AVAILABLE' | 'UNAVAILABLE' | 'PREFERRED'
 

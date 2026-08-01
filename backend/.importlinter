@@ -142,3 +142,23 @@ source_modules =
     optiedt.tasks
 forbidden_modules =
     optiedt.validation
+
+# ── The REST surface orchestrates, it does not decide ──────────────
+# docs/architecture.md's module map gives optiedt.api `domain` and
+# `services` and nothing else. A router that reached the solver could
+# launch a solve inside a request handler - which is precisely the
+# shape ADR-005 and the run lifecycle exist to prevent, since solving
+# takes minutes and no HTTP request is held open for it.
+#
+# Note this contract names the SOLVER only, not the analysis layer.
+# The comparison endpoint has to type its response against
+# analysis.interfaces (Decomposition, Contribution, DominanceVerdict),
+# which are plain frozen dataclasses. Forbidding that import would
+# force those shapes to be duplicated in the API for no gain.
+[importlinter:contract:api-cannot-reach-the-solver]
+name = API layer must not import the solver
+type = forbidden
+source_modules =
+    optiedt.api
+forbidden_modules =
+    optiedt.solver

@@ -76,7 +76,7 @@ boundary does.
 
 ### Enforcement
 
-`backend/.importlinter` turns **eight** of these into build failures:
+`backend/.importlinter` turns **nine** of these into build failures:
 
 - `optiedt.analysis` ⇸ `optiedt.solver` — invariant 1
 - `optiedt.analysis` ⇸ `optiedt.db`
@@ -86,6 +86,13 @@ boundary does.
 - `optiedt.domain` ⇸ every other package, and ⇸ `fastapi`, `sqlalchemy`, `ortools` — purity
 - `optiedt.instance` ⇸ the decision and application layers — the loader is a leaf
 - every product package ⇸ `optiedt.validation` — the benchmark harness is not product code
+- `optiedt.api` ⇸ `optiedt.solver` — added Phase 4, verified to fire before being relied on
+
+⚠️ The ninth names the **solver only, not the analysis layer**. The comparison endpoint has to type its
+response against `analysis.interfaces` (`Decomposition`, `Contribution`, `DominanceVerdict`), which are
+plain frozen dataclasses; forbidding that import would force those shapes to be duplicated in the API
+for no gain. What the contract actually prevents is a router launching a solve inside a request
+handler — the shape ADR-005 and the run lifecycle exist to rule out.
 
 Run with `uv run lint-imports`. A specification sentence that is only prose decays; one that fails CI
 does not.

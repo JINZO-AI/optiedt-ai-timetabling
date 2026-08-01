@@ -16,11 +16,11 @@ deferred by decision. **Phase 4 — the web interface — has not started.**
 |---|---|
 | **Project** | OptiEDT — generates, ranks and explains weekly university timetables (Tunisian public faculty, LMD) |
 | **Overall progress** | **55 % of budgeted effort** — Phases 1–3 complete, 11 of 20 days budgeted. By *delivered product* it is lower: **3 of 9 acceptance criteria** met, 0 of 25 requirements finished, because the user-facing path is Phases 4–5. Both numbers are real; quote the measure with the number |
-| **Current phase** | **Phase 4 — the web interface. NOT STARTED.** This is the phase to pick up. React + Vite scaffold only |
+| **Current phase** | **Phase 4 — the web interface. IN PROGRESS, M1 of 6 complete.** API foundation landed; frontend still scaffold only. Milestone table in the Phase 4 roadmap block below |
 | **Last completed phase** | **Phase 3 — COMPLETE 2026-07-31.** Criteria, scoring, ranking, decomposition, dominance, the objective, the recommendation translator, the **portfolio**, **FR-16** and **validation on the 21 published ITC-2007 instances** are all implemented and tested; ADR-011's calibration is discharged |
 | **Milestone reached** | Phase 3's: several candidates produced, ordered, and one difference decomposed — met **at the code level**; not yet reachable by a user (no run record, no endpoint). Phase 4's milestone is the complete path from declaring availability to publication |
 | **Current goal** | Deliver Phase 4: the complete path from a teacher declaring availability to a published timetable |
-| **Next task** | Start Phase 4: the availability grid, the generation screen, the comparison screen, the four timetable views. ⚠️ Settle **C-14** before building the comparison screen's dominance signal |
+| **Next task** | Phase 4 **M2** — the run lifecycle: `services/runs.py`, the background executor, `POST /runs` → 202 and polling. ⚠️ Settle **C-14** before M5's dominance signal and **C-12(a)** before M6's grid cell model |
 | **Branch** | `main` — ahead of `origin/main` by unpushed local commits. **No count is recorded here**, deliberately: `git rev-list --count origin/main..HEAD` |
 | **Latest commit** | **Not recorded here** — it is stale the moment anything is committed. `git log -1 --oneline`. The durable fact is the last *pushed* commit, in the row below |
 | **Repository status** | Last pushed: `origin/main` at [`bfe805a`](https://github.com/JINZO-AI/optiedt-ai-timetabling/commit/bfe805a), 2026-08-01. Everything after it is local. ⚠️ **This row has been wrong three times.** `0dc0078` (a *parent* commit) until 2026-07-31; `acf9aa0` with "9 commits ahead" until 2026-08-01, by which time eight of the nine were pushed; then "1 commit ahead" — which the very commit correcting it made 2. **A commit count cannot live in a file that commits change.** Record the pushed SHA, re-derive the rest: `git rev-parse origin/main` |
@@ -46,15 +46,15 @@ Phase 6  Tests, documentation, presentation            ░░░░░░░░�
 
 | Area | State |
 |---|---|
-| **Architecture** | 🟢 Stable. Four layers, boundaries enforced by `import-linter` — **8/8 contracts kept**. No layer edge has been weakened. The eighth, added 2026-07-31, keeps the ITC-2007 benchmark harness out of the product and was verified to fire before being relied on |
+| **Architecture** | 🟢 Stable. Four layers, boundaries enforced by `import-linter` — **9/9 contracts kept**. No layer edge has been weakened; the count has only ever gone up. The eighth (2026-07-31) keeps the ITC-2007 harness out of the product; the ninth (Phase 4 M1) keeps `api` off the solver. Both were verified to fire before being relied on |
 | **Solver** | 🟢 H1–H12 built and demonstrated correct. Reference instance solves in **2.8–3.3 s** (deterministic 0.13–0.21) across 7 seeds, all 218 sessions placed. C-7 fully closed — accounting (`x[s,t₀]`, `y[s,t]`) built on demand, auxiliaries measured at **5,249**. `solver/objective.py` (new) encodes S2–S10 as CP-SAT expressions; `engine.py` posts it — and builds occupancy at all — only when a criterion carries weight, so an all-zero profile is genuinely equivalent to a feasibility solve. **Deterministic budget calibrated 2026-07-30** — it binds exactly, per worker; 1 unit ≈ 4.8 s wall at one worker, ≈ 19 s at all sixteen. **`interleave_search = true` is set and is required for reproducibility** (C-16, ADR-011 amended); the warm start is withheld when an objective is posted, because it pinned all three profiles to one timetable |
 | **Objective** | 🟡 Encoded for S2–S5, S7, S10 in full; **S6 only for non-cumulative room types** (Salle) — cumulative types (Amphi, Lab_Info, Lab_Sciences) have no per-room CP-SAT variable to optimise against, only a post-hoc labeller (C-13). `analysis/criteria.py` still scores S6 correctly for every room after the fact |
 | **Analysis / scoring** | 🟢 Implemented and tested. `analysis/criteria.py` (7 criteria), `analysis/scoring.py` (`DefaultScorer`, `evaluate_candidate`), `analysis/ranking.py` (`DefaultRanker`: rank/decompose/dominance/**recommend** — FR-16). **The four properties the specification requires** (`docs/scoring-and-explanation.md`) all pass, verified by **ten** hypothesis tests in `tests/property/test_scoring_properties.py` — four specified, ten tests; the extra six cover edge cases the four imply but do not state |
 | **Portfolio** | 🟢 `services/portfolio.py` — the only module importing both `solver` and `analysis`, which is what `services` is for. Defines the three profiles, divides the total budget between them, solves sequentially under one fixed seed, removes duplicate timetables and ranks the survivors under one weight vector. 16 unit tests pin the rules against a recording fake solver. Measured on the reference instance: **3 distinct candidates in 147–150 s**, reproducibly, total budget 90 (C-16) |
-| **API · frontend · persistence** | ⬜ Scaffold only. Phases 4–5. The solver reads CSVs through `optiedt.instance`; PostgreSQL is not needed until runs must survive a restart |
+| **API · frontend · persistence** | 🟡 **API foundation landed (Phase 4, M1).** `optiedt.api` serves `GET /api/instance` and FR-2's availability read/write under `/api`, which `vite.config.ts` already proxies. `services/availability.py` holds declarations **in memory** behind a Protocol — Phase 5 substitutes a database-backed store with no router change. A ninth import contract, `api ⇸ solver`, was added and verified to fire. **Frontend is still scaffold only.** PostgreSQL is not needed until runs must survive a restart |
 | **Assistant** | ⬜ Scaffold only. Increment 1 (ADR-010), Phase 4+ |
-| **Validation** | 🟢 `scripts/run-checks.ps1` green: **8/8 contracts** · ruff · format · mypy strict on 48 files · tests · instance verification · frontend `tsc`. Separately, `scripts/validate-itc2007.ps1` runs the engine against the 21 published ITC-2007 instances — not in `run-checks` because a full sweep takes tens of minutes |
-| **Tests** | 🟢 **125 passing** (103 fast + 22 solver-marked), up from 27 at the end of Phase 2. New this phase: `tests/integration/test_reproducibility.py` (FR-19/ADR-011 — reproducibility **at production settings**, and the per-worker budget binding), `tests/property/test_scoring_properties.py` (10 hypothesis properties), `tests/unit/test_criteria.py` (the seven formulas against a hand-computable instance), `tests/integration/test_objective_matches_analysis.py` (**the cross-layer guard** — CP-SAT's objective value must equal the analysis layer's recomputation on the same placements), `tests/unit/test_portfolio.py` (16 orchestration rules against a recording fake solver), `tests/unit/test_recommendation.py` (FR-16, including the proof that a dominated candidate can never be recommended), `tests/unit/test_itc2007_cost.py` and `tests/integration/test_itc2007_validation.py` (ITC-2007's rules against hand-computed values, and against seven solutions the archive publishes) |
+| **Validation** | 🟢 `scripts/run-checks.ps1` green: **9/9 contracts** · ruff · format · mypy strict on 55 files · tests · instance verification · frontend `tsc`. `pytest` exit 5 is **no longer tolerated** (Phase 4 M1) — with 140 tests collected, allowing "collected nothing" would let a broken import pass as success. Separately, `scripts/validate-itc2007.ps1` runs the engine against the 21 published ITC-2007 instances — not in `run-checks` because a full sweep takes tens of minutes |
+| **Tests** | 🟢 **140 passing** (118 fast + 22 solver-marked). Phase 4 M1 added `tests/unit/test_api_schemas.py` (the wire format: French enum literals, camelCase fields — the guard against the `RoomType` defect returning) and `tests/unit/test_availability_api.py` (FR-2's replace-wholesale rule and the `SYNTHETIC`/`TEACHER` distinction). Phase 3's 125 are unchanged. New in Phase 3: `tests/integration/test_reproducibility.py` (FR-19/ADR-011 — reproducibility **at production settings**, and the per-worker budget binding), `tests/property/test_scoring_properties.py` (10 hypothesis properties), `tests/unit/test_criteria.py` (the seven formulas against a hand-computable instance), `tests/integration/test_objective_matches_analysis.py` (**the cross-layer guard** — CP-SAT's objective value must equal the analysis layer's recomputation on the same placements), `tests/unit/test_portfolio.py` (16 orchestration rules against a recording fake solver), `tests/unit/test_recommendation.py` (FR-16, including the proof that a dominated candidate can never be recommended), `tests/unit/test_itc2007_cost.py` and `tests/integration/test_itc2007_validation.py` (ITC-2007's rules against hand-computed values, and against seven solutions the archive publishes) |
 | **Documentation** | 🟢 Current as of this commit. Session history archived to `docs/history.md` |
 
 ---
@@ -145,7 +145,23 @@ candidates is Phase 5 and will most likely be built alongside this phase's `serv
 than as a separate pass. Two open questions land here: **C-14**, which must be settled before the
 comparison screen builds a dominance signal that can never fire, and **C-12** — the availability grid
 needs a three-state cell if a real preferred-window column (option (a), not yet built) is added.
-**Status.** Not started. React + Vite scaffold only.
+
+**Status. IN PROGRESS — M1 of 6 complete.** Six milestones, in this order:
+
+| # | Milestone | State |
+|---|---|---|
+| **M1** | API foundation — `GET /api/instance`, FR-2 availability read/write, wire format pinned | ✅ **done** |
+| **M2** | Run lifecycle — `services/runs.py`, `tasks/`, `POST /runs` → 202, polling, candidate + comparison endpoints | ⬜ next |
+| **M3** | Frontend shell + generation screen (FR-13, FR-5, FR-6) | ⬜ |
+| **M4** | Timetable views (FR-7, FR-18) | ⬜ |
+| **M5** | Comparison screen (FR-14, FR-15) — ⚠️ dominance signal held for **C-14** | ⬜ |
+| **M6** | Availability grid (FR-2) — ⚠️ cell model needs **C-12(a)** | ⬜ |
+
+⚠️ **Scope note, stated rather than assumed.** Phase 4 is written as "the web interface", but no screen
+can exist without an API, and this block already anticipated it ("built alongside this phase's
+`services`/`db` work"). Phase 4 therefore delivers **the screens plus the minimum API to reach them,
+with the run store in memory**. Authentication and RBAC (FR-11), PostgreSQL and the diagnosis run stay
+in Phase 5. **The API has no authentication yet and must not be exposed beyond a development machine.**
 
 ### Phase 5 — Pre-analysis in-app, diagnosis, auth, run record · ⬜ 2 days
 

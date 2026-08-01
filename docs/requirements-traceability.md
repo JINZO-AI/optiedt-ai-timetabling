@@ -7,7 +7,9 @@ built?" without reading code.
 
 Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 
-**Where the project actually is: 8 of 25 requirements are under way, none is finished.** Phase 2 built
+**Where the project actually is: 9 of 25 requirements are under way, none is finished.** FR-2 joined
+the list in Phase 4 M1: the availability endpoints and the replace-wholesale rule exist and are tested,
+but a teacher cannot reach them — the grid itself is M6. Phase 2 built
 the decision layer (FR-3) and Phase 3 built the objective, scoring, ranking, decomposition, dominance,
 the portfolio and the recommendation rule (FR-4, FR-5, FR-6, FR-13, FR-15, FR-16, FR-17) — but a
 requirement is only `✓` once a user can reach it, and there is no API or interface yet. Do not read the
@@ -58,7 +60,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | FR | Requirement | Priority | Module | Test | Status |
 |---|---|---|---|---|---|
 | **FR-1** | Load and manage department data | Necessary | `api`, `db`, `services` | `acceptance/test_fr01` | — |
-| **FR-2** | Teacher declares availability on a weekly grid | Necessary | `api`, `db`; `features/availability` | `acceptance/test_fr02` | — |
+| **FR-2** | Teacher declares availability on a weekly grid | Necessary | `api`, `db`; `features/availability` | `unit/test_availability_api` ✓, `acceptance/test_fr02` | **WIP** |
 | **FR-3** | Generate a timetable respecting H1–H12 | Necessary | `solver` | `integration/test_h1_h12` ✓ | **WIP** |
 | **FR-4** | Improve quality criteria within a time limit | Necessary | `solver` — objective | `integration` | **WIP** |
 | **FR-5** | Produce several candidates, each scored out of 100 | Necessary | `analysis` — scoring | `acceptance/test_fr05` | **WIP** |
