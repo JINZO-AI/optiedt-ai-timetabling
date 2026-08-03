@@ -54,6 +54,10 @@ Push-Location (Join-Path $root 'frontend')
 try {
     if (Test-Path 'node_modules') {
         Invoke-Step 'frontend types' { npm run typecheck }
+        # The display-layer tests. `tsc` cannot cover what these check: the
+        # acceptance criterion says the *displayed* contributions sum to the
+        # *displayed* score difference, and rounding happens in the component.
+        Invoke-Step 'frontend tests' { npm run test }
     } else {
         Write-Host "[skip] frontend - run scripts/bootstrap.ps1 first" -ForegroundColor Yellow
     }

@@ -13,7 +13,15 @@ but a teacher cannot reach them — the grid itself is M6. **FR-7 and FR-18 join
 timetable views render a candidate by teacher, group and room, and report each room's occupancy —
 verified against the real solver, with the occupancy totals matching `verify-instance` exactly. They
 stay `WIP` because no automated test covers the views yet and there is no authentication deciding who
-may see which timetable (FR-11, Phase 5). Phase 2 built
+may see which timetable (FR-11, Phase 5). **FR-14 joined in M5**, with the comparison screen; FR-15's
+display half is now built and tested, and the acceptance criterion it serves — displayed contributions
+summing to the displayed score difference — is **met** (`docs/status.md`). FR-15 stays `WIP` only for
+its acceptance test, which is Phase 6.
+
+⚠️ **FR-17 is deliberately not advanced by M5.** `GET /runs/{id}/dominance` exists and is tested, but
+the comparison screen shows no dominance signal: **C-14** is open, and the "dominated top candidate"
+indicator both documents ask for is provably unreachable. Building it would ship an indicator that can
+never fire. Phase 2 built
 the decision layer (FR-3) and Phase 3 built the objective, scoring, ranking, decomposition, dominance,
 the portfolio and the recommendation rule (FR-4, FR-5, FR-6, FR-13, FR-15, FR-16, FR-17) — but a
 requirement is only `✓` once a user can reach it, and there is no API or interface yet. Do not read the
@@ -82,8 +90,8 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-11** | Authenticate users and restrict access by role | Necessary | `core` — security; `api` — deps | `acceptance/test_fr11` | — |
 | **FR-12** | Verify data before solving; report structural risks | Necessary | `preanalysis` | `acceptance/test_fr12` | — |
 | **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs; `solver` | `unit/test_portfolio` ✓, `acceptance/test_fr13` ⚠️ | **WIP** |
-| **FR-14** | Compare two candidates criterion by criterion | Necessary | `features/comparison` | `integration` | — |
-| **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition | `property` ✓, `acceptance/test_fr15` | **WIP** |
+| **FR-14** | Compare two candidates criterion by criterion | Necessary | `features/comparison` | `integration` | **WIP** |
+| **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition; `features/comparison` | `property` ✓, `frontend ContributionsTable.test` ✓, `acceptance/test_fr15` | **WIP** |
 | **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking | `unit/test_recommendation` ✓ | **WIP** |
 | **FR-17** | Signal a recommended candidate that another dominates | Expected | `analysis` — dominance | `property` ✓ | **WIP** |
 | **FR-18** | Display occupancy of each classroom and laboratory | Expected | `features/timetable` | `integration` | **WIP** |

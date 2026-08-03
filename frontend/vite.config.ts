@@ -1,7 +1,9 @@
 import { fileURLToPath, URL } from 'node:url'
 
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+// `vitest/config` rather than `vite`: it is the same defineConfig plus the
+// `test` key below, so the alias and the tests cannot drift apart.
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [react()],
@@ -22,5 +24,11 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['src/test/setup.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
   },
 })

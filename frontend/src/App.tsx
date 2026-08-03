@@ -1,5 +1,6 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 
+import { ComparisonScreen } from '@/features/comparison/ComparisonScreen'
 import { GenerationScreen } from '@/features/generation/GenerationScreen'
 import { TimetableScreen } from '@/features/timetable/TimetableScreen'
 
@@ -23,6 +24,7 @@ export function App() {
         <nav className="app__nav">
           <NavLink to="/generation">Génération</NavLink>
           <NavLink to="/emplois-du-temps">Emplois du temps</NavLink>
+          <NavLink to="/comparaison">Comparaison</NavLink>
         </nav>
       </header>
 
@@ -31,6 +33,7 @@ export function App() {
           <Route path="/" element={<Navigate to="/generation" replace />} />
           <Route path="/generation" element={<GenerationScreen />} />
           <Route path="/emplois-du-temps" element={<TimetableScreen />} />
+          <Route path="/comparaison" element={<ComparisonScreen />} />
           <Route path="*" element={<p className="empty">Page inconnue.</p>} />
         </Routes>
       </main>

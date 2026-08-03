@@ -438,6 +438,35 @@ table.grid th {
   margin-top: 0.15rem;
 }
 
+/* ── comparison ───────────────────────────────────────────────────── */
+
+.compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+table.contributions tfoot th,
+table.contributions tfoot td {
+  border-top: 2px solid var(--ink);
+  border-bottom: none;
+  padding-top: 0.4rem;
+  font-weight: 600;
+}
+
+table.contributions tfoot th {
+  text-align: right;
+  color: var(--ink);
+}
+
+.gain {
+  color: var(--good);
+}
+
+.loss {
+  color: var(--bad);
+}
+
 .occupancy {
   margin-bottom: 1.25rem;
 }
