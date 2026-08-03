@@ -7,9 +7,13 @@ built?" without reading code.
 
 Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 
-**Where the project actually is: 9 of 25 requirements are under way, none is finished.** FR-2 joined
+**Where the project actually is: 11 of 25 requirements are under way, none is finished.** FR-2 joined
 the list in Phase 4 M1: the availability endpoints and the replace-wholesale rule exist and are tested,
-but a teacher cannot reach them — the grid itself is M6. Phase 2 built
+but a teacher cannot reach them — the grid itself is M6. **FR-7 and FR-18 joined in M4**: the four
+timetable views render a candidate by teacher, group and room, and report each room's occupancy —
+verified against the real solver, with the occupancy totals matching `verify-instance` exactly. They
+stay `WIP` because no automated test covers the views yet and there is no authentication deciding who
+may see which timetable (FR-11, Phase 5). Phase 2 built
 the decision layer (FR-3) and Phase 3 built the objective, scoring, ranking, decomposition, dominance,
 the portfolio and the recommendation rule (FR-4, FR-5, FR-6, FR-13, FR-15, FR-16, FR-17) — but a
 requirement is only `✓` once a user can reach it, and there is no API or interface yet. Do not read the
@@ -71,7 +75,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-4** | Improve quality criteria within a time limit | Necessary | `solver` — objective | `integration` | **WIP** |
 | **FR-5** | Produce several candidates, each scored out of 100 | Necessary | `analysis` — scoring | `acceptance/test_fr05` | **WIP** |
 | **FR-6** | Order candidates by score | Necessary | `analysis` — ranking | `property` ✓ | **WIP** |
-| **FR-7** | Display the timetable by teacher, group and room | Necessary | `features/timetable` | `integration` | — |
+| **FR-7** | Display the timetable by teacher, group and room | Necessary | `features/timetable` | `integration` | **WIP** |
 | **FR-8** | Report the rules in conflict when no timetable exists | Necessary | `preanalysis`, `solver` — diagnosis | `acceptance/test_fr08` | — |
 | **FR-9** | Configure the calendar: holidays, closed slots, shortened day | Necessary | `db`, `features/admin` | `acceptance/test_fr09` | — |
 | **FR-10** | Print or export a timetable view | Expected | `features/timetable` | `integration` | — |
@@ -82,7 +86,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition | `property` ✓, `acceptance/test_fr15` | **WIP** |
 | **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking | `unit/test_recommendation` ✓ | **WIP** |
 | **FR-17** | Signal a recommended candidate that another dominates | Expected | `analysis` — dominance | `property` ✓ | **WIP** |
-| **FR-18** | Display occupancy of each classroom and laboratory | Expected | `features/timetable` | `integration` | — |
+| **FR-18** | Display occupancy of each classroom and laboratory | Expected | `features/timetable` | `integration` | **WIP** |
 | **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db`, `services` | `acceptance/test_fr19` | — |
 | **FR-22** | Explain a candidate's quality from computed figures | Necessary | `assistant` | `acceptance/test_fr22` | — |
 | **FR-23** | Regenerate from an accepted recommendation, preserving H1–H12 | Necessary | `recommendations` | `acceptance/test_fr23` | — |

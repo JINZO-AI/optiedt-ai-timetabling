@@ -317,3 +317,131 @@ table.subscores tbody tr:last-child td {
   background: var(--line);
   width: 60px;
 }
+
+/* ── selects and tabs ─────────────────────────────────────────────── */
+
+.field select {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  min-width: 16rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.tab {
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+}
+
+.tab--active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── the weekly grid ──────────────────────────────────────────────── */
+
+table.grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.8rem;
+}
+
+table.grid th {
+  font-weight: 600;
+  padding: 0.4rem;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.grid__corner {
+  width: 6.5rem;
+}
+
+.grid__hour {
+  font-weight: 400;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cell {
+  border: 1px solid var(--line);
+  height: 4.4rem;
+  vertical-align: top;
+  padding: 0.3rem 0.35rem;
+}
+
+.cell--closed {
+  background: repeating-linear-gradient(
+    45deg,
+    #f0f2f5,
+    #f0f2f5 6px,
+    #e7eaee 6px,
+    #e7eaee 12px
+  );
+  color: var(--ink-soft);
+  text-align: center;
+  font-size: 0.7rem;
+}
+
+/* The second period of a two-period session: the cell above already names it,
+   so repeating the label would read as two separate sessions. */
+.cell--continued {
+  border-top: none;
+  background: var(--accent-soft);
+}
+
+.cell--busy {
+  background: var(--accent-soft);
+}
+
+.cell--CM {
+  background: #e7eefa;
+  border-left: 3px solid #3563a8;
+}
+.cell--TD {
+  background: #e9f5ee;
+  border-left: 3px solid var(--good);
+}
+.cell--TP {
+  background: #fdf2e6;
+  border-left: 3px solid #b5701d;
+}
+
+.cell__course {
+  font-weight: 600;
+}
+
+.cell__type {
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+}
+
+.cell__detail {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+  margin-top: 0.15rem;
+}
+
+.occupancy {
+  margin-bottom: 1.25rem;
+}
+
+.occupancy h3 {
+  margin-bottom: 0.2rem;
+}
