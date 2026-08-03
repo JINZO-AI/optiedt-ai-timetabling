@@ -22,19 +22,30 @@ Two rules the frontend depends on:
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
+from optiedt.analysis.interfaces import (
+    Contribution,
+    Decomposition,
+    DominanceVerdict,
+    Recommendation,
+)
 from optiedt.domain.entities import (
     Availability,
+    Candidate,
     ConstraintDefinition,
     Course,
     Group,
+    Placement,
     Programme,
     Promotion,
     Room,
     Session,
     Slot,
+    SubScore,
     Teacher,
 )
 from optiedt.domain.enums import (
@@ -43,10 +54,12 @@ from optiedt.domain.enums import (
     DeclarationSource,
     GroupLevel,
     RoomType,
+    RunState,
     SessionType,
     TeacherRank,
 )
 from optiedt.domain.instance import Instance
+from optiedt.services.runs import RunRecord
 
 
 class ApiModel(BaseModel):
@@ -330,3 +343,250 @@ class AvailabilityCellIn(ApiModel):
 class AvailabilityIn(ApiModel):
     semester: int
     cells: list[AvailabilityCellIn]
+
+
+# ── Runs and results ───────────────────────────────────────────────────
+
+
+class RunCreateIn(ApiModel):
+    """What a client may choose about a run. Deliberately little.
+
+    The weight profiles are not client-supplied: they are the three of
+    `docs/constraint-model.md`. Letting a client post arbitrary profiles would
+    make two runs incomparable with nothing recording why.
+    """
+
+    seed: int | None = None
+    deterministic_budget: float | None = None
+
+
+class RunCreatedOut(ApiModel):
+    """The 202 body. Solving takes minutes; the client polls `GET /runs/{id}`."""
+
+    run_id: str
+
+
+class PlacementOut(ApiModel):
+    session: str
+    slot: int
+    room: str
+
+    @classmethod
+    def of(cls, p: Placement) -> PlacementOut:
+        return cls(session=p.session, slot=p.slot, room=p.room)
+
+
+class SubScoreOut(ApiModel):
+    criterion: str
+    raw_value: float
+    normalised: float
+
+    @classmethod
+    def of(cls, s: SubScore) -> SubScoreOut:
+        return cls(criterion=s.criterion, raw_value=s.raw_value, normalised=s.normalised)
+
+
+class CandidateOut(ApiModel):
+    """A valid timetable, immutable once recorded (invariant 6).
+
+    ⚠️ `cost` is the solver's objective value, carried as provenance ONLY.
+    Nothing ranks, scores or displays a comparison from it: `score` and
+    `sub_scores` are recomputed by the analysis layer from the placements,
+    which the ban on `analysis -> solver` forces. That indirection stopped
+    being theoretical on 2026-07-31, when `CpSolver.objective_value` was
+    measured 5-15 units above the objective at the solution actually returned
+    under `interleave_search` (ADR-011). **Do not start ranking on `cost`.**
+    """
+
+    id: str
+    run: str
+    profile_name: str
+    cost: int
+    score: float
+    placements: list[PlacementOut]
+    sub_scores: list[SubScoreOut]
+
+    @classmethod
+    def of(cls, c: Candidate) -> CandidateOut:
+        return cls(
+            id=c.id,
+            run=c.run,
+            profile_name=c.profile_name,
+            cost=c.cost,
+            score=c.score,
+            placements=[PlacementOut.of(p) for p in c.placements],
+            sub_scores=[SubScoreOut.of(s) for s in c.sub_scores],
+        )
+
+
+class RunOut(ApiModel):
+    """One run and its candidates.
+
+    ⚠️ **Two fields are deliberately absent until Phase 5**, and their absence
+    is the honest signal:
+
+    - `preAnalysis` — the five checks have no implementation (FR-12, Phase 5).
+      Sending a permanently empty list would read as "verified, nothing wrong"
+      when it means "never verified", which is precisely the confusion that
+      cost three sessions on C-13.
+    - `diagnosis` — the diagnosis run is Phase 5. An `INFEASIBLE` run stops
+      there; reporting a conflict set nobody computed would name rules the user
+      cannot act on.
+
+    `frontend/src/types/domain.ts` declares both on its `Run`, running ahead of
+    the API on purpose: the shapes are agreed, the work that fills them is not
+    done. Add them here with that work, not before.
+    """
+
+    id: str
+    created_at: datetime
+    seed: int
+    deterministic_budget: float
+    """Deterministic time, NOT wall-clock seconds (ADR-011). The interface must
+    not present it as a duration."""
+
+    state: RunState
+    model_version: str
+    weights: dict[str, float]
+    """The weights in force — one vector prices every candidate of this run."""
+
+    candidates: list[CandidateOut]
+    duplicates_removed: list[str]
+    """Profile names whose timetable was identical to one already obtained.
+
+    Reported rather than silently dropped: C-5 turns on how often duplicates
+    actually occur, and a mechanism that removes them without saying so would
+    hide the evidence needed to settle it.
+    """
+
+    deterministic_time_used: float
+    wall_clock_seconds: float
+    error: str | None
+
+    @classmethod
+    def of(cls, record: RunRecord) -> RunOut:
+        return cls(
+            id=record.run.id,
+            created_at=record.run.created_at,
+            seed=record.run.seed,
+            deterministic_budget=record.run.deterministic_budget,
+            state=record.run.state,
+            model_version=record.run.model_version,
+            weights=dict(record.weights),
+            candidates=[CandidateOut.of(c) for c in record.candidates],
+            duplicates_removed=list(record.duplicates_removed),
+            deterministic_time_used=record.deterministic_time_used,
+            wall_clock_seconds=record.wall_clock_seconds,
+            error=record.error,
+        )
+
+
+class RunSummaryOut(ApiModel):
+    """A run without its placements, for a list screen."""
+
+    id: str
+    created_at: datetime
+    seed: int
+    state: RunState
+    candidate_count: int
+    duplicates_removed: list[str]
+
+    @classmethod
+    def of(cls, record: RunRecord) -> RunSummaryOut:
+        return cls(
+            id=record.run.id,
+            created_at=record.run.created_at,
+            seed=record.run.seed,
+            state=record.run.state,
+            candidate_count=len(record.candidates),
+            duplicates_removed=list(record.duplicates_removed),
+        )
+
+
+# ── Comparison ─────────────────────────────────────────────────────────
+
+
+class ContributionOut(ApiModel):
+    """One criterion's part of the difference between two scores.
+
+        contribution_i = 100 * w_i * ( n_i(A) - n_i(B) )
+
+    These are the figures the comparison screen displays. It must show them,
+    not summarise them: their sum IS the score difference, and that identity is
+    the explanation feature.
+    """
+
+    criterion: str
+    weight: float
+    normalised_a: float
+    normalised_b: float
+    value: float
+
+    @classmethod
+    def of(cls, c: Contribution) -> ContributionOut:
+        return cls(
+            criterion=c.criterion,
+            weight=c.weight,
+            normalised_a=c.normalised_a,
+            normalised_b=c.normalised_b,
+            value=c.value,
+        )
+
+
+class DecompositionOut(ApiModel):
+    candidate_a: str
+    candidate_b: str
+    score_difference: float
+    contributions: list[ContributionOut]
+
+    @classmethod
+    def of(cls, d: Decomposition) -> DecompositionOut:
+        return cls(
+            candidate_a=d.candidate_a,
+            candidate_b=d.candidate_b,
+            score_difference=d.score_difference,
+            contributions=[ContributionOut.of(c) for c in d.contributions],
+        )
+
+
+class DominanceVerdictOut(ApiModel):
+    """A candidate another improves on across the board.
+
+    ⚠️ `dominated_by` is never set for the TOP-ranked candidate — that state is
+    provably unreachable under a linear weighted sum with non-negative weights
+    (C-14). A dominated runner-up is ordinary. Do not build a "top candidate is
+    dominated" indicator from this field.
+    """
+
+    candidate: str
+    dominated_by: str | None
+
+    @classmethod
+    def of(cls, d: DominanceVerdict) -> DominanceVerdictOut:
+        return cls(candidate=d.candidate, dominated_by=d.dominated_by)
+
+
+class RecommendedCandidateOut(ApiModel):
+    """FR-16 — which candidate the system puts forward, and the rule.
+
+    ⚠️ Named `RecommendedCandidate`, not `Recommendation`, on purpose. The
+    domain's `RecommendationRecord` (and `Recommendation` in
+    `frontend/src/types/domain.ts`) is a different thing entirely: one of the
+    closed 3-action catalogue, `weight_delta` / `lock_session` /
+    `exclude_slot`, which belongs to regeneration (FR-23, Phase 5). Two
+    unrelated concepts sharing one word is how a screen ends up wired to the
+    wrong payload.
+
+    `rule` is carried as text rather than left for the interface to invent,
+    because the point of the rule is that it can be CHECKED against the
+    sub-scores recorded with the run.
+    """
+
+    candidate: str
+    rule: str
+    score: float
+    dominated_by: str | None
+
+    @classmethod
+    def of(cls, r: Recommendation) -> RecommendedCandidateOut:
+        return cls(candidate=r.candidate, rule=r.rule, score=r.score, dominated_by=r.dominated_by)

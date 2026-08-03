@@ -17,9 +17,9 @@ Keep this file current. A stale status file is worse than none, because the next
 
 | | |
 |---|---|
-| **Current phase** | **Phase 4 — the web interface. In progress, M1 of 6 complete.** API foundation landed (`GET /api/instance`, FR-2 availability read/write); frontend still scaffold only. Milestone table in [`docs/dashboard.md`](dashboard.md) |
+| **Current phase** | **Phase 4 — the web interface. In progress, M2 of 6 complete.** The API is complete for this phase — instance, FR-2 availability, run lifecycle, candidates, comparison, dominance, recommendation; frontend still scaffold only. Milestone table in [`docs/dashboard.md`](dashboard.md) |
 | **Last completed phase** | **Phase 3, closed 2026-07-31.** Delivered the seven criteria, the scorer, the ranker (decomposition, dominance, FR-16's recommendation), the CP-SAT objective, the recommendation translator, the portfolio, and validation on the 21 published ITC-2007 instances. C-4, C-7, C-12, C-13 and C-16 all resolved along the way |
-| **Next step** | Phase 4 **M2** — the run lifecycle: `services/runs.py`, the background executor, `POST /runs` → 202 and polling. ⚠️ Settle **C-14** before M5's dominance signal and **C-12(a)** before M6's grid cell model |
+| **Next step** | Phase 4 **M3** — the frontend shell and the generation screen (FR-13, FR-5, FR-6). ⚠️ Settle **C-14** before M5's dominance signal and **C-12(a)** before M6's grid cell model |
 | **Days used** | ~3 of 20 across Phases 1–3, which were budgeted 3 + 5 + 3 = 11 |
 | **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · latest **pushed** commit `bfe805a`, 2026-08-01; anything after it is local. ⚠️ **No local-commit count is recorded here** — this line has been wrong three times (`0dc0078`, a parent, until 2026-07-31; `acf9aa0` with "9 commits" after eight were pushed; then "1 commit", which the correcting commit itself made 2). **A count cannot live in a file that commits change.** Re-derive: `git rev-parse origin/main`, `git rev-list --count origin/main..HEAD` |
 | **Blocked on** | Nothing. **C-5** blocks the FR-13 acceptance test and **C-9** the Phase 6 acceptance tests, both in Phase 6; **C-14** blocks the Phase 4 comparison screen's dominance signal; **C-15** blocks FR-13's `✓`. None blocks starting Phase 4 |
@@ -217,7 +217,7 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 
 | Measurement | Value | Taken on | Notes |
 |---|---|---|---|
-| **Toolchain** | **all green** | 2026-08-01 | **9/9** layer contracts kept · ruff · format · mypy strict on **55** source files · **140 tests** (118 fast + 22 solver-marked) · instance verified · frontend `tsc` clean. Ninth contract (`api ⇸ solver`) added in Phase 4 M1 and verified to fire; `pytest` exit 5 no longer tolerated |
+| **Toolchain** | **all green** | 2026-08-01 | **9/9** layer contracts kept · ruff · format · mypy strict on **59** source files · **168 tests** (146 fast + 22 solver-marked) · instance verified · frontend `tsc` clean. Ninth contract (`api ⇸ solver`) added in Phase 4 M1 and verified to fire; `pytest` exit 5 no longer tolerated |
 | **Python** | **3.14.2** | 2026-07-29 | Resolved by uv 0.12.0 |
 | **OR-Tools CP-SAT imports and solves** | **yes** | 2026-07-29 | On Python 3.14. `max_deterministic_time` **is accepted by the solver parameters** — ADR-011 is implementable, not just plausible |
 | **Deterministic time → wall clock, reference instance** | **1 deterministic unit per worker ≈ 4.8 s wall at `workers=1`; ≈ 19 s at `workers=0` (16 cores)** | 2026-07-30 | ✅ **ADR-011's overdue Phase 2 calibration, discharged.** Budget 5, objective posted, catalogue weights. `workers=1` → 24.1 s · `2` → 17.2 s · `4` → 17.5 s · `8` → 57.2 s · `0` → 94.8 s. More workers cost *more* wall clock for the same per-worker budget, because the budget is per worker and the total work scales with the count |

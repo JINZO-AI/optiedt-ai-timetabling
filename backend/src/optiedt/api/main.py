@@ -17,7 +17,7 @@ from __future__ import annotations
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from optiedt.api.routers import availability, instance
+from optiedt.api.routers import availability, candidates, instance, runs
 
 API_PREFIX = "/api"
 
@@ -44,6 +44,8 @@ app.add_middleware(
 _api = APIRouter(prefix=API_PREFIX)
 _api.include_router(instance.router)
 _api.include_router(availability.router)
+_api.include_router(runs.router)
+_api.include_router(candidates.router)
 app.include_router(_api)
 
 

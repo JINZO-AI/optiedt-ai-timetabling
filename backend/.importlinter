@@ -162,3 +162,10 @@ source_modules =
     optiedt.api
 forbidden_modules =
     optiedt.solver
+# DIRECT imports only. `api -> services -> solver` is the sanctioned path and
+# every run takes it: services/runs.py holds a DiagnosisResult and
+# services/portfolio.py drives the solve, so forbidding the indirect chain
+# would forbid the architecture rather than protect it. What this contract
+# catches is a router or a schema writing `import optiedt.solver` itself -
+# which is how a solve ends up inside a request handler.
+allow_indirect_imports = True

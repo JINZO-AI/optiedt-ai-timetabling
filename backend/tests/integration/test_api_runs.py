@@ -1,0 +1,290 @@
+"""The run endpoints end to end, against a fake solver.
+
+No CP-SAT here on purpose, so these stay in the fast suite: what is under test
+is the lifecycle, the wire format and the layering, not the engine. The engine
+has its own tests (`tests/integration/test_h1_h12.py`) and its own budget
+discipline.
+
+The fake returns placements the real solver could have returned, so the
+analysis layer scores them for real - every score below is computed by
+`analysis/criteria.py` from actual placements, not stubbed.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Iterator
+from concurrent.futures import Future
+from dataclasses import dataclass, field
+
+import pytest
+from fastapi.testclient import TestClient
+
+from optiedt.api import deps
+from optiedt.api.main import app
+from optiedt.domain.entities import Placement
+from optiedt.services.runs import InMemoryRunStore
+from optiedt.solver.interfaces import DiagnosisResult, SolverInput, SolverOutput
+from optiedt.tasks.executor import RunExecutor
+
+SOFT_CODES = {"S2", "S3", "S4", "S5", "S6", "S7", "S10"}
+
+
+@dataclass
+class FakeSolver:
+    """Places every session, varying the arrangement per profile.
+
+    Varying by profile matters: two identical timetables are removed as
+    duplicates by `generate_portfolio`, so a fake returning one fixed
+    assignment would exercise deduplication instead of the portfolio.
+    """
+
+    offset_by_profile: dict[str, int] = field(default_factory=dict)
+    infeasible: bool = False
+    calls: list[str] = field(default_factory=list)
+
+    def solve(self, request: SolverInput) -> SolverOutput:
+        self.calls.append(request.profile.name)
+        if self.infeasible:
+            return SolverOutput(
+                placements=(),
+                cost=0,
+                infeasible=True,
+                proven_optimal=False,
+                deterministic_time_used=1.0,
+                wall_clock_seconds=0.01,
+            )
+        instance = request.instance
+        open_slots = [s.index for s in instance.slots if s.is_open]
+        offset = self.offset_by_profile.setdefault(
+            request.profile.name, len(self.offset_by_profile)
+        )
+        placements = tuple(
+            Placement(
+                session=session.id,
+                slot=open_slots[(index + offset) % len(open_slots)],
+                room=instance.rooms[index % len(instance.rooms)].id,
+            )
+            for index, session in enumerate(instance.sessions)
+        )
+        return SolverOutput(
+            placements=placements,
+            cost=len(placements),
+            infeasible=False,
+            proven_optimal=False,
+            deterministic_time_used=1.0,
+            wall_clock_seconds=0.01,
+        )
+
+    def diagnose(self, request: SolverInput) -> DiagnosisResult:  # pragma: no cover
+        raise AssertionError("Phase 4 must not enter the diagnosis run")
+
+
+@dataclass
+class Wired:
+    """The client and the exact executor its routes use.
+
+    Held together because a test waits on the executor's Future rather than
+    sleeping or polling: the run is finished when the Future resolves, so these
+    tests carry no timing assumption at all.
+    """
+
+    client: TestClient
+    solver: FakeSolver
+    futures: list[Future[None]]
+
+    def launch(self, **payload: object) -> dict[str, object]:
+        body: dict[str, object] = {"seed": 42, "deterministicBudget": 3.0}
+        body.update(payload)
+        created = self.client.post("/api/runs", json=body)
+        assert created.status_code == 202
+        run_id = created.json()["runId"]
+        self.futures[-1].result(timeout=60)
+        response = self.client.get(f"/api/runs/{run_id}")
+        assert response.status_code == 200
+        return dict(response.json())
+
+
+@pytest.fixture
+def wired() -> Iterator[Wired]:
+    for cached in (
+        deps.get_settings,
+        deps.get_instance,
+        deps.get_availability_store,
+        deps.get_run_store,
+        deps.get_executor,
+    ):
+        cached.cache_clear()
+
+    solver = FakeSolver()
+    instance = deps.get_instance()
+    store = InMemoryRunStore()
+    executor = RunExecutor(
+        store=store,
+        instance_provider=lambda: instance,
+        solver_factory=lambda: solver,
+    )
+
+    # Record the Futures the routes create, so a test can wait deterministically.
+    futures: list[Future[None]] = []
+    submit = executor.submit
+
+    def recording_submit(run_id: str) -> Future[None]:
+        future = submit(run_id)
+        futures.append(future)
+        return future
+
+    executor.submit = recording_submit  # type: ignore[method-assign]
+
+    app.dependency_overrides[deps.get_run_store] = lambda: store
+    app.dependency_overrides[deps.get_executor] = lambda: executor
+    with TestClient(app) as client:
+        yield Wired(client=client, solver=solver, futures=futures)
+    executor.shutdown()
+    app.dependency_overrides.clear()
+
+
+# ── launching and polling ──────────────────────────────────────────────
+
+
+def test_launching_a_run_returns_202_and_an_id_immediately(wired: Wired) -> None:
+    created = wired.client.post("/api/runs", json={})
+    assert created.status_code == 202
+    assert set(created.json()) == {"runId"}
+
+
+def test_a_run_reaches_completed_with_scored_candidates(wired: Wired) -> None:
+    run = wired.launch()
+    assert run["state"] == "COMPLETED"
+    assert run["error"] is None
+
+    candidates = run["candidates"]
+    assert isinstance(candidates, list)
+    assert candidates, "the fake places every session, so a candidate must exist"
+    for candidate in candidates:
+        assert 0.0 <= candidate["score"] <= 100.0
+        assert len(candidate["placements"]) == 218
+        assert {s["criterion"] for s in candidate["subScores"]} == SOFT_CODES
+
+
+def test_candidates_come_back_in_rank_order(wired: Wired) -> None:
+    """The client displays this order; it must not sort for itself."""
+    run = wired.launch()
+    scores = [c["score"] for c in run["candidates"]]
+    assert scores == sorted(scores, reverse=True)
+
+    listed = wired.client.get(f"/api/runs/{run['id']}/candidates").json()
+    assert [c["id"] for c in listed] == [c["id"] for c in run["candidates"]]
+
+
+def test_the_run_records_what_produced_it(wired: Wired) -> None:
+    run = wired.launch()
+    assert run["seed"] == 42
+    assert run["deterministicBudget"] == 3.0
+    assert run["modelVersion"]
+    # One weight vector prices every candidate - the identity FR-15 rests on.
+    assert set(run["weights"]) == SOFT_CODES
+
+
+def test_preanalysis_and_diagnosis_are_absent_rather_than_empty(wired: Wired) -> None:
+    """Phase 4 computes neither; an empty list would read as 'verified, clean'."""
+    run = wired.launch()
+    assert "preAnalysis" not in run
+    assert "diagnosis" not in run
+
+
+def test_each_profile_is_solved_once_and_sequentially(wired: Wired) -> None:
+    wired.launch()
+    assert wired.solver.calls == ["balanced", "student-favouring", "teacher-favouring"]
+
+
+def test_runs_are_listed_newest_first(wired: Wired) -> None:
+    first = wired.launch()
+    second = wired.launch()
+    listed = wired.client.get("/api/runs").json()
+    assert [r["id"] for r in listed][:2] == [second["id"], first["id"]]
+    assert listed[0]["candidateCount"] == len(second["candidates"])
+
+
+# ── comparison, dominance, recommendation ──────────────────────────────
+
+
+def test_comparison_contributions_sum_to_the_score_difference(wired: Wired) -> None:
+    """FR-15. The identity the whole explanation feature rests on."""
+    run = wired.launch()
+    candidates = run["candidates"]
+    assert len(candidates) >= 2, "the fake varies placements per profile"
+
+    a, b = candidates[0]["id"], candidates[1]["id"]
+    body = wired.client.get(f"/api/runs/{run['id']}/comparison", params={"a": a, "b": b}).json()
+
+    assert body["candidateA"] == a
+    assert body["candidateB"] == b
+    assert {c["criterion"] for c in body["contributions"]} == SOFT_CODES
+
+    total = sum(c["value"] for c in body["contributions"])
+    assert total == pytest.approx(body["scoreDifference"], abs=1e-9)
+    assert body["scoreDifference"] == pytest.approx(
+        candidates[0]["score"] - candidates[1]["score"], abs=1e-9
+    )
+
+
+def test_a_contribution_is_its_weight_times_the_normalised_difference(wired: Wired) -> None:
+    """The figure shown IS the calculation, so the API must send its terms."""
+    run = wired.launch()
+    a, b = run["candidates"][0]["id"], run["candidates"][1]["id"]
+    body = wired.client.get(f"/api/runs/{run['id']}/comparison", params={"a": a, "b": b}).json()
+    for c in body["contributions"]:
+        expected = 100.0 * c["weight"] * (c["normalisedA"] - c["normalisedB"])
+        assert c["value"] == pytest.approx(expected, abs=1e-9)
+
+
+def test_comparing_a_candidate_with_itself_is_refused(wired: Wired) -> None:
+    run = wired.launch()
+    a = run["candidates"][0]["id"]
+    response = wired.client.get(f"/api/runs/{run['id']}/comparison", params={"a": a, "b": a})
+    assert response.status_code == 422
+
+
+def test_the_top_candidate_is_never_reported_dominated(wired: Wired) -> None:
+    """C-14: provably unreachable, so the API must never claim it."""
+    run = wired.launch()
+    verdicts = wired.client.get(f"/api/runs/{run['id']}/dominance").json()
+    top = run["candidates"][0]["id"]
+    assert all(v["dominatedBy"] is None for v in verdicts if v["candidate"] == top)
+
+
+def test_the_recommendation_names_the_top_candidate_and_its_rule(wired: Wired) -> None:
+    run = wired.launch()
+    body = wired.client.get(f"/api/runs/{run['id']}/recommendation").json()
+    assert body["candidate"] == run["candidates"][0]["id"]
+    assert body["rule"]
+    assert body["dominatedBy"] is None
+
+
+# ── failure paths ──────────────────────────────────────────────────────
+
+
+def test_unknown_run_and_candidate_are_404(wired: Wired) -> None:
+    assert wired.client.get("/api/runs/nope").status_code == 404
+    run = wired.launch()
+    assert wired.client.get(f"/api/runs/{run['id']}/candidates/nope").status_code == 404
+
+
+def test_an_infeasible_instance_stops_at_infeasible(wired: Wired) -> None:
+    """It must NOT walk on to DIAGNOSING - that work is Phase 5."""
+    wired.solver.infeasible = True
+    run = wired.launch()
+    assert run["state"] == "INFEASIBLE"
+    assert run["candidates"] == []
+    assert run["error"] is None
+
+
+def test_a_solver_failure_lands_the_run_in_failed_with_a_reason(wired: Wired) -> None:
+    def explode(request: SolverInput) -> SolverOutput:
+        raise RuntimeError("solver exploded")
+
+    wired.solver.solve = explode  # type: ignore[method-assign]
+    run = wired.launch()
+    assert run["state"] == "FAILED"
+    assert run["error"] is not None
+    assert "solver exploded" in run["error"]

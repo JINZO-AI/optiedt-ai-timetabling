@@ -39,8 +39,14 @@ same reason as FR-3** — all seven of them, which is every Phase 3 requirement.
 (`services/portfolio.py`) are implemented and tested — the four properties the specification requires
 pass, verified by ten hypothesis tests in `tests/property/test_scoring_properties.py`, and a real
 portfolio run on the reference instance returns three distinct candidates, each scored /100 with its
-seven sub-scores. What is missing is the path *to* it: no run record, no endpoint, no comparison
-screen — Phases 4–5.
+seven sub-scores.
+
+⚠️ **Updated after Phase 4 M2: the endpoints now exist.** `POST /runs`, `GET /runs/{id}`, the candidate
+reads, `GET /runs/{id}/comparison`, `/dominance` and `/recommendation` are implemented and tested. All
+seven stay `WIP` regardless, because **a requirement is `✓` only once a user can reach it** and there is
+still no screen. What each is now waiting on is narrower than "no endpoint": FR-5, FR-6 and FR-13 need
+M3's generation screen; FR-14 and FR-15 need M5's comparison screen; FR-16 and FR-17 need M5 too, and
+FR-17 additionally needs **C-14** settled. FR-13 also still carries its own second reason below.
 
 **FR-16 is on that list and stays `WIP` for the ordinary reason** — no user can reach the
 recommendation yet. The ⚠️ note above is about something else: one *clause* of FR-16 describes a state
