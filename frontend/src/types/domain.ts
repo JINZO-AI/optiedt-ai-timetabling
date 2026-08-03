@@ -41,6 +41,120 @@ export type RunState =
   | 'DIAGNOSED'
   | 'FAILED'
 
+/** Position in the promotion → tutorial group → laboratory subgroup chain. */
+export type GroupLevel = 'PROMO' | 'TD' | 'TP'
+
+/** Unaccented, as teachers.csv carries them. Rank fixes the weekly load. */
+export type TeacherRank =
+  | 'Professeur'
+  | 'Maitre de Conferences'
+  | 'Maitre Assistant'
+  | 'Assistant'
+
+export type ConstraintKind = 'HARD' | 'SOFT'
+
+/** SYNTHETIC marks a generated declaration; it must never pass for a real one. */
+export type DeclarationSource = 'TEACHER' | 'SYNTHETIC'
+
+export interface Programme {
+  id: string
+  code: string
+  label: string
+  degreeCycle: string
+  department: string
+}
+
+export interface Promotion {
+  id: string
+  programme: string
+  level: string
+  academicYear: string
+  studentCount: number
+}
+
+export interface Group {
+  id: string
+  promotion: string
+  parentGroup: string | null
+  level: GroupLevel
+  label: string
+  size: number
+}
+
+export interface Teacher {
+  id: string
+  department: string
+  rank: TeacherRank
+  maxHoursPerWeek: number
+}
+
+export interface Course {
+  id: string
+  code: string
+  department: string
+  programme: string
+  level: string
+  semester: number
+  credits: number
+}
+
+/** The unit CP-SAT places. `durationPeriods` is 1 or 2. */
+export interface Session {
+  id: string
+  course: string
+  group: string
+  teacher: string
+  type: SessionType
+  durationPeriods: number
+  occurrencesPerWeek: number
+  requiredRoomType: RoomType
+  locked: boolean
+}
+
+export interface Room {
+  id: string
+  building: string
+  code: string
+  capacity: number
+  type: RoomType
+  equipment: string[]
+}
+
+export interface Availability {
+  teacher: string
+  slot: number
+  state: AvailabilityState
+  semester: number
+  source: DeclarationSource
+}
+
+export interface ConstraintDefinition {
+  code: string
+  name: string
+  kind: ConstraintKind
+  defaultWeight: number
+  xhsttReference: string | null
+}
+
+/**
+ * Everything a screen renders against, fetched once.
+ *
+ * A `Placement` carries ids only, so turning one into something readable needs
+ * this — which is what keeps a candidate exactly what the solver produced.
+ */
+export interface InstanceData {
+  programmes: Programme[]
+  promotions: Promotion[]
+  groups: Group[]
+  teachers: Teacher[]
+  courses: Course[]
+  sessions: Session[]
+  rooms: Room[]
+  slots: Slot[]
+  constraints: ConstraintDefinition[]
+  calendarConfig: Record<string, string>
+}
+
 /** slot = day_index * periods_per_day + period_index */
 export interface Slot {
   index: number
@@ -175,15 +289,56 @@ export interface DiagnosisResult {
   isMinimal: boolean
 }
 
+/**
+ * One run and its candidates.
+ *
+ * ⚠️ `preAnalysis` and `diagnosis` are NOT here, and their absence is the
+ * point. The five checks (FR-12) and the diagnosis run are Phase 5, so the API
+ * omits both rather than sending empty values: an empty check list would read
+ * as "verified, nothing wrong" when it means "never verified". `CheckResult`
+ * and `DiagnosisResult` stay declared below because the shapes are agreed —
+ * add the fields here with the work that fills them, not before.
+ */
 export interface Run {
   id: string
   createdAt: string
   seed: number
-  /** Deterministic time, NOT wall-clock seconds (ADR-011). */
+  /** Deterministic time, NOT wall-clock seconds (ADR-011). Never render it as
+   * a duration — the system makes no wall-clock promise. */
   deterministicBudget: number
   state: RunState
   modelVersion: string
+  /** The weights in force: ONE vector prices every candidate of this run. */
+  weights: Record<string, number>
+  /** In rank order, best first. Display this order; do not sort. */
   candidates: Candidate[]
-  preAnalysis: CheckResult[]
-  diagnosis: DiagnosisResult | null
+  /** Profile names whose timetable was identical to one already obtained. */
+  duplicatesRemoved: string[]
+  deterministicTimeUsed: number
+  wallClockSeconds: number
+  error: string | null
+}
+
+/** A run without its placements, for a list. */
+export interface RunSummary {
+  id: string
+  createdAt: string
+  seed: number
+  state: RunState
+  candidateCount: number
+  duplicatesRemoved: string[]
+}
+
+/**
+ * FR-16 — the candidate the system puts forward, and the rule that chose it.
+ *
+ * ⚠️ Not to be confused with `Recommendation` below, which is a different
+ * thing entirely: one of the closed 3-action catalogue, belonging to
+ * regeneration (FR-23, Phase 5).
+ */
+export interface RecommendedCandidate {
+  candidate: string
+  rule: string
+  score: number
+  dominatedBy: string | null
 }

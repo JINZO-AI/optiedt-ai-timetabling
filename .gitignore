@@ -282,3 +282,8 @@ backend/.solver-cache/
 !.vscode/extensions.json
 .DS_Store
 Thumbs.db
+
+# Local agent/tooling scratch. .claude/launch.json only records how to start
+# the dev server, which CLAUDE.md already documents (`npm run dev`), so it is
+# tooling rather than a deliverable and does not belong in the repository.
+.claude/

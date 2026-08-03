@@ -22,12 +22,24 @@ class Settings(BaseSettings):
 
     # ── Solver ─────────────────────────────────────────────────────
     solver_deterministic_budget: float = 120.0
-    """Deterministic time per weight profile — NOT wall-clock seconds.
+    """Deterministic time for a WHOLE run — NOT wall-clock seconds.
 
-    Wall-clock bounds with parallel workers are not reproducible (ADR-011).
-    ⚠️ The deterministic-to-wall-clock ratio is machine-dependent and must be
-    calibrated on the reference instance; until then any wall-clock expectation
-    derived from this number is a guess. See docs/status.md, "Measurements".
+    ⚠️ This docstring said "per weight profile" until Phase 4 M2, and that was
+    wrong: the value is passed as `PortfolioRequest.deterministic_budget`,
+    which `services/portfolio.py` divides between the profiles. Read as
+    per-profile, the default would mean 360 units for a three-profile run and
+    blow the "< 5 min" estimate `docs/status.md` records; read as a total it
+    sits beside the measured 147-150 s at total 90.
+
+    Wall-clock bounds with parallel workers are not reproducible (ADR-011). The
+    deterministic-to-wall-clock ratio is machine-dependent — calibrated
+    2026-07-30, figures in docs/status.md, "Measurements". Any wall-clock
+    expectation derived from this number is an estimate, never a promise.
+
+    A budget too small to find a solution makes the solve return UNKNOWN, which
+    `solver/engine.py` raises on rather than reporting as a normal result. The
+    run then lands in FAILED carrying that reason - measured in Phase 4 M2 with
+    a total budget of 3.
     """
 
     solver_wall_clock_ceiling_seconds: float = 900.0

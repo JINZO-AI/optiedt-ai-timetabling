@@ -1,0 +1,319 @@
+/* Plain CSS, no framework.
+ *
+ * The interface has to be legible to a department that will argue with it, so
+ * the visual weight goes on figures and their labels rather than on ornament.
+ * Numbers are set in a tabular font so a column of scores lines up.
+ */
+
+:root {
+  --ink: #16202b;
+  --ink-soft: #5a6a7a;
+  --line: #d8dee6;
+  --bg: #f6f8fa;
+  --panel: #ffffff;
+  --accent: #1f5f8b;
+  --accent-soft: #e8f1f7;
+  --good: #1d7a4c;
+  --warn: #8a5a00;
+  --warn-soft: #fdf5e3;
+  --bad: #a32b2b;
+  --radius: 6px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+  margin: 0 0 0.5rem;
+}
+
+h1 {
+  font-size: 1.5rem;
+}
+h2 {
+  font-size: 1.15rem;
+}
+h3 {
+  font-size: 1rem;
+}
+
+/* ── shell ────────────────────────────────────────────────────────── */
+
+.app__header {
+  display: flex;
+  align-items: baseline;
+  gap: 2rem;
+  padding: 0.9rem 1.5rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.app__brand {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.app__tagline {
+  display: block;
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.app__nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.app__nav a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  padding: 0.25rem 0;
+  border-bottom: 2px solid transparent;
+}
+
+.app__nav a.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.app__main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* ── panels ───────────────────────────────────────────────────────── */
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.panel__note {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0.9rem;
+}
+
+.empty {
+  color: var(--ink-soft);
+}
+
+/* ── forms ────────────────────────────────────────────────────────── */
+
+.form-row {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.field label {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.field input {
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  width: 11rem;
+}
+
+button {
+  font: inherit;
+  padding: 0.45rem 1.1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── run state ────────────────────────────────────────────────────── */
+
+.state {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+
+.state--running {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.state--done {
+  color: var(--good);
+  background: #e9f5ee;
+}
+.state--bad {
+  color: var(--bad);
+  background: #fbecec;
+}
+
+.meta {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-top: 0.6rem;
+}
+
+.meta b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.warning {
+  background: var(--warn-soft);
+  border: 1px solid #e5cf9a;
+  color: var(--warn);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.error {
+  background: #fbecec;
+  border: 1px solid #e3b5b5;
+  color: var(--bad);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+/* ── candidates ───────────────────────────────────────────────────── */
+
+.candidates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 1rem;
+}
+
+.candidate {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  background: var(--panel);
+}
+
+.candidate--top {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.candidate__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.candidate__rank {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.candidate__profile {
+  font-weight: 600;
+}
+
+.candidate__score {
+  font-size: 1.6rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.candidate__score span {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+table.subscores {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+}
+
+table.subscores th,
+table.subscores td {
+  text-align: right;
+  padding: 0.22rem 0.3rem;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+
+table.subscores th {
+  color: var(--ink-soft);
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+table.subscores th:first-child,
+table.subscores td:first-child {
+  text-align: left;
+}
+
+table.subscores tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.criterion-name {
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+}
+
+.bar {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+  margin-top: 2px;
+}
+
+.bar__track {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+  width: 60px;
+}
