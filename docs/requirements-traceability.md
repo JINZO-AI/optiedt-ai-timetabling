@@ -7,9 +7,20 @@ built?" without reading code.
 
 Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 
-**Where the project actually is: 11 of 25 requirements are under way, none is finished.** FR-2 joined
-the list in Phase 4 M1: the availability endpoints and the replace-wholesale rule exist and are tested,
-but a teacher cannot reach them — the grid itself is M6. **FR-7 and FR-18 joined in M4**: the four
+**Where the project actually is: 11 of 25 requirements are under way, none is finished.**
+
+⚠️ **Phase 4 delivered all six milestones and the count of finished requirements is still zero. That is
+not a contradiction, and it is the number most likely to be misread.** Every Phase 4 screen exists and
+was verified against the real solver; what keeps each requirement at `WIP` is now one of three things,
+none of them a missing screen: **no authentication** decides who may see or do what (FR-11, Phase 5),
+**no run record** survives a restart (FR-19, Phase 5), and **no acceptance test** has been written
+against the criterion (Phase 6). Do not promote a status because a phase closed — the same temptation
+Phase 3 recorded.
+
+FR-2 joined the list in Phase 4 M1 and its grid landed in M6: two states, because
+`teacher_availability.csv` carries a boolean and there is no third to record (C-12(a), decided
+2026-08-01). It stays `WIP` for the criterion that matters most — "filled in under 5 minutes without
+training" needs a timed walkthrough with a real teacher, which no automated check replaces. **FR-7 and FR-18 joined in M4**: the four
 timetable views render a candidate by teacher, group and room, and report each room's occupancy —
 verified against the real solver, with the occupancy totals matching `verify-instance` exactly. They
 stay `WIP` because no automated test covers the views yet and there is no authentication deciding who
@@ -78,7 +89,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | FR | Requirement | Priority | Module | Test | Status |
 |---|---|---|---|---|---|
 | **FR-1** | Load and manage department data | Necessary | `api`, `db`, `services` | `acceptance/test_fr01` | — |
-| **FR-2** | Teacher declares availability on a weekly grid | Necessary | `api`, `db`; `features/availability` | `unit/test_availability_api` ✓, `acceptance/test_fr02` | **WIP** |
+| **FR-2** | Teacher declares availability on a weekly grid | Necessary | `api`, `db`; `features/availability` ✓ | `unit/test_availability_api` ✓, `acceptance/test_fr02` ⚠️ timed walkthrough | **WIP** |
 | **FR-3** | Generate a timetable respecting H1–H12 | Necessary | `solver` | `integration/test_h1_h12` ✓ | **WIP** |
 | **FR-4** | Improve quality criteria within a time limit | Necessary | `solver` — objective | `integration` | **WIP** |
 | **FR-5** | Produce several candidates, each scored out of 100 | Necessary | `analysis` — scoring | `acceptance/test_fr05` | **WIP** |

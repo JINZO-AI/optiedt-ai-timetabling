@@ -1,5 +1,6 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 
+import { AvailabilityScreen } from '@/features/availability/AvailabilityScreen'
 import { ComparisonScreen } from '@/features/comparison/ComparisonScreen'
 import { GenerationScreen } from '@/features/generation/GenerationScreen'
 import { TimetableScreen } from '@/features/timetable/TimetableScreen'
@@ -22,6 +23,7 @@ export function App() {
           </span>
         </div>
         <nav className="app__nav">
+          <NavLink to="/disponibilites">Disponibilités</NavLink>
           <NavLink to="/generation">Génération</NavLink>
           <NavLink to="/emplois-du-temps">Emplois du temps</NavLink>
           <NavLink to="/comparaison">Comparaison</NavLink>
@@ -31,6 +33,7 @@ export function App() {
       <main className="app__main">
         <Routes>
           <Route path="/" element={<Navigate to="/generation" replace />} />
+          <Route path="/disponibilites" element={<AvailabilityScreen />} />
           <Route path="/generation" element={<GenerationScreen />} />
           <Route path="/emplois-du-temps" element={<TimetableScreen />} />
           <Route path="/comparaison" element={<ComparisonScreen />} />

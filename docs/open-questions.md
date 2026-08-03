@@ -23,7 +23,7 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 |---|---|---|---|
 | **C-5** | "At least three candidates" can fail when duplicates are removed | Phase 6 acceptance | Lead + supervisor |
 | **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
-| **C-14** | Dominance uses the strict reading; S10's zero weight makes ties common. **Also: the "dominated *top* candidate" signal both documents require is provably unreachable** | Phase 4 comparison screen | Technical lead |
+| **C-14** | Dominance uses the strict reading; S10's zero weight makes ties common. **Also: the "dominated *top* candidate" signal both documents require is provably unreachable.** **Deferred 2026-08-01** — Phase 4 ships **no dominance signal**; the reading and the specification's wording are still undecided | FR-17's `✓`; Phase 6 acceptance | Technical lead + supervisor |
 | **C-15** | The objective weights raw violation counts of incomparable scale, so "teacher-favouring" favours only S5, not S3. **Deferred by decision 2026-07-30** — recorded, objective unchanged | FR-13's `✓`; Phase 4 comparison screen | Technical lead |
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
@@ -278,6 +278,31 @@ Three things follow, none of which is a decision:
 (Phase 4) presents the signal to a user — and note that Phase 4 would otherwise implement a signal
 that can never fire. **Owner:** technical lead, with the supervisor if the wording in the specification
 is to change.
+
+#### DEFERRED 2026-08-01 by decision of the technical lead — no dominance signal in Phase 4
+
+**The question is not answered; the Phase 4 comparison screen simply does not present a dominance
+signal at all.** `features/comparison/ComparisonScreen.tsx` shows the two candidates and the
+decomposition, and nothing about dominance.
+
+**Why deferring is not the same as ignoring.** The reason the signal was on Phase 4's list is that both
+specification documents ask for it. Building it under the current reading would have shipped an
+indicator that is *provably* always empty — worse than absent, because a control that never fires
+teaches the user it means "no problem found" rather than "this cannot happen". Absence is the honest
+state until the reading is settled.
+
+**What is unaffected.** `GET /runs/{id}/dominance` and `DefaultRanker.dominance()` exist, are tested and
+are correct under the strict reading; nothing was removed. `Recommendation.dominated_by` is still
+computed and still provably `None`. Only the *display* is withheld.
+
+**What this defers.** The choice between the strict and the Pareto reading, and the rewording of
+`docs/scoring-and-explanation.md` §Dominance (lines about "when it happens to the top-ranked
+candidate") and its Recommendation rule ("a dominated top candidate is signalled alongside"). Both
+still describe a state the arithmetic forbids. **That wording is a delivered commitment, so changing it
+needs the supervisor** — which is part of why it was not settled inside Phase 4.
+
+**Now blocks:** FR-17's `✓`, and the Phase 6 acceptance work. Carry it there with C-5 and C-9.
+**Owner:** technical lead, with the supervisor.
 
 ### C-15 — The objective weights raw violation counts of incomparable scale · **NEW, OPEN — deferred 2026-07-30 by decision**
 
@@ -639,8 +664,34 @@ three distinct candidates, acceptance test fails) for a reason nobody would thin
 adopted formula gives S5 genuine, candidate-dependent variation, which lowers that risk without
 resolving C-5 itself — C-5 is a separate, still-open conflict in the specification's own wording.
 
-**Blocks:** Phase 3 (scoring) — now unblocked. The availability grid in Phase 4 still needs its own
-decision when (a) is revisited. **Owner:** technical lead, decided 2026-07-30.
+**Blocks:** Phase 3 (scoring) — now unblocked. **Owner:** technical lead, decided 2026-07-30.
+
+#### The availability grid's own decision · **RESOLVED 2026-08-01 → two states, (a) not revisited in Phase 4**
+
+C-12 left one thing open for whoever built the grid: two states against the current schema, or three
+once a real preferred-window column exists. **Decision: two states — available / unavailable.**
+
+**The reason is that the schema has no third state to record.** `teacher_availability.csv` carries a
+boolean and all 157 rows are unavailability declarations. A grid offering a *Preferred* cell would be
+collecting an answer with nowhere to put it, and the honest alternatives are both worse than waiting:
+drop the answer on save, or change the instance mid-phase.
+
+**What this is not.** It is **not** a judgement that two states are right. C-12 records option (a) — a
+genuine preferred-window column — as the objectively better long-term fix, rejected on scope rather
+than merit, and that stands. This decision only says Phase 4 is not where the instance changes.
+
+**What it costs, stated plainly.** S5 keeps its labelled proxy (edge-of-day placement) rather than
+measuring real preference, so **"teacher preference" continues to mean something other than what a
+teacher said** — and it carries weight 0.20, the second highest. That is recorded in C-12 above and is
+unchanged by this decision.
+
+**What it does not cost.** `AvailabilityState` already has three members and the API's
+`AvailabilityCellIn` already accepts `PREFERRED`, deliberately, so adopting (a) later changes the
+instance, the loader and the grid's cell component — **not the wire format**. Revisiting it is a data
+decision, not an API migration.
+
+**Revisit when:** instance and loader work is back in scope, or the supervisor asks for real preference
+data. Nothing in Phase 4 or 5 depends on it. **Owner:** technical lead, decided 2026-08-01.
 
 ---
 

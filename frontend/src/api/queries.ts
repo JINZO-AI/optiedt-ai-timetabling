@@ -11,6 +11,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiGet, apiSend } from '@/api/client'
 import type {
+  Availability,
+  AvailabilityState,
   Candidate,
   Decomposition,
   DominanceVerdict,
@@ -90,6 +92,31 @@ export function useDominance(runId: string | null) {
     queryKey: ['dominance', runId],
     queryFn: () => apiGet<DominanceVerdict[]>(`/runs/${runId as string}/dominance`),
     enabled: runId !== null,
+  })
+}
+
+export function useAvailability(teacherId: string | null) {
+  return useQuery({
+    queryKey: ['availability', teacherId],
+    queryFn: () => apiGet<Availability[]>(`/teachers/${teacherId as string}/availability`),
+    enabled: teacherId !== null,
+  })
+}
+
+export function useDeclareAvailability(teacherId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: {
+      semester: number
+      cells: { slot: number; state: AvailabilityState }[]
+    }) =>
+      apiSend<Availability[]>('PUT', `/teachers/${teacherId as string}/availability`, body),
+    onSuccess: (rows) => {
+      // Seed the cache from the response rather than re-fetching: the PUT
+      // already returns the teacher's effective declaration, so a round trip
+      // would only add a window in which the grid shows stale cells.
+      queryClient.setQueryData(['availability', teacherId], rows)
+    },
   })
 }
 

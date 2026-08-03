@@ -438,6 +438,39 @@ table.grid th {
   margin-top: 0.15rem;
 }
 
+/* ── availability grid ────────────────────────────────────────────── */
+
+/* Drag-to-paint: without this the browser starts a text selection and the
+   gesture the 5-minute criterion depends on fights the cursor. */
+.grid--availability {
+  user-select: none;
+  touch-action: none;
+}
+
+.cell--toggle {
+  cursor: pointer;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.75rem;
+  height: 3.2rem;
+}
+
+.cell--on {
+  background: #e9f5ee;
+  color: var(--good);
+}
+
+.cell--off {
+  background: #fbecec;
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.cell--toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 /* ── comparison ───────────────────────────────────────────────────── */
 
 .compare {

@@ -245,9 +245,11 @@ check(
 if not any(truthy(a["is_available"]) for a in availability):
     notes.append(
         "No availability row is positive and there is no 'preferred' state in the schema, "
-        "yet S5 'Teacher preference' carries weight 0.20 — the second highest. The "
-        "teacher-favouring profile may therefore differ from the others by S3 alone, and "
-        "two candidates may converge. See C-12 in docs/open-questions.md."
+        "yet S5 'Teacher preference' carries weight 0.20 — the second highest. S5 therefore "
+        "measures a labelled proxy (sessions placed in the first or last period of the day), "
+        "not what any teacher asked for, and the availability grid offers two states because "
+        "there is no third to record. Both are deliberate and recorded — C-12 in "
+        "docs/open-questions.md — not defects to fix here."
     )
 
 print()
