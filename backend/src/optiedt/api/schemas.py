@@ -38,6 +38,7 @@ from optiedt.domain.entities import (
     Candidate,
     ConstraintDefinition,
     Course,
+    DiagnosisResult,
     Group,
     Placement,
     Programme,
@@ -450,6 +451,35 @@ class CheckResultOut(ApiModel):
         )
 
 
+class DiagnosisOut(ApiModel):
+    """FR-8 — rules SUFFICIENT to explain an infeasibility (Phase 5 M2).
+
+    ⚠️ **Never present this as the smallest conflict set.** `isMinimal` is
+    False and the subset CP-SAT returns is heuristically reduced.
+
+    ⚠️ **An empty `conflictingCodes` is two different outcomes**, and only
+    `isConclusive` tells them apart: conclusive-and-empty means no *relaxable*
+    rule explains the conflict (H4-H6, H8-H10 are domain restrictions and
+    cannot be relaxed, so the conflict is in the data); inconclusive means
+    CP-SAT could not prove the infeasibility at all — which is NOT evidence
+    that the instance is sound. `detail` says which in words.
+    """
+
+    conflicting_codes: list[str]
+    is_minimal: bool
+    is_conclusive: bool
+    detail: str
+
+    @classmethod
+    def of(cls, d: DiagnosisResult) -> DiagnosisOut:
+        return cls(
+            conflicting_codes=list(d.conflicting_codes),
+            is_minimal=d.is_minimal,
+            is_conclusive=d.is_conclusive,
+            detail=d.detail,
+        )
+
+
 class RunOut(ApiModel):
     """One run and its candidates.
 
@@ -460,11 +490,10 @@ class RunOut(ApiModel):
     while the checks had no implementation; it is precisely the confusion that
     cost three sessions on C-13.
 
-    ⚠️ **`diagnosis` is still deliberately absent.** The diagnosis run is Phase 5
-    M2. An `INFEASIBLE` run stops there, and reporting a conflict set nobody
-    computed would name rules the user cannot act on. `DiagnosisResult` stays
-    declared in `frontend/src/types/domain.ts` — the shape is agreed, the work
-    that fills it is not done. Add the field on both sides with that work.
+    `diagnosis` landed with M2 and is `null` on every run that reached a
+    timetable — stage 3 is entered only from `INFEASIBLE`. ⚠️ A non-null
+    diagnosis does **not** mean a conflict was named; read `isConclusive` and
+    `conflictingCodes`.
     """
 
     id: str
@@ -481,6 +510,9 @@ class RunOut(ApiModel):
 
     pre_analysis: list[CheckResultOut]
     """The five checks, in the order they are reported. Empty means not run."""
+
+    diagnosis: DiagnosisOut | None
+    """Stage 3's report. `null` unless the run reached `DIAGNOSED`."""
 
     candidates: list[CandidateOut]
     duplicates_removed: list[str]
@@ -506,6 +538,7 @@ class RunOut(ApiModel):
             model_version=record.run.model_version,
             weights=dict(record.weights),
             pre_analysis=[CheckResultOut.of(c) for c in record.pre_analysis],
+            diagnosis=(DiagnosisOut.of(record.diagnosis) if record.diagnosis is not None else None),
             candidates=[CandidateOut.of(c) for c in record.candidates],
             duplicates_removed=list(record.duplicates_removed),
             deterministic_time_used=record.deterministic_time_used,

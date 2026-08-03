@@ -1,4 +1,4 @@
-"""Solver.solve() - stage 2 only. diagnose() (stage 3, Phase 5 M2) is not built.
+"""Solver.solve() - stage 2 - and diagnose() - stage 3, added Phase 5 M2.
 
 Bounded by max_deterministic_time, not max_time_in_seconds, per ADR-011:
 parallel workers racing under a wall-clock limit are not reproducible, and a
@@ -61,11 +61,11 @@ from dataclasses import dataclass
 
 from ortools.sat.python import cp_model
 
-from optiedt.domain.entities import Placement, RoomId, Session, SessionId
+from optiedt.domain.entities import DiagnosisResult, Placement, RoomId, Session, SessionId
 from optiedt.domain.enums import RoomType
 from optiedt.domain.instance import Instance
 from optiedt.solver.constraints import ALL_HARD_CONSTRAINTS
-from optiedt.solver.interfaces import DiagnosisResult, SolverInput, SolverOutput
+from optiedt.solver.interfaces import SolverInput, SolverOutput
 from optiedt.solver.objective import build_objective, has_active_criteria
 from optiedt.solver.occupancy import build_occupancy
 from optiedt.solver.variables import Variables, build_variables
@@ -285,7 +285,146 @@ class CpSatSolver:
         )
 
     def diagnose(self, request: SolverInput) -> DiagnosisResult:
-        raise NotImplementedError(
-            "Stage 3 (assumption-literal diagnosis) is Phase 5, not built yet. "
-            "See docs/status.md and C-6 in docs/open-questions.md."
+        """Stage 3 - rules SUFFICIENT to explain an infeasibility (FR-8).
+
+        Entered only after `solve` returns infeasible. Three properties are
+        imposed by CP-SAT itself and are not choices (docs/architecture.md):
+
+        1. **A single worker**, whatever `self.workers` says. Overridden here
+           rather than configured, because a diagnosis that returned a
+           different conflict set on a different machine would be worse than
+           none - the report names the rule a user is told to change.
+        2. **No objective.** With a function to minimise, the solver returns
+           the whole assumption set and the mechanism becomes useless. That is
+           why `build_occupancy` and `build_objective` are not called at all
+           here, not merely left unposted.
+        3. **A sufficient set, not a minimal one.** `is_minimal` stays False.
+           The interface must say "rules sufficient to explain the conflict",
+           never "the smallest such set".
+
+        ⚠️ **What the returned set means, precisely**, because the natural
+        reading is backwards. `sufficient_assumptions_for_infeasibility()`
+        returns an UNSAT CORE: a subset of the assumptions whose conjunction is
+        ALREADY infeasible on its own. So "H1, H3" means *enforcing H1 and H3
+        alone, with H7 and H12 set aside, admits no timetable* - NOT "relaxing
+        H1 and H3 would admit one". Measured: two sessions of one teacher into
+        one slot with one room returns `('H1',)`, even though relaxing H1 alone
+        would leave H3 forbidding the same pair.
+
+        **The same builders post stage 2 and stage 3.** Only H1, H3, H7 and H12
+        take a literal (C-6, `carries_assumption_literal`); the rest ignore the
+        argument. Building a separate diagnosis model would let stage 3 name a
+        conflict that does not exist in the model actually solved, and nothing
+        would catch it.
+
+        ⚠️ **Verified before this was relied on, not assumed.** OR-Tools
+        9.15.6755 honours `only_enforce_if` on `no_overlap`, `cumulative` AND
+        `exactly_one`, in both directions, and
+        `sufficient_assumptions_for_infeasibility()` returns only the guilty
+        literals. A version that SILENTLY IGNORED the literal would report
+        rules that were never relaxed, which is why
+        `tests/unit/test_diagnosis.py` pins the relaxation itself rather than
+        trusting the library - the same treatment `interleave_search` got.
+
+        ⚠️ **`interleave_search` is NOT set here.** It exists to make a
+        parallel race deterministic; at one worker there is no race, and it is
+        an Experimental parameter whose measured side effect is on the reported
+        objective (ADR-011). Nothing is gained by carrying it into a solve that
+        has no objective and no parallelism.
+        """
+        model = cp_model.CpModel()
+        try:
+            variables = build_variables(model, request)
+        except ValueError as exc:
+            # H4/H5 left a session with no room, or H6/H8/H9 with no start.
+            # There is no model to diagnose: the domain was empty before the
+            # search began, and no assumption literal can relax a domain.
+            return DiagnosisResult(
+                conflicting_codes=(),
+                is_conclusive=True,
+                detail=(
+                    "No model could be built, so no rule can be relaxed to explain the "
+                    f"conflict: {exc} The pre-analysis report names the resource and the "
+                    "quantity missing."
+                ),
+            )
+
+        literal_of_code: dict[int, str] = {}
+        assumptions: list[cp_model.IntVar] = []
+        for builder in ALL_HARD_CONSTRAINTS:
+            if not builder.carries_assumption_literal:
+                builder.apply(model, variables, request.instance)
+                continue
+            literal = model.new_bool_var(f"assume[{builder.code}]")
+            literal_of_code[literal.index] = builder.code
+            assumptions.append(literal)
+            builder.apply(model, variables, request.instance, literal)
+
+        model.add_assumptions(assumptions)
+
+        solver = cp_model.CpSolver()
+        solver.parameters.max_deterministic_time = request.deterministic_budget
+        solver.parameters.max_time_in_seconds = self.wall_clock_ceiling_seconds
+        solver.parameters.random_seed = request.seed
+        solver.parameters.num_workers = 1
+
+        status = solver.solve(model)
+
+        if status == cp_model.INFEASIBLE:
+            codes = tuple(
+                literal_of_code[index]
+                for index in solver.sufficient_assumptions_for_infeasibility()
+                if index in literal_of_code
+            )
+            if not codes:
+                return DiagnosisResult(
+                    conflicting_codes=(),
+                    is_conclusive=True,
+                    detail=(
+                        "No timetable exists, and no relaxable rule explains it. Only H1, "
+                        "H3, H7 and H12 are posted constraints an assumption can be "
+                        "attached to; H4, H5, H6, H8, H9 and H10 restrict a variable's "
+                        "domain before the search begins and cannot be relaxed. The "
+                        "conflict is in the data - read the pre-analysis report."
+                    ),
+                )
+            return DiagnosisResult(
+                conflicting_codes=codes,
+                is_conclusive=True,
+                detail=(
+                    f"{', '.join(codes)} are together SUFFICIENT to explain the conflict: "
+                    "enforcing them alone, with every other rule set aside, already admits "
+                    "no timetable. The set is heuristically reduced and is NOT guaranteed "
+                    "to be the smallest one, and other rules may also be violated - "
+                    "changing these is necessary, not necessarily enough."
+                ),
+            )
+
+        if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+            # Reachable only if `solve` and `diagnose` were given different
+            # instances, since H1-H12 are declared identically whatever the
+            # weights. Reported rather than raised: the run already has a
+            # verdict, and an exception here would replace it with a stack
+            # trace.
+            return DiagnosisResult(
+                conflicting_codes=(),
+                is_conclusive=True,
+                detail=(
+                    "The diagnosis run found a timetable satisfying all twelve hard "
+                    "constraints, so there is no conflict to report. If stage 2 returned "
+                    "INFEASIBLE, the two stages were given different data."
+                ),
+            )
+
+        return DiagnosisResult(
+            conflicting_codes=(),
+            is_conclusive=False,
+            detail=(
+                f"Inconclusive: CP-SAT returned {solver.status_name(status)} within the "
+                "budget - it neither found a timetable nor proved that none exists. This "
+                "is NOT evidence that the instance is sound: an instance can genuinely "
+                "have no solution while the propagators cannot construct the proof, which "
+                "is what cost three sessions on C-13. Read the pre-analysis report, and "
+                "raise the deterministic budget."
+            ),
         )

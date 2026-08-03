@@ -21,6 +21,11 @@ to, and attaching one to H12's or H3's posting on their behalf would be
 exactly the redundant-literal problem C-6 warns against - the solver
 could name H2 or H11 in a conflict report for a rule the user cannot act
 on independently of H12 or H3.
+
+⚠️ The `literal` argument each apply() below accepts is therefore IGNORED.
+A conflict that is "really" H2's is reported as H12, and one that is
+"really" H11's as H3 - which is correct, not a loss: those are the rules
+the user can actually change.
 """
 
 from __future__ import annotations
@@ -48,7 +53,13 @@ class H2:
     def carries_assumption_literal(self) -> bool:
         return False
 
-    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None:
+    def apply(
+        self,
+        model: cp_model.CpModel,
+        variables: Variables,
+        instance: Instance,
+        literal: cp_model.IntVar | None = None,
+    ) -> None:
         return None
 
 
@@ -64,5 +75,11 @@ class H11:
     def carries_assumption_literal(self) -> bool:
         return False
 
-    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None:
+    def apply(
+        self,
+        model: cp_model.CpModel,
+        variables: Variables,
+        instance: Instance,
+        literal: cp_model.IntVar | None = None,
+    ) -> None:
         return None

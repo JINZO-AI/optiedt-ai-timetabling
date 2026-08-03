@@ -290,24 +290,43 @@ export interface CheckResult {
  * Rules SUFFICIENT to explain an infeasibility — not the smallest such set.
  * The interface must say so: the subset is heuristically reduced and is not
  * guaranteed minimal.
+ *
+ * ⚠️ **The natural reading of `conflictingCodes` is backwards.** It is an
+ * unsat core: enforcing exactly those rules, with every other rule set aside,
+ * already admits no timetable. It is NOT a repair list — relaxing them need
+ * not make the instance solvable, because other rules may forbid the same
+ * placements. Never render it as "change these and it will solve".
+ *
+ * ⚠️ **An empty `conflictingCodes` is two different outcomes**, and only
+ * `isConclusive` separates them:
+ *
+ *  - conclusive and empty — no *relaxable* rule explains it. Only H1, H3, H7
+ *    and H12 are posted constraints an assumption can attach to; H4–H6 and
+ *    H8–H10 restrict a variable's domain before the search begins. The
+ *    conflict is in the data, and `preAnalysis` is where to look.
+ *  - not conclusive — CP-SAT could not prove the infeasibility within the
+ *    budget. That is NOT evidence the instance is sound; it is the C-13 shape.
+ *
+ * `detail` says which, in words.
  */
 export interface DiagnosisResult {
   conflictingCodes: string[]
   isMinimal: boolean
+  isConclusive: boolean
+  detail: string
 }
 
 /**
  * One run and its candidates.
  *
- * ⚠️ `diagnosis` is NOT here, and its absence is the point. The diagnosis run
- * is Phase 5 M2, so the API omits the field rather than sending an empty value
- * that would read as "checked, no conflict". `DiagnosisResult` stays declared
- * below because the shape is agreed — add the field here with the work that
- * fills it, not before.
+ * Two fields report on stages rather than on results, and both are read wrong
+ * by default:
  *
- * `preAnalysis` landed with M1 and follows the same rule in the other
- * direction: **an empty array means the stage did not run**, never "verified,
- * nothing wrong".
+ *  - `preAnalysis` — **an empty array means the stage did not run**, never
+ *    "verified, nothing wrong".
+ *  - `diagnosis` — `null` on every run that produced a timetable, because
+ *    stage 3 is entered only from `INFEASIBLE`. A non-null diagnosis does NOT
+ *    mean a conflict was named; read `isConclusive` and `conflictingCodes`.
  */
 export interface Run {
   id: string
@@ -322,6 +341,8 @@ export interface Run {
   weights: Record<string, number>
   /** The five checks, in the order they are reported. Empty means not run. */
   preAnalysis: CheckResult[]
+  /** Stage 3's report. `null` unless the run reached `DIAGNOSED`. */
+  diagnosis: DiagnosisResult | null
   /** In rank order, best first. Display this order; do not sort. */
   candidates: Candidate[]
   /** Profile names whose timetable was identical to one already obtained. */

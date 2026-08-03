@@ -17,9 +17,14 @@ results are recorded on the run whether they pass or fail. A failing check does
 not stop the run: stage 1 then stage 2 always, and stage 3 only on INFEASIBLE
 (docs/architecture.md).
 
-⚠️ **DIAGNOSING/DIAGNOSED are declared here and not yet entered.** An infeasible
-run stops at `INFEASIBLE`. The diagnosis run is Phase 5 M2. Transitioning into a
-state whose work does not exist would report a conflict set nobody computed.
+**DIAGNOSING/DIAGNOSED are entered** (FR-8, Phase 5 M2), and only from
+`INFEASIBLE` - never speculatively. `Solver.diagnose` returns the rules
+sufficient to explain the conflict, at one worker with no objective.
+
+⚠️ An infeasible run therefore ends in `DIAGNOSED`, not `INFEASIBLE`, and
+`DIAGNOSED` does NOT mean a conflict was named: the diagnosis can be
+inconclusive (CP-SAT could not prove the infeasibility) or conclusive with an
+empty set (no relaxable rule explains it). `DiagnosisResult.detail` says which.
 
 Storage is in memory: a restart loses every run. That is Phase 4's documented
 position (`docs/status.md`) - the run record proper is Phase 5, FR-19. The
@@ -35,10 +40,15 @@ from typing import Protocol
 
 from optiedt.analysis.interfaces import Decomposition, DominanceVerdict, Recommendation
 from optiedt.analysis.ranking import DefaultRanker
-from optiedt.domain.entities import Candidate, ConstraintCode, Run, RunId
+from optiedt.domain.entities import (
+    Candidate,
+    ConstraintCode,
+    DiagnosisResult,
+    Run,
+    RunId,
+)
 from optiedt.domain.enums import RunState
 from optiedt.preanalysis.checks import CheckResult
-from optiedt.solver.interfaces import DiagnosisResult
 
 MODEL_VERSION = "weekly.h1-h12.s2-s10"
 """What produced a candidate, recorded with every run.

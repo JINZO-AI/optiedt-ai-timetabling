@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { isTerminal, useCreateRun, useInstance, useRun } from '@/api/queries'
+import { ConflictReport } from '@/features/conflicts/ConflictReport'
 import { CandidateCard } from '@/features/generation/CandidateCard'
 import { PreAnalysisReport } from '@/features/generation/PreAnalysisReport'
 import type { ConstraintDefinition, RunState } from '@/types/domain'
@@ -112,14 +113,18 @@ export function GenerationScreen() {
             </p>
           )}
 
-          {run.data.state === 'INFEASIBLE' && (
-            <p className="warning">
-              Aucun emploi du temps n’existe pour cette instance. Le rapport nommant les règles en
-              conflit relève du diagnostic, qui n’est pas encore implémenté.
-            </p>
-          )}
-
           {run.data.error && <p className="error">{run.data.error}</p>}
+        </section>
+      )}
+
+      {run.data?.diagnosis && (
+        <section className="panel">
+          <h2>Diagnostic</h2>
+          <p className="panel__note">
+            Exécuté uniquement lorsque l’optimisation conclut qu’aucun emploi du temps n’existe :
+            un seul worker, aucun objectif, les règles posées sous hypothèses.
+          </p>
+          <ConflictReport diagnosis={run.data.diagnosis} catalogue={catalogue} />
         </section>
       )}
 

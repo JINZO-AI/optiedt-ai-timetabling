@@ -51,6 +51,7 @@ def _noverlap_by_key(
     variables: Variables,
     instance: Instance,
     key_of_session: dict[SessionId, str],
+    literal: cp_model.IntVar | None = None,
 ) -> None:
     by_key: dict[str, list[cp_model.IntervalVar]] = defaultdict(list)
     for session in instance.sessions:
@@ -58,7 +59,9 @@ def _noverlap_by_key(
         by_key[key].append(variables.interval[session.id])
     for intervals in by_key.values():
         if len(intervals) > 1:
-            model.add_no_overlap(intervals)
+            posted = model.add_no_overlap(intervals)
+            if literal is not None:
+                posted.only_enforce_if(literal)
 
 
 def _ancestor_chain(group_id: GroupId, parent_of: dict[GroupId, GroupId | None]) -> list[GroupId]:
@@ -86,9 +89,15 @@ class H1:
     def carries_assumption_literal(self) -> bool:
         return True
 
-    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None:
+    def apply(
+        self,
+        model: cp_model.CpModel,
+        variables: Variables,
+        instance: Instance,
+        literal: cp_model.IntVar | None = None,
+    ) -> None:
         key_of_session = {s.id: s.teacher for s in instance.sessions}
-        _noverlap_by_key(model, variables, instance, key_of_session)
+        _noverlap_by_key(model, variables, instance, key_of_session, literal)
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,7 +114,13 @@ class H12:
     def carries_assumption_literal(self) -> bool:
         return True
 
-    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None:
+    def apply(
+        self,
+        model: cp_model.CpModel,
+        variables: Variables,
+        instance: Instance,
+        literal: cp_model.IntVar | None = None,
+    ) -> None:
         parent_of = {g.id: g.parent_group for g in instance.groups}
         sessions_by_group: dict[GroupId, list[SessionId]] = defaultdict(list)
         for session in instance.sessions:
@@ -119,4 +134,6 @@ class H12:
                 for session_id in sessions_by_group.get(ancestor_id, [])
             ]
             if len(intervals) > 1:
-                model.add_no_overlap(intervals)
+                posted = model.add_no_overlap(intervals)
+                if literal is not None:
+                    posted.only_enforce_if(literal)

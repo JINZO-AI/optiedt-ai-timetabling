@@ -170,11 +170,25 @@ Entered only on `INFEASIBLE`. Three properties are imposed by CP-SAT itself and 
    must say "rules sufficient to explain the conflict", never "the smallest such set".
 
 Constraints are declared under enforcement literals passed as assumptions. The solver returns a subset
-explaining the infeasibility, and each is reported by its catalogue code.
+explaining the infeasibility, and each is reported by its catalogue code. **Built in Phase 5 M2**
+(`CpSatSolver.diagnose`), through the *same* constraint builders stage 2 uses — a separate diagnosis
+model could name a conflict that does not exist in the model actually solved.
 
 **This only works if the constraint → literal mapping is 1:1 and non-redundant.** See C-6 in
 `docs/open-questions.md`: H2 is subsumed by H12, and H11 is implied by H3, so overlapping literals can
 make the report name a rule the user cannot act on.
+
+⚠️ **What the returned set means is the reverse of the natural reading.** It is an unsat core:
+*enforcing exactly those rules, with the others set aside, already admits no timetable.* It is **not** a
+repair list — relaxing them need not make the instance solvable. Measured: two sessions of one teacher
+into one slot with one room returns `('H1',)`, though relaxing H1 leaves H3 forbidding the same pair.
+
+⚠️ **The mechanism is inconclusive at reference scale, and this is C-17, open.** Attaching an
+enforcement literal to `no_overlap` or `cumulative` takes it out of presolve: an area contradiction a
+plain solve proves in **0.0 s** returns **UNKNOWN after 240 s** under assumptions. A deletion-based
+search over plain subset solves answers `('H3',)` in **1.6 s** on the same instance. The three
+properties listed above are imposed by *this* mechanism, not by CP-SAT in general, and two of them
+would change if the mechanism did. **Read C-17 before treating this section as settled.**
 
 ---
 

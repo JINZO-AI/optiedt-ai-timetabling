@@ -7,8 +7,15 @@ built?" without reading code.
 
 Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 
-**Where the project actually is: 13 of 25 requirements are under way, none is finished.**
-*(FR-2, 3, 4, 5, 6, 7, 12, 13, 14, 15, 16, 17, 18 — count them in the table rather than trusting this line.)*
+**Where the project actually is: 14 of 25 requirements are under way, none is finished.**
+*(FR-2, 3, 4, 5, 6, 7, 8, 12, 13, 14, 15, 16, 17, 18 — count them in the table rather than trusting this line.)*
+
+⚠️ **FR-8 joined in Phase 5 M2, and it stays `WIP` for a reason beyond its acceptance test.** The
+diagnosis run exists, is tested against real CP-SAT and names exactly the guilty rule on instances
+where one rule can be at fault. But it is **inconclusive on the reference instance**: enforcement
+literals defeat CP-SAT's presolve, so an infeasibility a plain solve proves in 0.0 s returns `UNKNOWN`
+after 240 s. That is **C-17**, open and measured. Do not promote FR-8 to `✓` on the strength of the
+unit tests — the requirement is that a report names the rules in conflict *for this faculty's data*.
 
 **FR-12 joined in Phase 5 M1.** The five checks run in `optiedt.preanalysis.verifications`, carry both
 the period bound and the contiguity bound, are recorded on every run and are displayed on the
@@ -102,7 +109,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-5** | Produce several candidates, each scored out of 100 | Necessary | `analysis` — scoring | `acceptance/test_fr05` | **WIP** |
 | **FR-6** | Order candidates by score | Necessary | `analysis` — ranking | `property` ✓ | **WIP** |
 | **FR-7** | Display the timetable by teacher, group and room | Necessary | `features/timetable` | `integration` | **WIP** |
-| **FR-8** | Report the rules in conflict when no timetable exists | Necessary | `preanalysis`, `solver` — diagnosis | `acceptance/test_fr08` | — |
+| **FR-8** | Report the rules in conflict when no timetable exists | Necessary | `preanalysis` ✓, `solver` — `diagnose()` ✓; `features/conflicts` ✓ | `unit/test_diagnosis` ✓, `integration/test_api_runs` ✓, `frontend ConflictReport.test` ✓, `acceptance/test_fr08` | **WIP** |
 | **FR-9** | Configure the calendar: holidays, closed slots, shortened day | Necessary | `db`, `features/admin` | `acceptance/test_fr09` | — |
 | **FR-10** | Print or export a timetable view | Expected | `features/timetable` | `integration` | — |
 | **FR-11** | Authenticate users and restrict access by role | Necessary | `core` — security; `api` — deps | `acceptance/test_fr11` | — |

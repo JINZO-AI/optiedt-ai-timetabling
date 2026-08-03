@@ -24,7 +24,7 @@ Keep this file current. A stale status file is worse than none, because the next
 | **Next step** | **Phase 5 M2 — the diagnosis run (FR-8).** M1 landed FR-12 with both bounds. Then M3 the run record, M4 authentication and rights, M5 publication, M6 the closing audit |
 | **Days used** | ~4 of 20 across Phases 1–4, which were budgeted 3 + 5 + 3 + 4 = 15 |
 | **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · latest **pushed** commit `8d1194b`, 2026-08-01 (the Phase 4 closing audit); `HEAD` and `origin/main` identical at that point. ⚠️ **No local-commit count is recorded here** — this line has been wrong four times (`0dc0078`, a parent, until 2026-07-31; `acf9aa0` with "9 commits" after eight were pushed; then "1 commit", which the correcting commit itself made 2; then `bfe805a`, left stale by the next push). **A count cannot live in a file that commits change, and a SHA does not survive a push that does not touch this file.** Re-derive: `git rev-parse origin/main`, `git rev-list --count origin/main..HEAD` |
-| **Blocked on** | Nothing for Phase 5. **C-5**, **C-9** and **C-14** all land in Phase 6 acceptance now; **C-15** blocks FR-13's `✓`. C-14 was deferred 2026-08-01 — Phase 4 shipped **no dominance signal** rather than one that can never fire, so FR-17 waits on it |
+| **Blocked on** | **C-17 needs a decision** (new 2026-08-04): the documented stage-3 mechanism is inconclusive at reference scale, measured. M2 shipped it anyway so the phase is not blocked, and the limitation is recorded. **C-5**, **C-9** and **C-14** land in Phase 6 acceptance; **C-15** blocks FR-13's `✓` |
 
 ---
 
@@ -85,6 +85,15 @@ FR-17's `✓`, Phase 6 acceptance, and the rewording of `docs/scoring-and-explan
 describes the unreachable state. **That wording is a delivered commitment, so it needs the supervisor.**
 
 **C-9 — four requirements have no detailed specification.** Blocks Phase 6 acceptance tests.
+
+**C-17 — the documented stage-3 mechanism is inconclusive at reference scale. NEW 2026-08-04,
+measured.** Enforcement literals defeat CP-SAT's presolve: an infeasibility a plain solve proves in
+0.0 s returns `UNKNOWN` after 240 s under assumptions, on both realistic infeasible variants of the
+reference instance. A deletion-based search over plain subset solves answers `('H3',)` in 1.6 s.
+Phase 5 M2 shipped the documented mechanism so the phase is not blocked, and the limitation is
+recorded rather than hidden. **Blocks FR-8 being useful on this project's own instance**, and the
+acceptance criterion that depends on it. Changing it changes `docs/architecture.md`'s stage 3 and two
+of its three "imposed" properties — technical lead's decision.
 
 ---
 
@@ -256,7 +265,8 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 | **The complete Phase 4 path, end to end** | **a declaration reaches the solver and is honoured** | 2026-08-01 | T001 marked Monday 08:30 and Wednesday 15:40 unavailable on the grid; the generated Wednesday-14:00 row was withdrawn by the replace-wholesale rule and the rows came back marked `TEACHER`, while a teacher who declared nothing kept their `SYNTHETIC` rows. A run then placed T001's two sessions at slots 24/18, 21/22 and 25/22 across the three candidates — **never** at slot 0 or 14. This is the milestone's claim measured rather than asserted |
 | **FR-18 room occupancy, rendered** | **matches `verify-instance` exactly, all four room types** | 2026-08-01 | The timetable screen's occupancy view sums to Amphi **32**, Salle **82**, Lab_Info **160**, Lab_Sciences **48** periods on the candidate it displays — the same figures `scripts/verify-instance.ps1` reports for the instance. Independent arithmetic (frontend, over placements) agreeing with the verifier is what makes the view trustworthy rather than merely plausible. ⚠️ It is the *period* figure; the bound that binds for laboratories is two-period windows, and the view says so on screen |
 | **A budget too small to solve** | **run lands in `FAILED` carrying the reason** | 2026-08-01 | Total budget 3 (1 per profile) makes CP-SAT return `UNKNOWN`; `solver/engine.py` raises rather than reporting it as a normal result, the executor records `FAILED`, and the API surfaces the message. Correct behaviour, not a defect — and the C-13 lesson working: an `UNKNOWN` is never quietly passed off as an answer |
-| Diagnosis run on an infeasible instance | *not yet measured* | — | Single worker, no objective — expect it to be slow |
+| ⚠️ **Diagnosis run on an infeasible instance** | **inconclusive at reference scale — C-17** | 2026-08-04 | Phase 5 M2. Four computer laboratories withdrawn (an **area** contradiction, 160 periods against 112): a plain solve returns `INFEASIBLE` in **0.0 s**; the same model under four assumption literals returns **`UNKNOWN` after 240 s** at budget 120. Enforcement literals take `no_overlap`/`cumulative` out of presolve. The original pre-C-13 mix behaves the same way. **The mechanism is correct and tested — 14 tests naming exactly `('H1',)`, `('H12',)`, `('H3',)` on small instances — and unusable on this instance.** See C-17 |
+| **Deletion-based subset search, measured as the alternative** | **`('H3',)` in 1.6 s** | 2026-08-04 | Four plain solves, each omitting one assumable rule, dropping it if the model stays infeasible. Presolve keeps working because no constraint is conditional. On the contiguity case it returns all four in 92 s having dropped nothing — the honest outcome, since CP-SAT cannot prove that infeasibility at all (C-13) and the pre-analysis is what catches it. **Not implemented**: it changes a documented design (C-17) |
 | **Effective `y[s][t]` count after pruning** | **5,328** of 6,104 | 2026-07-30 | 87.3% of the upper bound. Start indicators `x[s,t₀]`: **4,720**. Together 10,048 variables (C-7) |
 | **Cost of building the C-7 accounting** | **2.9–4.1 s → 7.6–8.0 s** | 2026-07-30 | Same configuration, three seeds; deterministic time 0.4–1.9 → ~6.1. Why `build_occupancy()` is called on demand and not by the feasibility solve |
 | **First solve with the C-4/C-12 objective posted** | **~49 s wall · ~84 deterministic units**, feasible (not proven optimal) | 2026-07-30 | Seed 42, catalogue default weights, `deterministic_budget=30`, `num_workers=0`. 218/218 placed. ⚠️ The ~84 deterministic units against a budget of 30 is the **per-worker sum**, not an overshoot — see the two calibration rows above. This row previously read it as confirming a "calibration live again" risk that turned out not to exist |

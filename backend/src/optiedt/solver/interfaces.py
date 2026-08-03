@@ -17,6 +17,7 @@ from ortools.sat.python import cp_model
 from optiedt.domain.entities import (
     Candidate,
     ConstraintCode,
+    DiagnosisResult,
     Placement,
     RoomId,
     SessionId,
@@ -75,20 +76,6 @@ class SolverOutput:
     wall_clock_seconds: float
 
 
-@dataclass(frozen=True, slots=True)
-class DiagnosisResult:
-    """Rules SUFFICIENT to explain an infeasibility — not the smallest such set.
-
-    The subset returned by the solver is heuristically reduced and is NOT
-    guaranteed minimal. The interface must present it as "rules sufficient to
-    explain the conflict". Obtaining a minimal set would require minimising the
-    sum of the literals instead, recorded as a possible improvement.
-    """
-
-    conflicting_codes: tuple[ConstraintCode, ...]
-    is_minimal: bool = False
-
-
 class ConstraintBuilder(Protocol):
     """Builds one hard constraint into the CP-SAT model.
 
@@ -104,8 +91,16 @@ class ConstraintBuilder(Protocol):
       overlaps another.** H2 is subsumed by H12; H11 is implied by H3. Redundant
       literals let the solver return either one, so the conflict report can name
       a rule the user cannot act on. The mapping constraint → literal must be
-      1:1 and non-redundant. This is C-6, unresolved — decide it before building
-      the diagnosis run.
+      1:1 and non-redundant. This is C-6, RESOLVED: only H1, H3, H7 and H12
+      carry one, because they are the only constraints that are posted objects
+      at all.
+
+    ``apply`` takes an optional enforcement ``literal``, used only by the
+    diagnosis run (stage 3, ``Solver.diagnose``). **Stage 2 and stage 3 post
+    through the SAME builders**, deliberately: a separate diagnosis model could
+    name a conflict that does not exist in the model actually solved, and
+    nothing would catch it. A builder whose ``carries_assumption_literal`` is
+    False ignores the argument — it has no posting to attach one to.
     """
 
     @property
@@ -114,7 +109,13 @@ class ConstraintBuilder(Protocol):
     @property
     def carries_assumption_literal(self) -> bool: ...
 
-    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None: ...
+    def apply(
+        self,
+        model: cp_model.CpModel,
+        variables: Variables,
+        instance: Instance,
+        literal: cp_model.IntVar | None = None,
+    ) -> None: ...
 
 
 class Solver(Protocol):

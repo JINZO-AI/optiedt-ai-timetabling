@@ -21,9 +21,9 @@ from fastapi.testclient import TestClient
 
 from optiedt.api import deps
 from optiedt.api.main import app
-from optiedt.domain.entities import Placement
+from optiedt.domain.entities import DiagnosisResult, Placement
 from optiedt.services.runs import InMemoryRunStore
-from optiedt.solver.interfaces import DiagnosisResult, SolverInput, SolverOutput
+from optiedt.solver.interfaces import SolverInput, SolverOutput
 from optiedt.tasks.executor import RunExecutor
 
 SOFT_CODES = {"S2", "S3", "S4", "S5", "S6", "S7", "S10"}
@@ -41,6 +41,8 @@ class FakeSolver:
     offset_by_profile: dict[str, int] = field(default_factory=dict)
     infeasible: bool = False
     calls: list[str] = field(default_factory=list)
+    diagnosis_calls: int = 0
+    conflicting_codes: tuple[str, ...] = ("H1", "H3")
 
     def solve(self, request: SolverInput) -> SolverOutput:
         self.calls.append(request.profile.name)
@@ -75,8 +77,17 @@ class FakeSolver:
             wall_clock_seconds=0.01,
         )
 
-    def diagnose(self, request: SolverInput) -> DiagnosisResult:  # pragma: no cover
-        raise AssertionError("Phase 4 must not enter the diagnosis run")
+    def diagnose(self, request: SolverInput) -> DiagnosisResult:
+        """Stage 3. The real encoding is tested against CP-SAT in
+        tests/unit/test_diagnosis.py; what these tests check is the LIFECYCLE
+        around it, so the fake returns a fixed verdict."""
+        self.diagnosis_calls += 1
+        return DiagnosisResult(
+            conflicting_codes=self.conflicting_codes,
+            is_minimal=False,
+            is_conclusive=True,
+            detail="fake diagnosis",
+        )
 
 
 @dataclass
@@ -218,10 +229,57 @@ def test_the_report_carries_the_binding_figure_not_only_a_verdict(wired: Wired) 
     assert "Lab_Info" in coverage["detail"]
 
 
-def test_diagnosis_is_still_absent_rather_than_empty(wired: Wired) -> None:
-    """The diagnosis run is M2. Reporting a conflict set nobody computed would
-    name rules the user cannot act on."""
-    assert "diagnosis" not in wired.launch()
+def test_a_run_that_found_a_timetable_carries_no_diagnosis(wired: Wired) -> None:
+    """Stage 3 is entered ONLY from INFEASIBLE, never speculatively."""
+    run = wired.launch()
+    assert run["diagnosis"] is None
+    assert wired.solver.diagnosis_calls == 0
+
+
+# ── the diagnosis branch (FR-8) ────────────────────────────────────────
+
+
+def test_an_infeasible_run_is_diagnosed_and_names_the_rules(wired: Wired) -> None:
+    """FR-8 through the API: a report naming the rules in conflict, not a timeout."""
+    wired.solver.infeasible = True
+    run = wired.launch()
+
+    assert run["state"] == "DIAGNOSED"
+    assert wired.solver.diagnosis_calls == 1
+    diagnosis = run["diagnosis"]
+    assert diagnosis["conflictingCodes"] == ["H1", "H3"]
+    assert diagnosis["isConclusive"] is True
+    # ⚠️ SUFFICIENT, never minimal. The interface must not claim otherwise.
+    assert diagnosis["isMinimal"] is False
+    assert run["candidates"] == []
+
+
+def test_an_infeasible_run_still_carries_its_pre_analysis(wired: Wired) -> None:
+    """Both halves of the report, not one.
+
+    The conflict set names rules; the pre-analysis names resources and
+    quantities. On a genuinely infeasible instance the second is often the
+    actionable one - C-13's conflict was capacity, which no assumption literal
+    can express.
+    """
+    wired.solver.infeasible = True
+    run = wired.launch()
+    assert len(run["preAnalysis"]) == 5
+
+
+def test_an_inconclusive_diagnosis_does_not_read_as_no_conflict(wired: Wired) -> None:
+    """The C-13 shape: CP-SAT could not prove the infeasibility.
+
+    An empty code list with `isConclusive` false must never be presented as
+    "nothing wrong" - that is precisely the inference that cost three sessions.
+    """
+    wired.solver.infeasible = True
+    wired.solver.conflicting_codes = ()
+    run = wired.launch()
+
+    assert run["state"] == "DIAGNOSED"
+    assert run["diagnosis"]["conflictingCodes"] == []
+    assert run["diagnosis"]["detail"], "an empty set must be explained in words"
 
 
 def test_each_profile_is_solved_once_and_sequentially(wired: Wired) -> None:
@@ -302,11 +360,17 @@ def test_unknown_run_and_candidate_are_404(wired: Wired) -> None:
     assert wired.client.get(f"/api/runs/{run['id']}/candidates/nope").status_code == 404
 
 
-def test_an_infeasible_instance_stops_at_infeasible(wired: Wired) -> None:
-    """It must NOT walk on to DIAGNOSING - that work is Phase 5."""
+def test_an_infeasible_instance_walks_on_to_diagnosed(wired: Wired) -> None:
+    """`INFEASIBLE` is a waypoint, not a terminal state (Phase 5 M2).
+
+    ⚠️ Reaching `DIAGNOSED` is not the same as having a conflict to report —
+    `test_an_inconclusive_diagnosis_does_not_read_as_no_conflict` covers that.
+    It is also NOT a failure: `error` stays None, because an instance with no
+    solution is an answer, not a fault.
+    """
     wired.solver.infeasible = True
     run = wired.launch()
-    assert run["state"] == "INFEASIBLE"
+    assert run["state"] == "DIAGNOSED"
     assert run["candidates"] == []
     assert run["error"] is None
 

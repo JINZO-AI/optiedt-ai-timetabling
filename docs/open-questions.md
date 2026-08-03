@@ -17,10 +17,11 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 
 ## Index — what is actually still open
 
-**Four.** Everything else on this page is resolved and kept for its reasoning.
+**Five.** Everything else on this page is resolved and kept for its reasoning.
 
 | # | Still open | Blocks | Owner |
 |---|---|---|---|
+| **C-17** | **The documented stage-3 mechanism is implementable but unusable at reference scale.** Enforcement literals defeat CP-SAT's presolve: the same infeasibility that a plain solve proves in **0.0 s** returns **UNKNOWN after 240 s** under assumptions. A deletion-based search over plain solves answers `('H3',)` in **1.6 s**. **NEW 2026-08-04, measured** | FR-8 being useful on this project's own instance; the acceptance criterion "an instance without a solution produces a report naming the rules in conflict" | Technical lead |
 | **C-5** | "At least three candidates" can fail when duplicates are removed | Phase 6 acceptance | Lead + supervisor |
 | **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
 | **C-14** | Dominance uses the strict reading; S10's zero weight makes ties common. **Also: the "dominated *top* candidate" signal both documents require is provably unreachable.** **Deferred 2026-08-01** — Phase 4 ships **no dominance signal**; the reading and the specification's wording are still undecided | FR-17's `✓`; Phase 6 acceptance | Technical lead + supervisor |
@@ -30,7 +31,7 @@ Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-
 **C-8, C-11** · **C-4, C-12** · **C-16** (2026-07-30, implemented). The sections below keep their full reasoning;
 headings say which is which.
 
-**Eleven resolved plus four open is fifteen, and the codes run C-1 to C-16 — there is no C-10, and that
+**Eleven resolved plus five open is sixteen, and the codes run C-1 to C-17 — there is no C-10, and that
 is not a lost question.** The number was never assigned. Recorded here for the same reason the retired
 soft-criterion codes S1/S8/S9 are recorded in the errata: a gap in a sequence invites someone to go
 looking for what fell through it.
@@ -341,6 +342,90 @@ finished, because the profiles do not yet differentiate for the documented reaso
 
 **Blocks:** FR-13's eventual `✓`; the Phase 4 comparison screen, which would otherwise explain a
 difference by a cause that is not the real one. **Owner:** technical lead.
+
+### C-17 — Assumption literals defeat presolve, so stage 3 is inconclusive at reference scale · **NEW, OPEN — measured 2026-08-04**
+
+`docs/architecture.md` stage 3 specifies the mechanism: *"Constraints are declared under enforcement
+literals passed as assumptions. The solver returns a subset explaining the infeasibility."* That is
+what Phase 5 M2 built, and **it works** — 14 tests in `tests/unit/test_diagnosis.py` pin it against
+real CP-SAT, naming exactly `('H1',)`, `('H12',)` or `('H3',)` on instances designed so only one rule
+can be at fault.
+
+**It does not work on this project's own instance**, and the reason is not budget.
+
+#### The measurement
+
+Same instance, same model, same infeasibility. Four computer laboratories withdrawn, so `Lab_Info`
+demand is 160 periods against 4 rooms × 28 = 112 available — an **area** contradiction, exactly the
+kind `AddCumulative` reasons about:
+
+| | status | wall clock |
+|---|---|---|
+| Plain solve, 1 worker | **INFEASIBLE** | **0.0 s** |
+| Plain solve, 4 workers | **INFEASIBLE** | **0.0 s** |
+| **Under four assumption literals**, 1 worker, budget 120 | **UNKNOWN** | **240 s** (wall-clock ceiling) |
+
+**Attaching an enforcement literal to `no_overlap` and `cumulative` removes them from presolve.** They
+stop being facts the propagators may reason with and become conditional obligations, so the
+contradiction CP-SAT found instantly is no longer visible to it. This is a property of the encoding,
+not of the budget: a 4× budget increase changed nothing.
+
+Both realistic infeasibilities behave this way — the area case above, and the original pre-C-13 room
+mix (the contiguity case). In both, the run reaches `DIAGNOSED` carrying *"inconclusive"*, which is
+honest and useless.
+
+#### The alternative, also measured
+
+**Deletion-based conflict search**: keep every constraint hard and solve *subsets*. Start with all
+four assumable rules; for each in turn, solve without it, and drop it permanently if the model is
+still infeasible. Every solve is a plain solve, so presolve keeps working.
+
+| Instance | Result | Solves | Wall clock |
+|---|---|---|---|
+| Four laboratories withdrawn (area) | **`('H3',)`** — the actionable answer | 4 | **1.6 s** |
+| The original pre-C-13 mix (contiguity) | `('H1','H3','H7','H12')` — nothing could be dropped | 4 | 92 s |
+
+The second row is the honest outcome rather than a failure: **CP-SAT cannot prove that infeasibility
+at all** — that is precisely what C-13 was — so every subset solve returns `UNKNOWN`, nothing can be
+dropped, and no method resting on a CP-SAT proof can name the rule. **The pre-analysis catches it**,
+and does so in milliseconds. An implementation must therefore distinguish "kept because removing it
+stayed infeasible" from "kept because the subset solve was inconclusive", or the second row reads as a
+confident four-rule verdict.
+
+#### What this costs, and what it does not
+
+Three things stated in `docs/architecture.md` as *"imposed by CP-SAT itself, not choices"* would change
+under the alternative, and they were only ever imposed **by the assumption mechanism**:
+
+- **A single worker.** Needed because solving under assumptions admits no parallelism. Subset solves
+  are ordinary solves and can use every worker — though reproducibility then needs `interleave_search`
+  (C-16), which is a live constraint, not a free choice.
+- **The result is sufficient, not minimal.** A deletion search tests each removal, so the surviving set
+  *is* minimal with respect to the four. `DiagnosisResult.is_minimal` could become true — but only when
+  no subset solve was inconclusive.
+- **No objective.** Unchanged; a feasibility subset solve posts none either.
+
+**Unaffected:** C-6 (still exactly four relaxable rules, still 1:1 and non-redundant), the report's
+shape, the API, and the screen. This is a change of *how the set is computed*, not of what it means.
+
+#### Options
+
+- **(a) Keep the assumption mechanism, record the limitation.** Matches the documented design exactly.
+  Ships a diagnosis that is inconclusive on every infeasibility this project can actually produce.
+- **(b) Replace it with deletion-based subset search.** Answers correctly and fast where a proof
+  exists, degrades honestly where none does. Costs a change to `docs/architecture.md`'s stage 3 and to
+  two of its three "imposed" properties.
+- **(c) Both: try assumptions under a small budget, fall back to subset search.** Most faithful to the
+  documented design and the most code; the fallback would fire every time on this instance, so the
+  first half would be paying for nothing.
+
+**Recommendation: (b)**, with the inconclusive/definite distinction carried in the report. **Not
+decided here** — it changes a documented design, and `docs/architecture.md` states the current one as
+the mechanism.
+
+**Blocks:** FR-8 being useful on the reference instance, and the acceptance criterion "an instance
+without a solution produces a report naming the rules in conflict". Phase 5 M2 shipped **(a)** so that
+the phase is not blocked on a decision. **Owner:** technical lead.
 
 ### C-16 — Reproducibility and portfolio diversity · **RESOLVED 2026-07-30 → both, via `interleave_search` and withholding the hint**
 

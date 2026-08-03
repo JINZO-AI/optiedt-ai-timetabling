@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from optiedt.domain.entities import Placement
+from optiedt.domain.entities import DiagnosisResult, Placement
 from optiedt.domain.instance import Instance
 from optiedt.services.portfolio import (
     EMPHASIS,
@@ -28,7 +28,7 @@ from optiedt.services.portfolio import (
     generate_portfolio,
     placement_signature,
 )
-from optiedt.solver.interfaces import DiagnosisResult, SolverInput, SolverOutput
+from optiedt.solver.interfaces import SolverInput, SolverOutput
 
 
 @dataclass

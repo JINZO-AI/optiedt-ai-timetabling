@@ -25,6 +25,7 @@ from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import replace
 
+from optiedt.domain.entities import WeightProfile
 from optiedt.domain.enums import RunState
 from optiedt.domain.instance import Instance
 from optiedt.preanalysis.checks import PreAnalysis
@@ -32,7 +33,7 @@ from optiedt.preanalysis.verifications import DefaultPreAnalysis
 from optiedt.services.portfolio import PortfolioRequest, generate_portfolio
 from optiedt.services.runs import TERMINAL_STATES, RunRecord, RunStore
 from optiedt.solver.engine import CpSatSolver
-from optiedt.solver.interfaces import Solver
+from optiedt.solver.interfaces import Solver, SolverInput
 
 logger = logging.getLogger(__name__)
 
@@ -153,16 +154,44 @@ class RunExecutor:
         )
 
         if report.infeasible:
-            # Stops here. DIAGNOSING is Phase 5; entering it would report a
-            # conflict set nobody computed.
             record = record.to(RunState.INFEASIBLE)
             self._store.save(record)
-            return record
+            return self._diagnose(record, instance)
 
         record = replace(record.to(RunState.SCORING), candidates=report.result.candidates)
         self._store.save(record)
 
         record = record.to(RunState.COMPLETED)
+        self._store.save(record)
+        return record
+
+    def _diagnose(self, record: RunRecord, instance: Instance) -> RunRecord:
+        """Stage 3 (FR-8). Entered ONLY from INFEASIBLE - never speculatively.
+
+        The whole budget goes to this one solve, not a third of it: the
+        portfolio's budget was divided between three profiles because there
+        were three solves, and there is one here. It is also a single-worker
+        solve with no objective, so it buys far less search per unit than
+        stage 2 did.
+
+        ⚠️ The profile is the balanced one purely because `SolverInput`
+        requires one. **The weights are irrelevant to a diagnosis** - H1-H12
+        are declared identically whatever they are, and `diagnose` posts no
+        objective at all. Passing a profile here decides nothing.
+        """
+        record = record.to(RunState.DIAGNOSING)
+        self._store.save(record)
+
+        diagnosis = self._solver_factory().diagnose(
+            SolverInput(
+                instance=instance,
+                profile=WeightProfile(name="diagnosis", weights=dict(record.weights)),
+                seed=record.run.seed,
+                deterministic_budget=record.run.deterministic_budget,
+            )
+        )
+
+        record = replace(record.to(RunState.DIAGNOSED), diagnosis=diagnosis)
         self._store.save(record)
         return record
 

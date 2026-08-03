@@ -298,6 +298,48 @@ class Candidate:
 
 
 @dataclass(frozen=True, slots=True)
+class DiagnosisResult:
+    """Rules SUFFICIENT to explain an infeasibility — not the smallest such set.
+
+    ⚠️ **Lives in `domain`, not in `solver`, deliberately (Phase 5 M2).** It is
+    a RESULT — a tuple of catalogue codes and three facts about them — carried
+    from the solver to the run record, to the API and to the screen. Leaving it
+    in `solver/interfaces.py` would have forced `api/schemas.py` to reach it
+    through a re-export in `services`, which is legal under
+    `api ⇸ solver` (that contract forbids DIRECT imports only) and would have
+    been evasion rather than compliance. A shape three layers must name belongs
+    to the layer all three may import.
+
+    The subset returned by the solver is heuristically reduced and is NOT
+    guaranteed minimal. The interface must present it as "rules sufficient to
+    explain the conflict". Obtaining a minimal set would require minimising the
+    sum of the literals instead, recorded as a possible improvement.
+
+    ⚠️ **An empty `conflicting_codes` is not one outcome but two**, and
+    collapsing them would be the same mistake as an empty pre-analysis list
+    reading as "verified, nothing wrong":
+
+    - `is_conclusive=True`, empty — the solver proved infeasibility, and **no
+      relaxable rule explains it**. Only H1, H3, H7 and H12 carry literals
+      (C-6); H4, H5, H6, H8, H9 and H10 are domain restrictions applied when
+      the variable is built, so there is nothing to relax. The conflict is in
+      the data, and the pre-analysis report is where to look.
+    - `is_conclusive=False`, empty — the solver could **not prove**
+      infeasibility within the budget. That is the C-13 shape: an instance can
+      genuinely have no solution while CP-SAT's propagators cannot construct
+      the proof. Never present this as "no conflict found".
+
+    `detail` carries which of those happened, in words, because the codes alone
+    cannot say it.
+    """
+
+    conflicting_codes: tuple[ConstraintCode, ...]
+    is_minimal: bool = False
+    is_conclusive: bool = True
+    detail: str = ""
+
+
+@dataclass(frozen=True, slots=True)
 class Comparison:
     """A recorded preference. The only training data increment 2 will have."""
 
