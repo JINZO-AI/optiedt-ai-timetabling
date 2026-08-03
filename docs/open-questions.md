@@ -24,7 +24,7 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 | **C-5** | "At least three candidates" can fail when duplicates are removed | Phase 6 acceptance | Lead + supervisor |
 | **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
 | **C-14** | Dominance uses the strict reading; S10's zero weight makes ties common. **Also: the "dominated *top* candidate" signal both documents require is provably unreachable.** **Deferred 2026-08-01** — Phase 4 ships **no dominance signal**; the reading and the specification's wording are still undecided | FR-17's `✓`; Phase 6 acceptance | Technical lead + supervisor |
-| **C-15** | The objective weights raw violation counts of incomparable scale, so "teacher-favouring" favours only S5, not S3. **Deferred by decision 2026-07-30** — recorded, objective unchanged | FR-13's `✓`; Phase 4 comparison screen | Technical lead |
+| **C-15** | The objective weights raw violation counts of incomparable scale, so "teacher-favouring" favours only S5, not S3. **Deferred by decision 2026-07-30** — recorded, objective unchanged. Phase 4's comparison screen sidesteps it by showing measured sub-scores and making **no claim about what a profile favours** | FR-13's `✓` | Technical lead |
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
 **C-8, C-11** · **C-4, C-12** · **C-16** (2026-07-30, implemented). The sections below keep their full reasoning;
