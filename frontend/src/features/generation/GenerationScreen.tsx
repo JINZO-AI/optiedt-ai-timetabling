@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { isTerminal, useCreateRun, useInstance, useRun } from '@/api/queries'
 import { CandidateCard } from '@/features/generation/CandidateCard'
+import { PreAnalysisReport } from '@/features/generation/PreAnalysisReport'
 import type { ConstraintDefinition, RunState } from '@/types/domain'
 
 /**
@@ -119,6 +120,18 @@ export function GenerationScreen() {
           )}
 
           {run.data.error && <p className="error">{run.data.error}</p>}
+        </section>
+      )}
+
+      {run.data && (
+        <section className="panel">
+          <h2>Vérification préalable</h2>
+          <p className="panel__note">
+            Cinq contrôles arithmétiques, sans solveur, exécutés avant toute résolution. Ils
+            distinguent une instance qui n’admet réellement aucune solution d’une erreur de
+            modélisation — deux situations que le solveur signale de la même façon.
+          </p>
+          <PreAnalysisReport checks={run.data.preAnalysis} />
         </section>
       )}
 

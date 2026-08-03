@@ -205,6 +205,13 @@ All five pass on the reference instance, with these results:
 A failing verification **names the resource concerned and the quantity missing** — that is the content
 of the report required by FR-12, not a boolean.
 
+**The five now run in two places** (Phase 5 M1). `scripts/verify-instance.ps1` guards the contract
+between the generator and the application; `optiedt.preanalysis.verifications` is stage 1 of every run
+and reports the same figures through `GET /runs/{id}`. The two share no code — the standalone checker
+must not depend on either side of the contract it guards — so
+`tests/integration/test_preanalysis_matches_verifier.py` compares them numerically. See
+`docs/testing-strategy.md` §2.
+
 ### ⚠️ 91% is the number to watch — and counting periods will not show it to you
 
 Computer laboratories at **91% of their two-period windows** are the tightest point of the instance and
@@ -241,8 +248,12 @@ data/
   generator/      Produces the 13 files. Imports NOTHING from backend/    ← to be written
   instance/       The 13 CSVs + constraint_catalogue.csv                  ← to be generated
   reference/      ITC-2007 · XHSTT · Kaggle — present, gitignored         ✅ verified
-  verification/   The five checks and their expected results              ← to be written
+  verification/   The five checks and their expected results              ✅ written, runs in CI
 ```
+
+⚠️ The last line read "← to be written" until 2026-08-03, by which time `verify_instance.py` had been
+running in `scripts/run-checks.ps1` for weeks. A layout diagram that marks a delivered file as owed is
+how a session goes looking for work that is already done.
 
 **`data/generator/` imports nothing from `backend/`.** The 13 files are the contract between the
 generator and the application. If the generator imported the ORM, the file schema would stop being the

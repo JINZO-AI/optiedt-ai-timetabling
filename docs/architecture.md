@@ -94,6 +94,10 @@ plain frozen dataclasses; forbidding that import would force those shapes to be 
 for no gain. What the contract actually prevents is a router launching a solve inside a request
 handler — the shape ADR-005 and the run lifecycle exist to rule out.
 
+`api → preanalysis.checks` (`CheckResult`, added Phase 5 M1) is the same kind of import and is
+permitted for the same reason: a frozen dataclass typed into a response. The line the module map draws
+is about *calling* a layer, not about naming its data shapes.
+
 Run with `uv run lint-imports`. A specification sentence that is only prose decays; one that fails CI
 does not.
 
@@ -112,6 +116,15 @@ A run always passes through stage 1 and stage 2. It enters stage 3 **only** when
 
 Five arithmetic checks, no solver involved. Their purpose is to tell apart two situations a solver
 reports identically: *this instance genuinely has no solution* and *the model has a bug*.
+
+**Implemented in `optiedt.preanalysis.verifications` (Phase 5 M1).** Every run records the five
+results, passing or failing, and `GET /runs/{id}` returns them. Two consequences worth stating:
+
+- **A failing check does not stop the run.** Stage 1 then stage 2, always. Reporting a structural
+  proof of infeasibility *and* the solver's conflict set is more useful than either alone — and when
+  CP-SAT returns `UNKNOWN` on an infeasibility it cannot prove (the C-13 shape), the pre-analysis
+  report is the only thing that says why.
+- **An empty check list means the stage did not run**, never "verified, nothing wrong".
 
 They run in milliseconds and they are the primary debugging instrument for this project, because the
 reference instance sits at **91% computer-laboratory occupancy** (of two-period windows — the figure

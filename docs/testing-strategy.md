@@ -107,6 +107,37 @@ that passed verification, so the `UNKNOWN` it produced was blamed on the model f
 A failing check must name the **resource concerned and the quantity missing**, not return a boolean —
 that is the content FR-12 requires.
 
+### Two implementations, compared numerically · Phase 5 M1
+
+The checks exist **twice**, deliberately, and the duplication is guarded the same way the objective's
+is.
+
+| Where | What it is for | May depend on |
+|---|---|---|
+| `data/verification/verify_instance.py` | Guards the contract between the generator and the application. Runs in `run-checks.ps1` | **Nothing** — not the backend, not a third-party package |
+| `optiedt.preanalysis.verifications` | Stage 1 of every run; reports structural risk through the API (FR-12) | `optiedt.domain` only |
+
+The standalone checker cannot import the application, because the 13 CSVs *are* the contract and a
+checker that guards a contract must not depend on either side of it. So the same arithmetic is written
+twice, and **`tests/integration/test_preanalysis_matches_verifier.py` requires the two to agree figure
+for figure** — re-deriving every figure from the raw CSVs rather than comparing against a constant
+transcribed from a document, which would prove the transcription and not the arithmetic.
+
+That test is the counterpart of `test_objective_matches_analysis.py`: two implementations of one
+definition agreeing *in shape* is not evidence they agree *in value*, and the analysis/solver pair
+proved it by disagreeing 28×.
+
+⚠️ **One half of verification 5 is deliberately absent from the in-application check**, and it says so
+in its own report: `Instance` excludes `Student` (increment 2), so "425 students match the declared
+subgroup sizes" stays with `scripts/verify-instance.ps1`. A narrower check must not pass for the
+documented one.
+
+⚠️ **`test_the_original_room_mix_is_caught` is the C-13 regression test.** It reconstructs the room mix
+as it was before the 2026-07-30 repair and requires the contiguity bound to name both shortfalls —
+computer laboratories short by 14 windows, science laboratories by 2 — on an instance the period bound
+passes at a comfortable 95.2 %. **If that test ever passes trivially, the blind spot is back inside the
+product.**
+
 ---
 
 ## 3 · Properties of the analysis layer

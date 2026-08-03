@@ -20,6 +20,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from optiedt.domain.instance import Instance
+
 
 @dataclass(frozen=True, slots=True)
 class CheckResult:
@@ -38,12 +40,17 @@ class CheckResult:
 
 
 class Check(Protocol):
-    """One of the five verifications."""
+    """One of the five verifications.
+
+    Takes the Instance, not an opaque object: `preanalysis` depends on `domain`
+    and on nothing else, which is what makes these checks runnable without a
+    database, without the API and — above all — without the solver.
+    """
 
     @property
     def name(self) -> str: ...
 
-    def run(self, instance: object) -> CheckResult: ...
+    def run(self, instance: Instance) -> CheckResult: ...
 
 
 # The five checks, in the order they are reported. Expected results on the
@@ -104,6 +111,9 @@ and students match the declared group sizes."""
 
 
 class PreAnalysis(Protocol):
-    """Runs all five checks and reports the structural risks found (FR-12)."""
+    """Runs all five checks and reports the structural risks found (FR-12).
 
-    def verify(self, instance: object) -> list[CheckResult]: ...
+    Implemented by `preanalysis.verifications.DefaultPreAnalysis`.
+    """
+
+    def verify(self, instance: Instance) -> list[CheckResult]: ...

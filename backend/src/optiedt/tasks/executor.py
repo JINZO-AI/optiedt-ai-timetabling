@@ -27,6 +27,8 @@ from dataclasses import replace
 
 from optiedt.domain.enums import RunState
 from optiedt.domain.instance import Instance
+from optiedt.preanalysis.checks import PreAnalysis
+from optiedt.preanalysis.verifications import DefaultPreAnalysis
 from optiedt.services.portfolio import PortfolioRequest, generate_portfolio
 from optiedt.services.runs import TERMINAL_STATES, RunRecord, RunStore
 from optiedt.solver.engine import CpSatSolver
@@ -68,10 +70,12 @@ class RunExecutor:
         store: RunStore,
         instance_provider: InstanceProvider,
         solver_factory: SolverFactory,
+        pre_analysis: PreAnalysis | None = None,
     ) -> None:
         self._store = store
         self._instance_provider = instance_provider
         self._solver_factory = solver_factory
+        self._pre_analysis: PreAnalysis = pre_analysis or DefaultPreAnalysis()
         self._pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="optiedt-run")
 
     def submit(self, run_id: str) -> Future[None]:
@@ -89,30 +93,49 @@ class RunExecutor:
             logger.error("run %s vanished before execution", run_id)
             return
         try:
-            record = self._preanalyse(record)
-            self._solve(record)
+            # Resolved ONCE, then handed to both stages. Calling the provider
+            # twice would let a declaration made between stage 1 and stage 2
+            # give the run a pre-analysis report about data the solver never
+            # saw - a report describing a different instance is worse than
+            # none, and this is the file where that would happen silently.
+            instance = self._instance_provider()
+            record = self._preanalyse(record, instance)
+            self._solve(record, instance)
         except Exception as exc:  # the record must carry the reason, whatever it was
             logger.exception("run %s failed", run_id)
             self._fail(run_id, exc)
 
-    def _preanalyse(self, record: RunRecord) -> RunRecord:
-        """Stage 1. Runs no checks yet - see services/runs.py.
+    def _preanalyse(self, record: RunRecord, instance: Instance) -> RunRecord:
+        """Stage 1 - the five checks, against the instance about to be solved.
 
-        The state is entered so the lifecycle is honest about where a run is,
-        and the check list stays EMPTY rather than being filled with passes
-        nobody computed. FR-12 fills it in Phase 5.
+        Against the SOLVE instance, declarations included, not the pristine one
+        loaded from the CSVs: a teacher who marks most of the week unavailable
+        changes what TEACHER_FREE_SLOTS should say, and checking the instance
+        nobody is going to solve would report on the wrong data.
+
+        ⚠️ A failing check does NOT stop the run. Stage 1 then stage 2 always,
+        stage 3 only on INFEASIBLE (docs/architecture.md): the checks report
+        structural risk, the solver returns the verdict, and an infeasible run
+        gets both a pigeonhole proof and a conflict set rather than either
+        alone. The one case where this costs something is a provably infeasible
+        instance CP-SAT cannot prove - it returns UNKNOWN, the run lands in
+        FAILED, and the pre-analysis report is then the only thing that says
+        why. That is exactly the C-13 shape, and why this report is recorded
+        even when the run fails afterwards.
         """
         record = record.to(RunState.PREANALYSIS)
         self._store.save(record)
+        record = replace(record, pre_analysis=tuple(self._pre_analysis.verify(instance)))
+        self._store.save(record)
         return record
 
-    def _solve(self, record: RunRecord) -> RunRecord:
+    def _solve(self, record: RunRecord, instance: Instance) -> RunRecord:
         record = record.to(RunState.SOLVING)
         self._store.save(record)
 
         report = generate_portfolio(
             PortfolioRequest(
-                instance=self._instance_provider(),
+                instance=instance,
                 run=record.run.id,
                 seed=record.run.seed,
                 deterministic_budget=record.run.deterministic_budget,

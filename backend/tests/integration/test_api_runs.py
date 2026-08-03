@@ -185,11 +185,43 @@ def test_the_run_records_what_produced_it(wired: Wired) -> None:
     assert set(run["weights"]) == SOFT_CODES
 
 
-def test_preanalysis_and_diagnosis_are_absent_rather_than_empty(wired: Wired) -> None:
-    """Phase 4 computes neither; an empty list would read as 'verified, clean'."""
+def test_a_run_carries_the_five_checks_it_actually_ran(wired: Wired) -> None:
+    """FR-12 through the API. The report is the evidence the stage happened.
+
+    ⚠️ An empty list means the stage did not run, and must never read as
+    "verified, nothing wrong" - which is the confusion that cost three sessions
+    on C-13. So the list is asserted non-empty and named, not merely present.
+    """
     run = wired.launch()
-    assert "preAnalysis" not in run
-    assert "diagnosis" not in run
+    checks = run["preAnalysis"]
+    assert isinstance(checks, list)
+    assert [c["name"] for c in checks] == [
+        "ROOM_SUITABILITY",
+        "SLOT_COVERAGE",
+        "TEACHER_LOAD",
+        "TEACHER_FREE_SLOTS",
+        "GROUP_HIERARCHY",
+    ]
+    assert all(c["passed"] for c in checks), checks
+    assert all(c["detail"] for c in checks), "a check that says only 'passed' hides the figures"
+
+
+def test_the_report_carries_the_binding_figure_not_only_a_verdict(wired: Wired) -> None:
+    """The number to watch is 91 % of two-period WINDOWS, not 71 % of periods.
+
+    The check passes either way, so if the report did not carry the figure a
+    reader would have no way to see that the instance is 8 windows from
+    infeasible.
+    """
+    coverage = next(c for c in wired.launch()["preAnalysis"] if c["name"] == "SLOT_COVERAGE")
+    assert "2-period windows" in coverage["detail"]
+    assert "Lab_Info" in coverage["detail"]
+
+
+def test_diagnosis_is_still_absent_rather_than_empty(wired: Wired) -> None:
+    """The diagnosis run is M2. Reporting a conflict set nobody computed would
+    name rules the user cannot act on."""
+    assert "diagnosis" not in wired.launch()
 
 
 def test_each_profile_is_solved_once_and_sequentially(wired: Wired) -> None:

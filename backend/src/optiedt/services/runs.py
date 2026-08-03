@@ -10,20 +10,16 @@ Solving takes minutes, so no HTTP request is held open for it
                                   +-> INFEASIBLE -> DIAGNOSING -> DIAGNOSED
     (any non-terminal)  -> FAILED
 
-⚠️ **Two of those states are declared here and not yet entered**, and saying so
-matters more than the code:
+**PREANALYSIS runs the five checks** (FR-12, Phase 5 M1). They live in
+`optiedt.preanalysis.verifications`, carry BOTH the period bound and the
+contiguity bound - the period bound alone is what let C-13 through - and their
+results are recorded on the run whether they pass or fail. A failing check does
+not stop the run: stage 1 then stage 2 always, and stage 3 only on INFEASIBLE
+(docs/architecture.md).
 
-- **PREANALYSIS runs no checks.** `optiedt.preanalysis` holds the Protocol and
-  the five names, no bodies; porting the working logic from
-  `data/verification/verify_instance.py` is FR-12, Phase 5, item 7 of
-  `docs/status.md`'s "Next, in order". A run passes through the state and
-  records an EMPTY check list. **An empty list means "not verified", never
-  "verified and clean"** - and when FR-12 lands it must carry the contiguity
-  bound as well as the period bound, because the period bound alone is what let
-  C-13 through.
-- **DIAGNOSING/DIAGNOSED are never entered.** An infeasible run stops at
-  `INFEASIBLE`. The diagnosis run is Phase 5. Transitioning into a state whose
-  work does not exist would report a conflict set nobody computed.
+⚠️ **DIAGNOSING/DIAGNOSED are declared here and not yet entered.** An infeasible
+run stops at `INFEASIBLE`. The diagnosis run is Phase 5 M2. Transitioning into a
+state whose work does not exist would report a conflict set nobody computed.
 
 Storage is in memory: a restart loses every run. That is Phase 4's documented
 position (`docs/status.md`) - the run record proper is Phase 5, FR-19. The

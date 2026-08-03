@@ -1,15 +1,20 @@
-"""Solver.solve() - stage 2 only. diagnose() (stage 3, Phase 5) is not built.
+"""Solver.solve() - stage 2 only. diagnose() (stage 3, Phase 5 M2) is not built.
 
 Bounded by max_deterministic_time, not max_time_in_seconds, per ADR-011:
 parallel workers racing under a wall-clock limit are not reproducible, and a
 fixed seed does not fix that. max_time_in_seconds is still set, as a hang
 backstop only - reaching it is an anomaly, never the expected way a solve
-ends. Measured 2026-07-30 (C-13, docs/open-questions.md): under
-num_workers=0 (parallel), max_deterministic_time did not tightly bound the
-search the way it does for one worker - a run configured for 60s
-deterministic time consumed 247.98 deterministic-time units before the
-wall-clock ceiling actually stopped it. Not yet fully calibrated; the
-wall-clock ceiling is doing more of the real work than ADR-011 assumed.
+ends.
+
+⚠️ This docstring claimed until 2026-08-03 that max_deterministic_time "did
+not tightly bound the search" under num_workers=0, citing 60 requested against
+247.98 consumed. **That was false and is corrected here.** The budget binds
+EXACTLY, per worker: CpSolver.deterministic_time reports the SUM ACROSS
+WORKERS, so a 16-core machine legitimately reports ~11x the budget and nothing
+was overshooting. Measured 2026-07-30 - budget 5 reports 5.00 at one worker,
+ratio 1.00 - and recorded in C-2 and ADR-011; tests/integration/
+test_reproducibility.py pins the ratio so the misreading cannot return. The
+wall-clock ceiling is NOT doing more of the real work than ADR-011 assumed.
 
 num_workers, not the deprecated num_search_workers: confirmed against the
 installed OR-Tools version's own field documentation before use, since the

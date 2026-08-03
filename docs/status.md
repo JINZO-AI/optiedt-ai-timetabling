@@ -1,10 +1,10 @@
 # Status
 
 **Increment 1 of 2 · Phases 1–4 complete. Phase 5 (pre-analysis in-app, diagnosis, auth, run record) is
-next and has not started.**
+IN PROGRESS — M1 of 6 done.**
 **C-4, C-12 — both halves — and C-16 resolved; C-14 and C-15 deferred by decision. Four questions remain
 open, none blocking Phase 5.**
-**Last updated 2026-08-01.**
+**Last updated 2026-08-03.**
 
 Keep this file current. A stale status file is worse than none, because the next session trusts it.
 
@@ -19,9 +19,9 @@ Keep this file current. A stale status file is worse than none, because the next
 
 | | |
 |---|---|
-| **Current phase** | **Phase 5 — pre-analysis in-app, diagnosis, authentication, run record. Not started.** Phase 4 closed 2026-08-01: six milestones and a closing audit. Milestone table in [`docs/dashboard.md`](dashboard.md) |
+| **Current phase** | **Phase 5 — pre-analysis in-app, diagnosis, authentication, run record. IN PROGRESS, M1 of 6 done.** Phase 4 closed 2026-08-01: six milestones and a closing audit. Milestone table in [`docs/dashboard.md`](dashboard.md) |
 | **Last completed phase** | **Phase 4, closed 2026-08-01.** Six milestones: the API foundation, the run lifecycle and executor, and four screens — availability, generation, timetables, comparison. First frontend tests. C-12(a) resolved and C-14 deferred, both recorded before the code was written. Before it, Phase 3 (closed 2026-07-31) delivered the criteria, scorer, ranker, objective, translator, portfolio and the ITC-2007 validation |
-| **Next step** | **Phase 5** — pre-analysis in-app (FR-12, ⚠️ **port both bounds**), the diagnosis run, authentication and rights, and the run record |
+| **Next step** | **Phase 5 M2 — the diagnosis run (FR-8).** M1 landed FR-12 with both bounds. Then M3 the run record, M4 authentication and rights, M5 publication, M6 the closing audit |
 | **Days used** | ~4 of 20 across Phases 1–4, which were budgeted 3 + 5 + 3 + 4 = 15 |
 | **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · latest **pushed** commit `8d1194b`, 2026-08-01 (the Phase 4 closing audit); `HEAD` and `origin/main` identical at that point. ⚠️ **No local-commit count is recorded here** — this line has been wrong four times (`0dc0078`, a parent, until 2026-07-31; `acf9aa0` with "9 commits" after eight were pushed; then "1 commit", which the correcting commit itself made 2; then `bfe805a`, left stale by the next push). **A count cannot live in a file that commits change, and a SHA does not survive a push that does not touch this file.** Re-derive: `git rev-parse origin/main`, `git rev-list --count origin/main..HEAD` |
 | **Blocked on** | Nothing for Phase 5. **C-5**, **C-9** and **C-14** all land in Phase 6 acceptance now; **C-15** blocks FR-13's `✓`. C-14 was deferred 2026-08-01 — Phase 4 shipped **no dominance signal** rather than one that can never fire, so FR-17 waits on it |
@@ -123,11 +123,16 @@ describes the unreachable state. **That wording is a delivered commitment, so it
    screen ships no dominance signal, because the indicator both documents ask for can never fire.
    ⚠️ **One thing is owed:** the FR-2 acceptance criterion ("filled in under 5 minutes without
    training") is about a person and needs a timed walkthrough. Carried to Phase 6.
-7. **Port the five verifications into the application** as FR-12 (Phase 5). The standalone checker at
-   `data/verification/verify_instance.py` already has the logic; the in-application version reports
-   structural risks through the API. ⚠️ **Port the contiguity bound, not just the period bound** — the
-   period bound alone is what let C-13 through, and shipping it alone would put the same blind spot in
-   the product.
+7. ~~**Port the five verifications into the application** as FR-12.~~ **Done 2026-08-03**, Phase 5 M1.
+   `optiedt/preanalysis/verifications.py`, wired into the run's `PREANALYSIS` state, returned by
+   `GET /runs/{id}` and displayed on the generation screen. **Both bounds are ported**, and
+   `tests/unit/test_preanalysis.py::test_the_original_room_mix_is_caught` reconstructs the pre-repair
+   room mix and requires the contiguity bound to name both shortfalls — the period bound passes that
+   instance at 95.2 %. The two implementations are compared numerically by
+   `tests/integration/test_preanalysis_matches_verifier.py` rather than trusted to agree.
+   ⚠️ One half of verification 5 is deliberately **not** ported: `Instance` excludes `Student`
+   (increment 2), so "425 students match the declared sizes" stays with `verify-instance.ps1`. The
+   in-application check says so in its own report rather than passing for the documented one.
 8. **Fill H10's dormant gap** when recommendation regeneration needs it: `build_variables` currently
    refuses to run if any session is locked, because `SolverInput` carries session ids without the
    target slot and room. Safe today only because the reference instance has none.
@@ -229,7 +234,9 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 
 | Measurement | Value | Taken on | Notes |
 |---|---|---|---|
-| **Toolchain** | **all green** | 2026-08-01 | **9/9** layer contracts kept · ruff · format · mypy strict on **59** source files · **168 backend tests** (146 fast + 22 solver-marked) · instance verified · frontend `tsc` clean · **7 frontend tests** (`vitest`, added M5 and wired into `run-checks.ps1`). Ninth contract (`api ⇸ solver`) added in Phase 4 M1 and verified to fire; `pytest` exit 5 no longer tolerated |
+| **Toolchain** | **all green** | 2026-08-03 | **9/9** layer contracts kept · ruff · format · mypy strict on **60** source files · **200 backend tests** (178 fast + 22 solver-marked) · instance verified · frontend `tsc` clean · **12 frontend tests** (`vitest`). Phase 5 M1 added 32 backend and 5 frontend tests. Ninth contract (`api ⇸ solver`) added in Phase 4 M1 and verified to fire; `pytest` exit 5 no longer tolerated |
+| **FR-12 in the application** | **the five checks reproduce `verify-instance` exactly** | 2026-08-03 | Phase 5 M1. Rendered on the generation screen during a real run: Amphi 32/56 = 57.1 % · Lab_Info 160/224 = 71.4 % **and 80/88 two-period windows = 90.9 %** · Lab_Sciences 48/84 = 57.1 % and 24/33 = 72.7 % · Salle 82/196 = 41.8 %; heaviest load 12 periods (18 h); smallest margin 11 free slots. Two independent implementations agreeing is what makes the figures trustworthy rather than merely self-consistent |
+| **The report survives a failed run** | **verified** | 2026-08-03 | Budget 3 makes CP-SAT return `UNKNOWN` and the run lands in `FAILED` — and the pre-analysis report is still displayed. That is the C-13 case: when the solver cannot prove an infeasibility, the report is the only thing that says whether the instance is structurally sound |
 | **Python** | **3.14.2** | 2026-07-29 | Resolved by uv 0.12.0 |
 | **OR-Tools CP-SAT imports and solves** | **yes** | 2026-07-29 | On Python 3.14. `max_deterministic_time` **is accepted by the solver parameters** — ADR-011 is implementable, not just plausible |
 | **Deterministic time → wall clock, reference instance** | **1 deterministic unit per worker ≈ 4.8 s wall at `workers=1`; ≈ 19 s at `workers=0` (16 cores)** | 2026-07-30 | ✅ **ADR-011's overdue Phase 2 calibration, discharged.** Budget 5, objective posted, catalogue weights. `workers=1` → 24.1 s · `2` → 17.2 s · `4` → 17.5 s · `8` → 57.2 s · `0` → 94.8 s. More workers cost *more* wall clock for the same per-worker budget, because the budget is per worker and the total work scales with the count |

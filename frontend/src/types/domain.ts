@@ -270,6 +270,13 @@ export interface Recommendation {
 /**
  * A structural risk found before solving. Names the resource and the quantity
  * missing — never a bare boolean, which is what FR-12 requires.
+ *
+ * `detail` carries the figures even when `passed` is true, and the screen must
+ * show them. Passing is not the same as being safe: computer laboratories sit
+ * at 90.9 % of their two-period windows — 8 spare in the whole week — while
+ * the period figure reads a reassuring 71 %. Displaying only a tick would hide
+ * the number that actually binds, which is the mistake C-13 cost three
+ * sessions of work.
  */
 export interface CheckResult {
   name: string
@@ -292,12 +299,15 @@ export interface DiagnosisResult {
 /**
  * One run and its candidates.
  *
- * ⚠️ `preAnalysis` and `diagnosis` are NOT here, and their absence is the
- * point. The five checks (FR-12) and the diagnosis run are Phase 5, so the API
- * omits both rather than sending empty values: an empty check list would read
- * as "verified, nothing wrong" when it means "never verified". `CheckResult`
- * and `DiagnosisResult` stay declared below because the shapes are agreed —
- * add the fields here with the work that fills them, not before.
+ * ⚠️ `diagnosis` is NOT here, and its absence is the point. The diagnosis run
+ * is Phase 5 M2, so the API omits the field rather than sending an empty value
+ * that would read as "checked, no conflict". `DiagnosisResult` stays declared
+ * below because the shape is agreed — add the field here with the work that
+ * fills it, not before.
+ *
+ * `preAnalysis` landed with M1 and follows the same rule in the other
+ * direction: **an empty array means the stage did not run**, never "verified,
+ * nothing wrong".
  */
 export interface Run {
   id: string
@@ -310,6 +320,8 @@ export interface Run {
   modelVersion: string
   /** The weights in force: ONE vector prices every candidate of this run. */
   weights: Record<string, number>
+  /** The five checks, in the order they are reported. Empty means not run. */
+  preAnalysis: CheckResult[]
   /** In rank order, best first. Display this order; do not sort. */
   candidates: Candidate[]
   /** Profile names whose timetable was identical to one already obtained. */

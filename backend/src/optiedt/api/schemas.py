@@ -59,6 +59,7 @@ from optiedt.domain.enums import (
     TeacherRank,
 )
 from optiedt.domain.instance import Instance
+from optiedt.preanalysis.checks import CheckResult
 from optiedt.services.runs import RunRecord
 
 
@@ -419,24 +420,51 @@ class CandidateOut(ApiModel):
         )
 
 
+class CheckResultOut(ApiModel):
+    """One of the five pre-analysis verifications (FR-12).
+
+    ⚠️ A failing check carries the RESOURCE concerned and the QUANTITY missing,
+    never a bare boolean — that named detail is the content the structural-risk
+    report requires (docs/data-and-instance.md).
+
+    `detail` carries the figures even when the check passes, because passing is
+    not the same as being safe: computer laboratories sit at 90.9 % of their
+    two-period windows, 8 spare in the whole week, and a report that only said
+    "passed" would hide the number most worth watching.
+    """
+
+    name: str
+    passed: bool
+    resource: str | None
+    missing_quantity: float | None
+    detail: str
+
+    @classmethod
+    def of(cls, c: CheckResult) -> CheckResultOut:
+        return cls(
+            name=c.name,
+            passed=c.passed,
+            resource=c.resource,
+            missing_quantity=c.missing_quantity,
+            detail=c.detail,
+        )
+
+
 class RunOut(ApiModel):
     """One run and its candidates.
 
-    ⚠️ **Two fields are deliberately absent until Phase 5**, and their absence
-    is the honest signal:
+    `preAnalysis` landed with Phase 5 M1 and is present from `PREANALYSIS`
+    onwards. ⚠️ **An empty list means the stage did not run** — a `PENDING` run,
+    or a failure before stage 1 — and never "verified, nothing wrong". That
+    distinction is why the field was omitted entirely rather than sent empty
+    while the checks had no implementation; it is precisely the confusion that
+    cost three sessions on C-13.
 
-    - `preAnalysis` — the five checks have no implementation (FR-12, Phase 5).
-      Sending a permanently empty list would read as "verified, nothing wrong"
-      when it means "never verified", which is precisely the confusion that
-      cost three sessions on C-13.
-    - `diagnosis` — the diagnosis run is Phase 5. An `INFEASIBLE` run stops
-      there; reporting a conflict set nobody computed would name rules the user
-      cannot act on.
-
-    `frontend/src/types/domain.ts` leaves both off its `Run` for the same
-    reason, and keeps `CheckResult` and `DiagnosisResult` declared beside it —
-    the shapes are agreed, the work that fills them is not done. Add the fields
-    on both sides with that work, not before.
+    ⚠️ **`diagnosis` is still deliberately absent.** The diagnosis run is Phase 5
+    M2. An `INFEASIBLE` run stops there, and reporting a conflict set nobody
+    computed would name rules the user cannot act on. `DiagnosisResult` stays
+    declared in `frontend/src/types/domain.ts` — the shape is agreed, the work
+    that fills it is not done. Add the field on both sides with that work.
     """
 
     id: str
@@ -450,6 +478,9 @@ class RunOut(ApiModel):
     model_version: str
     weights: dict[str, float]
     """The weights in force — one vector prices every candidate of this run."""
+
+    pre_analysis: list[CheckResultOut]
+    """The five checks, in the order they are reported. Empty means not run."""
 
     candidates: list[CandidateOut]
     duplicates_removed: list[str]
@@ -474,6 +505,7 @@ class RunOut(ApiModel):
             state=record.run.state,
             model_version=record.run.model_version,
             weights=dict(record.weights),
+            pre_analysis=[CheckResultOut.of(c) for c in record.pre_analysis],
             candidates=[CandidateOut.of(c) for c in record.candidates],
             duplicates_removed=list(record.duplicates_removed),
             deterministic_time_used=record.deterministic_time_used,

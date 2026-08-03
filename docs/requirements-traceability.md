@@ -7,8 +7,14 @@ built?" without reading code.
 
 Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 
-**Where the project actually is: 12 of 25 requirements are under way, none is finished.**
-*(FR-2, 3, 4, 5, 6, 7, 13, 14, 15, 16, 17, 18 — count them in the table rather than trusting this line.)*
+**Where the project actually is: 13 of 25 requirements are under way, none is finished.**
+*(FR-2, 3, 4, 5, 6, 7, 12, 13, 14, 15, 16, 17, 18 — count them in the table rather than trusting this line.)*
+
+**FR-12 joined in Phase 5 M1.** The five checks run in `optiedt.preanalysis.verifications`, carry both
+the period bound and the contiguity bound, are recorded on every run and are displayed on the
+generation screen. It stays `WIP` for its acceptance test (Phase 6) — and note that no acceptance test
+can replace `test_the_original_room_mix_is_caught`, which is what actually pins the bound C-13 turned
+on.
 
 ⚠️ **Phase 4 delivered all six milestones and the count of finished requirements is still zero. That is
 not a contradiction, and it is the number most likely to be misread.** Every Phase 4 screen exists and
@@ -100,7 +106,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-9** | Configure the calendar: holidays, closed slots, shortened day | Necessary | `db`, `features/admin` | `acceptance/test_fr09` | — |
 | **FR-10** | Print or export a timetable view | Expected | `features/timetable` | `integration` | — |
 | **FR-11** | Authenticate users and restrict access by role | Necessary | `core` — security; `api` — deps | `acceptance/test_fr11` | — |
-| **FR-12** | Verify data before solving; report structural risks | Necessary | `preanalysis` | `acceptance/test_fr12` | — |
+| **FR-12** | Verify data before solving; report structural risks | Necessary | `preanalysis` ✓; `api` — `RunOut.preAnalysis`; `features/generation` ✓ | `unit/test_preanalysis` ✓, `integration/test_preanalysis_matches_verifier` ✓, `frontend PreAnalysisReport.test` ✓, `acceptance/test_fr12` | **WIP** |
 | **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs; `solver` | `unit/test_portfolio` ✓, `acceptance/test_fr13` ⚠️ | **WIP** |
 | **FR-14** | Compare two candidates criterion by criterion | Necessary | `features/comparison` | `integration` | **WIP** |
 | **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition; `features/comparison` | `property` ✓, `frontend ContributionsTable.test` ✓, `acceptance/test_fr15` | **WIP** |
