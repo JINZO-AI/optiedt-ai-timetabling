@@ -270,7 +270,9 @@ From `backend/`:
 | **Layer boundaries** | `uv run lint-imports` |
 | Migrations | `uv run alembic revision --autogenerate -m "..."` · `uv run alembic upgrade head` |
 
-From `frontend/`: `npm install`, `npm run dev`, `npm run build`, `npm run typecheck`.
+From `frontend/`: `npm install`, `npm run dev`, `npm run build`, `npm run typecheck`, `npm run test`
+(vitest — the display-layer tests; `run-checks.ps1` runs it). `npm run dev` needs the API on `:8000`,
+which `vite.config.ts` proxies.
 
 From the root:
 

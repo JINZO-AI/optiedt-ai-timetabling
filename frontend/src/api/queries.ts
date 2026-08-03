@@ -13,9 +13,7 @@ import { apiGet, apiSend } from '@/api/client'
 import type {
   Availability,
   AvailabilityState,
-  Candidate,
   Decomposition,
-  DominanceVerdict,
   InstanceData,
   RecommendedCandidate,
   Run,
@@ -68,14 +66,6 @@ export function useCreateRun() {
   })
 }
 
-export function useCandidates(runId: string | null) {
-  return useQuery({
-    queryKey: ['candidates', runId],
-    queryFn: () => apiGet<Candidate[]>(`/runs/${runId as string}/candidates`),
-    enabled: runId !== null,
-  })
-}
-
 export function useComparison(runId: string | null, a: string | null, b: string | null) {
   return useQuery({
     queryKey: ['comparison', runId, a, b],
@@ -87,13 +77,10 @@ export function useComparison(runId: string | null, a: string | null, b: string 
   })
 }
 
-export function useDominance(runId: string | null) {
-  return useQuery({
-    queryKey: ['dominance', runId],
-    queryFn: () => apiGet<DominanceVerdict[]>(`/runs/${runId as string}/dominance`),
-    enabled: runId !== null,
-  })
-}
+// No `useDominance` hook, deliberately. `GET /runs/{id}/dominance` exists and is
+// tested, but C-14 is open and Phase 4 ships no dominance signal, so a hook
+// here would be a code path nothing exercises. Add it with the screen that
+// uses it — see C-14 in docs/open-questions.md.
 
 export function useAvailability(teacherId: string | null) {
   return useQuery({

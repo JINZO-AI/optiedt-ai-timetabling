@@ -3,10 +3,12 @@
 **The handoff file. Read this second, after `CLAUDE.md`.** It carries the whole project state; every
 other document is detail you fetch only when you need it.
 
-**Last updated 2026-07-31. Phase 3 is COMPLETE.** Validation on the published ITC-2007 instances closed
-the last item; before it, portfolio orchestration and FR-16 landed, ADR-011's overdue calibration was
-discharged and the ADR amended, C-16 was raised and resolved (`interleave_search`), and C-15 was
-deferred by decision. **Phase 4 — the web interface — has not started.**
+**Last updated 2026-08-01. Phase 4 is COMPLETE — all six milestones, closing audit passed.** The
+application is reachable by a person: a teacher declares availability, a run honours it, and the
+candidates are ranked, viewed four ways and compared with contributions that add up by hand. Two
+questions were decided along the way — **C-12(a)** resolved (two-state grid) and **C-14** deferred
+(Phase 4 ships **no** dominance signal rather than one that can never fire). **Phase 5 — pre-analysis
+in-app, diagnosis, authentication and the run record — has not started.**
 
 ---
 
@@ -16,18 +18,18 @@ deferred by decision. **Phase 4 — the web interface — has not started.**
 |---|---|
 | **Project** | OptiEDT — generates, ranks and explains weekly university timetables (Tunisian public faculty, LMD) |
 | **Overall progress** | **75 % of budgeted effort** — Phases 1–4 delivered, 15 of 20 days budgeted. By *delivered product*: **4 of 9 acceptance criteria** met (displayed contributions fell in M5), 0 of 25 requirements finished, because a requirement is `✓` only once a user can reach it *and* it is tested end to end — most now wait on FR-11's authentication and Phase 6's acceptance tests rather than on a missing screen. Both numbers are real; quote the measure with the number |
-| **Current phase** | **Phase 4 — the web interface. All six milestones delivered 2026-08-01.** The complete path runs end to end against the real solver: a teacher declares availability, a run honours it, and the candidates are ranked, viewed and compared. **Phase 5 is next.** ⚠️ Phase 4 is not *closed* — a closing audit has not been run, and the <5-minute FR-2 criterion needs a timed walkthrough with a real user |
-| **Last completed phase** | **Phase 3 — COMPLETE 2026-07-31.** Criteria, scoring, ranking, decomposition, dominance, the objective, the recommendation translator, the **portfolio**, **FR-16** and **validation on the 21 published ITC-2007 instances** are all implemented and tested; ADR-011's calibration is discharged |
+| **Current phase** | **Phase 5 — pre-analysis in-app, diagnosis, authentication, run record. NOT STARTED.** This is the phase to pick up |
+| **Last completed phase** | **Phase 4 — COMPLETE 2026-08-01**, six milestones and a closing audit. Four screens (availability, generation, timetables, comparison) over ten `/api` endpoints, an in-process run executor, and the first frontend tests. Before it, Phase 3 delivered the criteria, scoring, ranking, decomposition, dominance, the objective, the portfolio, FR-16 and the ITC-2007 validation |
 | **Milestone reached** | **Phase 4's, in the part that was buildable.** Verified 2026-08-01 end to end: a teacher declared unavailability on the grid, the declaration replaced the generated rows, a run honoured it (T001 never placed in a declared-unavailable slot across all three candidates), and the candidates were ranked, viewed four ways and compared with contributions that add up by hand. ⚠️ **Publication itself is not built** — the milestone's wording says "to publication", and that needs the run record and rights (FR-19, FR-11), which are Phase 5 |
-| **Current goal** | Deliver Phase 4: the complete path from a teacher declaring availability to a published timetable |
-| **Next task** | Run a **Phase 4 closing audit** (compare every document against the repository, the way the Phase 3 close did), then start **Phase 5**: pre-analysis in-app (FR-12 — **port both bounds**), the diagnosis run, authentication and the run record. Two things Phase 4 leaves for later by decision: **C-14** (no dominance signal shipped) and the timed FR-2 walkthrough |
+| **Current goal** | Deliver Phase 5: an infeasible instance must produce a report naming the rules in conflict rather than a timeout, and every published timetable must trace back to its run, seed and weights |
+| **Next task** | Start Phase 5. ⚠️ **FR-12 must port both bounds** — the period bound alone is what let C-13 through, and shipping it alone would put that blind spot inside the product. The working logic is already in `data/verification/verify_instance.py`. Phase 4 leaves three things behind, all recorded: **C-14** (no dominance signal shipped), the **timed FR-2 walkthrough**, and the in-memory stores that FR-19 replaces |
 | **Branch** | `main` — ahead of `origin/main` by unpushed local commits. **No count is recorded here**, deliberately: `git rev-list --count origin/main..HEAD` |
 | **Latest commit** | **Not recorded here** — it is stale the moment anything is committed. `git log -1 --oneline`. The durable fact is the last *pushed* commit, in the row below |
 | **Repository status** | Last pushed: `origin/main` at [`bfe805a`](https://github.com/JINZO-AI/optiedt-ai-timetabling/commit/bfe805a), 2026-08-01. Everything after it is local. ⚠️ **This row has been wrong three times.** `0dc0078` (a *parent* commit) until 2026-07-31; `acf9aa0` with "9 commits ahead" until 2026-08-01, by which time eight of the nine were pushed; then "1 commit ahead" — which the very commit correcting it made 2. **A commit count cannot live in a file that commits change.** Record the pushed SHA, re-derive the rest: `git rev-parse origin/main` |
-| **Project health** | 🟢 **Green.** `scripts/run-checks.ps1` green, **125 tests** pass, 8/8 layer contracts kept. **C-16 resolved** — reproducibility and three distinct candidates hold simultaneously at production settings, and the portfolio is ~2× faster than before. **3 of 9 acceptance criteria met**, up from 1. The engine is validated on all 21 published ITC-2007 instances |
+| **Project health** | 🟢 **Green.** `scripts/run-checks.ps1` green across eight steps: **168 backend tests + 7 frontend**, **9/9 layer contracts** kept, mypy strict on 59 files, instance verified. **4 of 9 acceptance criteria met**, up from 3 — displayed contributions fell in Phase 4 M5. The engine is validated on all 21 published ITC-2007 instances, and the whole path from declaring availability to comparing candidates is verified against the real solver |
 
 ```
-Increment 1   ███████████░░░░░░░░░  55 % of budgeted days
+Increment 1   ███████████████░░░░░  75 % of budgeted days
 
 Phase 1  Needs, specification, instance verification   ████████████████████  ✅ done
 Phase 2  Modelling H1–H12, first valid timetable       ████████████████████  ✅ done
@@ -37,13 +39,8 @@ Phase 5  Pre-analysis in-app, diagnosis, auth, runs    ░░░░░░░░�
 Phase 6  Tests, documentation, presentation            ░░░░░░░░░░░░░░░░░░░░  ⬜ not started
 ```
 
-⚠️ **Phase 4's bar is "delivered", not "closed".** All six milestones are built and each was verified
-against the real solver, but no closing audit has been run — and the Phase 3 close is the reason to say
-so: its audit needed **four passes** before one came back empty, and the pass after that (2026-08-01)
-still found fifteen more. Treat the phase as done and unaudited.
-
 *Progress is measured in delivered phases against the 20-day increment-1 plan (Phase 1 = 3 d,
-2 = 5 d, 3 = 3 d, 4 = 4 d, 5 = 2 d, 6 = 3 d). Phases 1–3 = 11 of 20 days budgeted, delivered in ~3.*
+2 = 5 d, 3 = 3 d, 4 = 4 d, 5 = 2 d, 6 = 3 d). Phases 1–4 = 15 of 20 days budgeted.*
 
 ---
 
@@ -56,9 +53,9 @@ still found fifteen more. Treat the phase as done and unaudited.
 | **Objective** | 🟡 Encoded for S2–S5, S7, S10 in full; **S6 only for non-cumulative room types** (Salle) — cumulative types (Amphi, Lab_Info, Lab_Sciences) have no per-room CP-SAT variable to optimise against, only a post-hoc labeller (C-13). `analysis/criteria.py` still scores S6 correctly for every room after the fact |
 | **Analysis / scoring** | 🟢 Implemented and tested. `analysis/criteria.py` (7 criteria), `analysis/scoring.py` (`DefaultScorer`, `evaluate_candidate`), `analysis/ranking.py` (`DefaultRanker`: rank/decompose/dominance/**recommend** — FR-16). **The four properties the specification requires** (`docs/scoring-and-explanation.md`) all pass, verified by **ten** hypothesis tests in `tests/property/test_scoring_properties.py` — four specified, ten tests; the extra six cover edge cases the four imply but do not state |
 | **Portfolio** | 🟢 `services/portfolio.py` — the only module importing both `solver` and `analysis`, which is what `services` is for. Defines the three profiles, divides the total budget between them, solves sequentially under one fixed seed, removes duplicate timetables and ranks the survivors under one weight vector. 16 unit tests pin the rules against a recording fake solver. Measured on the reference instance: **3 distinct candidates in 147–150 s**, reproducibly, total budget 90 (C-16) |
-| **API · frontend · persistence** | 🟢 **Complete for Phase 4.** Four screens — availability, generation, timetables, comparison — over ten endpoints. React shell with `react-router` and `@tanstack/react-query`; `features/generation` launches a run, polls it and renders the ranked candidates with all seven sub-scores; `features/timetable` shows a candidate by teacher, group, room and as room occupancy (FR-7, FR-18). **A group's view includes its ancestors' sessions** — a CM gathers the whole promotion, so a subgroup shown only its own sessions would display a week with holes its students do not have. ⚠️ **The frontend computes nothing** — no score, no re-normalisation, no sorting; rank order is the array order the API returns (`docs/architecture.md`: the presentation layer may not "compute a score, decide an order"). Ten endpoints under `/api`, which `vite.config.ts` already proxies: the instance, FR-2's availability read/write, `POST /runs` → **202** with polling on `GET /runs/{id}`, and the candidate, comparison, dominance and recommendation reads. `tasks/executor.py` runs solves in-process on a **single-worker pool** (ADR-005) — one solve at a time, because each already uses every core. Both stores are **in memory** behind Protocols; Phase 5 substitutes database-backed ones with no router change. A ninth import contract, `api ⇸ solver`, was added and verified to fire. PostgreSQL is not needed until runs must survive a restart |
-| **Assistant** | ⬜ Scaffold only. Increment 1 (ADR-010), Phase 4+ |
-| **Validation** | 🟢 `scripts/run-checks.ps1` green, **ten steps**: **9/9 contracts** · ruff · format · mypy strict on 59 files · 168 backend tests · instance verification · frontend `tsc` · **frontend tests** (added M5). `pytest` exit 5 is **no longer tolerated** (Phase 4 M1) — with 168 tests collected, allowing "collected nothing" would let a broken import pass as success. Separately, `scripts/validate-itc2007.ps1` runs the engine against the 21 published ITC-2007 instances — not in `run-checks` because a full sweep takes tens of minutes |
+| **API · frontend · persistence** | 🟢 **Complete for Phase 4.** Four screens — availability, generation, timetables, comparison — over ten endpoints. React shell with `react-router` and `@tanstack/react-query`; `features/generation` launches a run, polls it and renders the ranked candidates with all seven sub-scores; `features/timetable` shows a candidate by teacher, group, room and as room occupancy (FR-7, FR-18). **A group's view includes its ancestors' sessions** — a CM gathers the whole promotion, so a subgroup shown only its own sessions would display a week with holes its students do not have. ⚠️ **The frontend computes no score and decides no ranking**: rank order is the array order the API returns, and every figure shown arrives already computed (`docs/architecture.md`: the presentation layer may not "compute a score, decide an order"). It *does* arrange for display — grid axes, rooms alphabetically, and largest-remainder rounding so a contributions column adds up — which is what "display, filter, print" permits. Do not restate this as "the frontend computes nothing"; that is falsifiable by one grep and invites someone to conclude the rule is not meant seriously. The endpoints are `/api`, which `vite.config.ts` already proxies: the instance, FR-2's availability read/write, `POST /runs` → **202** with polling on `GET /runs/{id}`, and the candidate, comparison, dominance and recommendation reads. `tasks/executor.py` runs solves in-process on a **single-worker pool** (ADR-005) — one solve at a time, because each already uses every core. Both stores are **in memory** behind Protocols; Phase 5 substitutes database-backed ones with no router change. A ninth import contract, `api ⇸ solver`, was added and verified to fire. PostgreSQL is not needed until runs must survive a restart |
+| **Assistant** | ⬜ Scaffold only — interfaces, no bodies. Increment 1 by ADR-010, but **named in no phase's completion criteria**, which is exactly the ~2.5 unbudgeted days C-1 records. It was **not** part of Phase 4 and is not part of Phase 5's; schedule it explicitly or it stays homeless |
+| **Validation** | 🟢 `scripts/run-checks.ps1` green, **eight steps**: layer boundaries (**9/9 contracts**) · ruff · format · mypy strict on 59 files · 168 backend tests · instance verification · frontend `tsc` · **frontend tests** (added M5). `pytest` exit 5 is **no longer tolerated** (Phase 4 M1) — with 168 tests collected, allowing "collected nothing" would let a broken import pass as success. Separately, `scripts/validate-itc2007.ps1` runs the engine against the 21 published ITC-2007 instances — not in `run-checks` because a full sweep takes tens of minutes |
 | **Tests** | 🟢 **168 backend** (146 fast + 22 solver-marked) **+ 7 frontend**. The frontend tests are new in Phase 4 M5 (`vitest` + `@testing-library/react`) and `run-checks.ps1` runs them: they assert on **rendered** figures, which `tsc` cannot, and the acceptance criterion is about what is *displayed*. They caught a real rounding defect on their first run. Phase 4 also added `tests/unit/test_api_schemas.py` (the wire format: French enum literals, camelCase fields — the guard against the `RoomType` defect returning), `tests/unit/test_availability_api.py` (FR-2's replace-wholesale rule and the `SYNTHETIC`/`TEACHER` distinction), `tests/unit/test_run_lifecycle.py` (the state machine, including that `DIAGNOSING` is reachable only from `INFEASIBLE`) and `tests/integration/test_api_runs.py` (the run endpoints against a **fake solver**, so they stay in the fast suite and carry no timing assumption — the test waits on the executor's Future). Phase 3's 125 are unchanged. New in Phase 3: `tests/integration/test_reproducibility.py` (FR-19/ADR-011 — reproducibility **at production settings**, and the per-worker budget binding), `tests/property/test_scoring_properties.py` (10 hypothesis properties), `tests/unit/test_criteria.py` (the seven formulas against a hand-computable instance), `tests/integration/test_objective_matches_analysis.py` (**the cross-layer guard** — CP-SAT's objective value must equal the analysis layer's recomputation on the same placements), `tests/unit/test_portfolio.py` (16 orchestration rules against a recording fake solver), `tests/unit/test_recommendation.py` (FR-16, including the proof that a dominated candidate can never be recommended), `tests/unit/test_itc2007_cost.py` and `tests/integration/test_itc2007_validation.py` (ITC-2007's rules against hand-computed values, and against seven solutions the archive publishes) |
 | **Documentation** | 🟢 Current as of this commit. Session history archived to `docs/history.md` |
 
@@ -73,8 +70,8 @@ ever disagree, that file wins and this table is the bug. **Do not silently decid
 |---|---|---|---|
 | **C-5** | "At least three candidates" can fail when duplicates are removed | Phase 6 acceptance | Lead + supervisor |
 | **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
-| **C-14** | Dominance uses the strict reading ("improves on **every** criterion"); S10's zero weight makes ties common. **And the "dominated *top* candidate" signal both documents require is provably unreachable** — a dominated candidate cannot outscore its dominator, so it can never rank first. Phase 4 would otherwise build a signal that can never fire | Phase 4 comparison screen | Technical lead |
-| **C-15** | The objective weights raw violation counts of incomparable scale, so "teacher-favouring" favours only S5, not S3. **Deferred by decision 2026-07-30** — recorded, objective unchanged | FR-13's `✓`; Phase 4 comparison screen | Technical lead |
+| **C-14** | Dominance uses the strict reading ("improves on **every** criterion"); S10's zero weight makes ties common. **And the "dominated *top* candidate" signal both documents require is provably unreachable** — a dominated candidate cannot outscore its dominator, so it can never rank first. **Deferred 2026-08-01**: Phase 4 shipped **no** dominance signal rather than one that can never fire | FR-17's `✓`; Phase 6 acceptance; the wording of `scoring-and-explanation.md` | Technical lead **+ supervisor** |
+| **C-15** | The objective weights raw violation counts of incomparable scale, so "teacher-favouring" favours only S5, not S3. **Deferred by decision 2026-07-30** — recorded, objective unchanged. The comparison screen sidesteps it by showing measured sub-scores and making **no claim about what a profile favours** | FR-13's `✓` | Technical lead |
 
 **Resolved, do not reopen without new evidence:** C-1, C-2, C-3, C-6, C-7, C-8, C-11, C-13, **C-4,
 C-12, C-16** (2026-07-30). ADR-011 was amended rather than reversed: deterministic time bounds the
@@ -100,6 +97,8 @@ favourable measurement cannot settle — but the acceptance test would pass toda
 | **S6 cannot be optimised for cumulative room types** | The CP-SAT objective only covers Salle (non-cumulative); Amphi/Lab_Info/Lab_Sciences rooms are chosen by a post-solve labeller the objective cannot see | Scored correctly after the fact regardless (`analysis/criteria.py`). Closing this needs `solver/variables.py` changes — out of scope this session |
 | **`recommendations/translator.py` cannot build a full `SolverInput`** | `Run`/`Candidate` carry no instance reference, no base profile weights, no prior locks/exclusions | Returns a `RunOverride` (plain domain data) instead; a later layer (`services/`, Phase 4–5) must assemble the actual `SolverInput` |
 | **On ITC-2007, cost quality is far from the published best on the larger instances** | Every timetable produced is *valid* — that is the claim `docs/testing-strategy.md` §1 makes first, and it holds 21 of 21. But at a minute or so per instance, CP-SAT is barely past feasibility on the big ones, and the costs are multiples of the published best | Expected, and the strategy document says so: **"the objective is not to beat published results."** Exact methods are known to trail metaheuristics tuned for this problem at short budgets. The *model* is demonstrably right — comp11 solved to **cost 0**, and comp01 reaches the published optimum of **5** given more search. Quote validity first and cost second, always with the budget |
+| **Candidates are not shown as they are produced** | `architecture.md` stage 2 and ADR-005 both claim incremental visibility; `services/portfolio.py` returns the whole portfolio at the end, so the screen shows `SOLVING` for 105–150 s then everything at once | Found by the Phase 4 closing audit; both documents corrected. Closing it changes a **Phase 3** module's contract |
+| **In-memory stores, no authentication** | A restart loses every run; every endpoint is open | Phase 4's documented position. FR-19 and FR-11 in Phase 5. **Not to be exposed beyond a development machine** |
 | **Exam multi-room assignment** (R-6) | Breaks a shared `room[s]` abstraction | Keep it out of shared solver code from the start |
 
 ---
@@ -122,8 +121,8 @@ automatic.
 - The displayed contributions **sum exactly** to the score difference, to display precision. ✅ **Met**
   at the code level — `analysis/ranking.py`'s `decompose()`, verified by
   `tests/property/test_scoring_properties.py::test_decomposition_is_exact` and, on three real portfolio
-  candidates, agreeing to 9 decimal places. The acceptance criterion stays unticked because *displayed*
-  needs Phase 4's comparison screen.
+  candidates, agreeing to 9 decimal places. **The acceptance criterion itself was ticked in Phase 4 M5**,
+  once the comparison screen existed and a test could read the rendered figures back out of the DOM.
 - Dominance is detected and reported. ✅ **Met** — `DefaultRanker.dominance()`, property-tested.
 - Two runs with the same data, weights and seed produce identical candidates in the same order.
   ✅ **Met at production settings** — via `interleave_search` (C-16, ADR-011 amended). Verified on
@@ -139,19 +138,28 @@ two limitations carried forward (S6's cumulative-room-type gap, and regeneration
 on Phase 5's run record), and the ITC-2007 results. Persistence of runs and candidates was never Phase
 3 work — it is Phase 5's run record.
 
-### Phase 4 — Web interface · ⬜ 4 days · **next**
+### Phase 4 — Web interface · ✅ **complete 2026-08-01**
 
 **Purpose.** The complete path from a teacher declaring availability to a published timetable.
-**Completion criteria.** Availability grid filled in under 5 minutes without training; generation
-screen; side-by-side comparison with contributions; timetable views by teacher, group, room, lab.
-**Dependencies.** Phase 3 is complete and its algorithms — score, ranking, decomposition, dominance,
-the recommendation rule and the portfolio — exist to build the screens on. Persistence of runs and
-candidates is Phase 5 and will most likely be built alongside this phase's `services`/`db` work rather
-than as a separate pass. Two open questions land here: **C-14**, which must be settled before the
-comparison screen builds a dominance signal that can never fire, and **C-12** — the availability grid
-needs a three-state cell if a real preferred-window column (option (a), not yet built) is added.
 
-**Status. IN PROGRESS — M1 of 6 complete.** Six milestones, in this order:
+**Completion criteria — three of four met, and the fourth is not automatable.**
+- Generation screen. ✅ **Met** (M3), verified against the real solver.
+- Side-by-side comparison with contributions. ✅ **Met** (M5) — and it ticked the acceptance criterion,
+  which needed *displayed* figures rather than computed ones.
+- Timetable views by teacher, group, room, lab. ✅ **Met** (M4); the "lab" view is FR-18's occupancy
+  report, whose totals match `verify-instance` exactly.
+- Availability grid filled in **under 5 minutes without training**. ⚠️ **Built (M6), not verified.**
+  The criterion is about a person and needs a timed walkthrough with a teacher who has not seen the
+  screen. **This is the one thing Phase 4 owes**, and it is carried to Phase 6 with the other
+  acceptance work.
+
+**Dependencies.** Phase 3's algorithms — score, ranking, decomposition, dominance, the recommendation
+rule and the portfolio — existed to build the screens on. Both open questions that landed here were
+decided: **C-12(a)** resolved (two states, because the schema has no third to record) and **C-14**
+deferred (no dominance signal shipped, rather than one that can never fire). Both were recorded in
+`docs/open-questions.md` with their reasons **before** the code was written.
+
+**Status. COMPLETE — 6 of 6 milestones, closing audit passed 2026-08-01.**
 
 | # | Milestone | State |
 |---|---|---|
@@ -168,14 +176,45 @@ can exist without an API, and this block already anticipated it ("built alongsid
 with the run store in memory**. Authentication and RBAC (FR-11), PostgreSQL and the diagnosis run stay
 in Phase 5. **The API has no authentication yet and must not be exposed beyond a development machine.**
 
-### Phase 5 — Pre-analysis in-app, diagnosis, auth, run record · ⬜ 2 days
+#### The closing audit, 2026-08-01
+
+**Six passes; the sixth found nothing.** It found **17 defects**, plus one the audit introduced and
+caught on the next pass (a fix that duplicated a paragraph) — worth recording, because it is why a
+clean pass has to be a *whole* pass and not a spot check of what you just edited.
+
+The useful part is the shape of them: **not one was caught by `run-checks.ps1`**, which was green
+before the audit started, green after every fix, and green throughout. A validation suite proves the
+code does what its tests say; it cannot notice that a document describes a different system.
+
+The Phase 3 close taught the method and this audit confirmed it: **compare documents against the
+repository, never against other documents.** Every defect below was found by checking a claim against
+`git`, a file count, a `grep`, or the running application — not by reading two documents side by side.
+
+| Kind | Found |
+|---|---|
+| **Stale status** | Both `dashboard.md` and `status.md` still opened with "Phase 4 has not started", the phase block still read "IN PROGRESS — M1 of 6", and the health row still said 125 tests and 8/8 contracts. **The header of the handoff file is what a cold session reads first** — the same defect the Phase 3 close found, recurring |
+| **Wrong counts** | "ten steps" in `run-checks.ps1` (there are 8) · "11 of 25 requirements" (12) · "3 of 9 acceptance criteria" (4) · a 55 % progress bar (75 %) · a duplicated caption my own fix introduced |
+| **Claims contradicted by the code** | ADR-005 and `architecture.md` both list *"candidates visible as they are produced"* as a delivered benefit; `portfolio.py` returns the whole portfolio at the end, so the screen shows `SOLVING` for 105–150 s and everything arrives at once. ADR-005 also says run state "lives in the database" — it is in memory. `frontend/README.md` repeated the incremental claim and described four screens that do not exist |
+| **Comments contradicting each other** | `schemas.py` said `domain.ts` declares `preAnalysis`/`diagnosis` on its `Run`; `domain.ts` says it deliberately does not. Two files describing each other, both wrong |
+| **Over-claims** | "The frontend computes nothing" — falsifiable by one grep, and an over-claim invites the reader to conclude the rule is not meant seriously. It computes no *score* and decides no *ranking*; it does sort grid axes and round for display |
+| **Dead code** | `useCandidates` and `useDominance` (frontend hooks nothing called — the second because C-14 deferred the display) and `RunSummary` in `services/runs.py`. Removed; the *endpoints* stay, tested and deliberate |
+
+**What the audit did not find:** any architecture violation (9/9 contracts kept throughout), any broken
+link, any unresolved TODO, and no defect in what the screens actually compute — the occupancy view still
+reconciles with `verify-instance` to the period.
+
+### Phase 5 — Pre-analysis in-app, diagnosis, auth, run record · ⬜ 2 days · **next**
 
 **Purpose.** An infeasible instance must produce a report naming the rules in conflict, not a
 timeout; every published timetable must trace back to its run, seed and weights.
 **Completion criteria.** FR-12 reports structural risks through the API; the diagnosis run returns a
 sufficient conflict set; a teacher account sees only its own data; runs are recorded.
-**Dependencies.** Phase 3 for the run record; C-6 is already resolved (only H1, H3, H7, H12 carry an
-assumption literal, so the conflict report can name an actionable rule).
+**Dependencies.** C-6 is already resolved (only H1, H3, H7, H12 carry an assumption literal, so the
+conflict report can name an actionable rule). **Phase 4 left the seams in place**: `RunStore` and
+`AvailabilityStore` are Protocols with in-memory implementations, so FR-19 substitutes database-backed
+ones without touching a router; `RunState` already carries `PREANALYSIS`, `DIAGNOSING` and `DIAGNOSED`,
+and the lifecycle refuses to enter them because nothing computes them yet; and `RunOut` omits
+`preAnalysis` and `diagnosis` rather than sending empty values, so adding them is additive.
 ⚠️ **FR-12 must port the contiguity bound as well as the period bound** — shipping the period bound
 alone would put the C-13 blind spot inside the product.
 **Status.** Not started. `preanalysis/` has the Protocol and the five check names, no bodies. The
@@ -185,12 +224,16 @@ working logic already exists in `data/verification/verify_instance.py`.
 
 **Purpose.** Acceptance requirement by requirement; the project is accepted that way.
 **Completion criteria.** The nine acceptance criteria in `docs/status.md` all ticked; documents complete.
-**Dependencies.** All previous phases. **C-5** and **C-9** must be settled before the acceptance tests
-are written, or they will fail for reasons that are not defects.
+**Dependencies.** All previous phases. **C-5**, **C-9** and now **C-14** must be settled before the
+acceptance tests are written, or they will fail for reasons that are not defects. C-14 arrived here
+when Phase 4 deferred it, and it carries a documentation change too: `docs/scoring-and-explanation.md`
+still describes a dominance signal the arithmetic forbids, and **that wording needs the supervisor**.
 **Also lands here.** The **instance generator** (`data/generator/`), a stated PPM §10 deliverable that
 does not exist — item 9 of `docs/status.md`'s "Next, in order". It must reproduce *the* documented
-instance, not merely a valid one (ADR-008).
-**Status.** Not started. **Three of nine** acceptance criteria are met.
+instance, not merely a valid one (ADR-008). And the **timed FR-2 walkthrough**: the availability grid
+is built, but "filled in under 5 minutes without training" is about a person and no automated check
+stands in for it.
+**Status.** Not started. **Four of nine** acceptance criteria are met.
 
 ### Increment 2 — conditional on remaining time
 

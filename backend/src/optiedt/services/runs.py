@@ -33,7 +33,7 @@ Protocol below is the seam.
 from __future__ import annotations
 
 import threading
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Protocol
 
@@ -233,20 +233,3 @@ def dominance_for(record: RunRecord) -> list[DominanceVerdict]:
 
 def recommendation_for(record: RunRecord) -> Recommendation | None:
     return ranker_for(record).recommend(list(record.candidates))
-
-
-@dataclass(frozen=True, slots=True)
-class RunSummary:
-    """Counts a screen shows without pulling every placement."""
-
-    run: Run
-    candidate_count: int = 0
-    duplicates_removed: tuple[str, ...] = field(default_factory=tuple)
-
-    @classmethod
-    def of(cls, record: RunRecord) -> RunSummary:
-        return cls(
-            run=record.run,
-            candidate_count=len(record.candidates),
-            duplicates_removed=record.duplicates_removed,
-        )

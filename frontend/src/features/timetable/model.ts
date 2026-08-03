@@ -1,9 +1,15 @@
 /**
  * Turning placements into something a person can read.
  *
- * This is display logic only. It filters and arranges what the API sent; it
- * computes no score and decides no order (docs/architecture.md). A `Placement`
- * carries ids alone, so every label here comes from the instance payload.
+ * This is display logic only. It filters and arranges what the API sent: it
+ * computes **no score** and decides **no ranking** — which is the boundary
+ * `docs/architecture.md` draws, the presentation layer being allowed to
+ * "display, filter, print" and forbidden to "compute a score, decide an
+ * order". The sorts below order grid axes and room codes, not candidates by
+ * quality; do not read them as licence to rank anything.
+ *
+ * A `Placement` carries ids alone, so every label here comes from the instance
+ * payload.
  */
 
 import type {

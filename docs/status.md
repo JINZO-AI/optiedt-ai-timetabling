@@ -1,13 +1,15 @@
 # Status
 
-**Increment 1 of 2 · Phases 1–3 complete. Phase 4 (the web interface) is next and has not started.**
-**C-4, C-12 and C-16 resolved; C-15 deferred by decision. Four questions remain open, none blocking Phase 4.**
-**Last updated 2026-07-31.**
+**Increment 1 of 2 · Phases 1–4 complete. Phase 5 (pre-analysis in-app, diagnosis, auth, run record) is
+next and has not started.**
+**C-4, C-12 — both halves — and C-16 resolved; C-14 and C-15 deferred by decision. Four questions remain
+open, none blocking Phase 5.**
+**Last updated 2026-08-01.**
 
 Keep this file current. A stale status file is worse than none, because the next session trusts it.
 
 > **Read [`docs/dashboard.md`](dashboard.md) first.** It carries the project state, the roadmap and the
-> brief for whichever phase is current — **Phase 4** — in one page. This file is the detail behind it:
+> brief for whichever phase is current — **Phase 5** — in one page. This file is the detail behind it:
 > blockers, measurements, phases, acceptance criteria. Session-by-session history is archived in
 > [`docs/history.md`](history.md).
 
@@ -17,10 +19,10 @@ Keep this file current. A stale status file is worse than none, because the next
 
 | | |
 |---|---|
-| **Current phase** | **Phase 4 — the web interface. All six milestones delivered 2026-08-01, not yet audited.** Availability, generation, the four timetable views and comparison all run end to end against the real solver. Milestone table in [`docs/dashboard.md`](dashboard.md) |
-| **Last completed phase** | **Phase 3, closed 2026-07-31.** Delivered the seven criteria, the scorer, the ranker (decomposition, dominance, FR-16's recommendation), the CP-SAT objective, the recommendation translator, the portfolio, and validation on the 21 published ITC-2007 instances. C-4, C-7, C-12, C-13 and C-16 all resolved along the way |
-| **Next step** | A **Phase 4 closing audit**, then **Phase 5** — pre-analysis in-app (FR-12, **both bounds**), the diagnosis run, authentication and the run record |
-| **Days used** | ~3 of 20 across Phases 1–3, which were budgeted 3 + 5 + 3 = 11 |
+| **Current phase** | **Phase 5 — pre-analysis in-app, diagnosis, authentication, run record. Not started.** Phase 4 closed 2026-08-01: six milestones and a closing audit. Milestone table in [`docs/dashboard.md`](dashboard.md) |
+| **Last completed phase** | **Phase 4, closed 2026-08-01.** Six milestones: the API foundation, the run lifecycle and executor, and four screens — availability, generation, timetables, comparison. First frontend tests. C-12(a) resolved and C-14 deferred, both recorded before the code was written. Before it, Phase 3 (closed 2026-07-31) delivered the criteria, scorer, ranker, objective, translator, portfolio and the ITC-2007 validation |
+| **Next step** | **Phase 5** — pre-analysis in-app (FR-12, ⚠️ **port both bounds**), the diagnosis run, authentication and rights, and the run record |
+| **Days used** | ~4 of 20 across Phases 1–4, which were budgeted 3 + 5 + 3 + 4 = 15 |
 | **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · latest **pushed** commit `bfe805a`, 2026-08-01; anything after it is local. ⚠️ **No local-commit count is recorded here** — this line has been wrong three times (`0dc0078`, a parent, until 2026-07-31; `acf9aa0` with "9 commits" after eight were pushed; then "1 commit", which the correcting commit itself made 2). **A count cannot live in a file that commits change.** Re-derive: `git rev-parse origin/main`, `git rev-list --count origin/main..HEAD` |
 | **Blocked on** | Nothing for Phase 5. **C-5**, **C-9** and **C-14** all land in Phase 6 acceptance now; **C-15** blocks FR-13's `✓`. C-14 was deferred 2026-08-01 — Phase 4 shipped **no dominance signal** rather than one that can never fire, so FR-17 waits on it |
 
@@ -31,8 +33,9 @@ Keep this file current. A stale status file is worse than none, because the next
 *C-6, C-7, C-13, C-4, C-12 and C-16 are all resolved and recorded in `docs/open-questions.md`, which is
 the authority. What follows is only what is still open.*
 
-**Nothing blocks Phase 4.** Of the four open questions, one lands inside Phase 4 (C-14, before the
-comparison screen builds its dominance signal) and three land in Phase 6.
+**Nothing blocks Phase 5.** All four open questions now land in Phase 6's acceptance work. C-14 was the
+one that landed inside Phase 4, and it was **deferred rather than answered** on 2026-08-01: the
+comparison screen ships with no dominance signal at all.
 
 ### C-4 and C-12 — resolved 2026-07-30
 
@@ -75,8 +78,11 @@ specification's *wording*.
 blocks FR-13's `✓` because the profiles do not differentiate for the documented reason.
 
 **C-14 — dominance uses the strict reading, and the "dominated top candidate" signal cannot fire.**
-Blocks the Phase 4 comparison screen: it would otherwise build an indicator that is provably always
-empty.
+**Deferred 2026-08-01.** Phase 4's comparison screen ships **no dominance signal**, because building one
+under the current reading would have shipped an indicator that is provably always empty — worse than
+absent, since a control that never fires teaches the user it means "no problem found". Now blocks
+FR-17's `✓`, Phase 6 acceptance, and the rewording of `docs/scoring-and-explanation.md`, which still
+describes the unreachable state. **That wording is a delivered commitment, so it needs the supervisor.**
 
 **C-9 — four requirements have no detailed specification.** Blocks Phase 6 acceptance tests.
 
@@ -109,12 +115,14 @@ empty.
    constraints and four soft costs, and models the problem in CP-SAT. Run it with
    `scripts/validate-itc2007.ps1`. Results in Measurements below.
 
-**Phase 3 is closed.** What follows belongs to Phases 4–6, in this order:
+**Phases 3 and 4 are closed.** What follows belongs to Phases 5–6, in this order:
 
-6. **Phase 4 — the web interface.** Availability grid, generation screen, comparison screen, the four
-   timetable views. Also the first consumer of the portfolio and the decomposition, which exist and are
-   tested but are not yet reachable by a user. ⚠️ Settle **C-14** before building the dominance signal:
-   the "dominated top candidate" indicator both documents ask for can never fire.
+6. ~~**Phase 4 — the web interface.**~~ **Done 2026-08-01**, six milestones. The availability grid,
+   generation screen, comparison screen and four timetable views all exist, and the portfolio and the
+   decomposition are now reachable by a user. **C-14 was deferred, not settled** — the comparison
+   screen ships no dominance signal, because the indicator both documents ask for can never fire.
+   ⚠️ **One thing is owed:** the FR-2 acceptance criterion ("filled in under 5 minutes without
+   training") is about a person and needs a timed walkthrough. Carried to Phase 6.
 7. **Port the five verifications into the application** as FR-12 (Phase 5). The standalone checker at
    `data/verification/verify_instance.py` already has the logic; the in-application version reports
    structural risks through the API. ⚠️ **Port the contiguity bound, not just the period bound** — the
@@ -189,6 +197,9 @@ its decomposition, and validation on the published instances.
 | ⚠️ **`interleave_search` is marked "Experimental" upstream** | Reproducibility — a written acceptance criterion — now rests on one OR-Tools parameter whose guarantee could change between releases | **Pin the OR-Tools version.** `tests/integration/test_reproducibility.py` verifies the behaviour at production settings rather than trusting the documentation; treat a failure there as blocking, not flaky |
 | ⚠️ **`interleave_search` misreports `CpSolver.objective_value`** | Measured 2026-07-31 on ITC-2007 comp02/comp18/comp21: the reported objective sat **5–15 units above** the objective expression evaluated at the solution the solver returned, on solves that stopped before proving optimality. With the parameter off, the two agree exactly | **Affects nothing today, by design.** No score, ranking, comparison or display reads `SolverOutput.cost` — `analysis/criteria.py` recomputes every criterion from the placements, which the ban on `analysis → solver` forces. The two guards that could have gone flaky were pinned: `test_objective_matches_analysis.py` requires `proven_optimal`, and the ITC-2007 harness compares the encoding rather than the reported objective. **Do not start ranking on `cost`** — ADR-011 |
 | **Raw-weight objective lets a large-scale criterion swamp a small one** | The objective minimises `Σ(weight_i × violations_i)` in **raw** units, and the criteria have incomparable scales — S5 ~100 (session count) against S3 ~15 (idle periods). In teacher-favouring, S5 contributes ≈32 to the objective against S3's ≈4.5, so it behaves as an S5-only profile. Measured across budgets: S5 improves 101 → 72 (beating balanced's 81) while S3 *degrades* 13 → 18. **"Teacher-favouring" does not currently favour teachers on S3** | Not an implementation defect — the profile raises both weights exactly as documented, and the analysis layer scores both correctly. It is a consequence of the objective's raw-weight formulation meeting criteria of different magnitudes. Needs a decision: normalise the objective's weights by each criterion's bound range, or set the emphasis factor per criterion. **Not decided here** |
+| **Candidates are not shown as they are produced** | `docs/architecture.md` stage 2 and ADR-005 both list incremental visibility as a benefit. `services/portfolio.py` returns the whole `PortfolioReport` at the end, so the generation screen shows `SOLVING` for the full 105–150 s and every candidate arrives at once | **Found by the Phase 4 closing audit, 2026-08-01.** Nothing is incorrect — the candidates are right and the states honest — but a stated benefit is unrealised. Both documents now say so. Closing it means `generate_portfolio` publishing each candidate through a callback or the store instead of its return value, which changes a **Phase 3** module's contract. Not attempted during Phase 4 |
+| **Both stores are in memory** | `services/runs.py` and `services/availability.py` keep runs and declarations in process. A restart loses every run — not only in-flight ones, which is what ADR-005's "cost" paragraph says | Phase 4's documented position; FR-19's run record replaces it in Phase 5. Both sit behind Protocols so the substitution needs no router change |
+| **No authentication** | Every endpoint is open and the teacher whose availability is edited comes from a dropdown, not a session | FR-11, Phase 5. **Must not be exposed beyond a development machine** until then — stated in `api/main.py` and `frontend/README.md` |
 | **Exam multi-room assignment** (R-6) | Breaks a shared `room[s]` abstraction | Keep it out of shared solver code from the start |
 | ~~`uv` not installed~~ | — | **Resolved.** uv 0.12.0 installed; the whole toolchain runs |
 | **Kaggle `students.csv` holds personal data** | 3,000 rows with names, emails, phones, addresses | Never load it beyond `student_id` + enrolment; never let such a field reach the assistant context |

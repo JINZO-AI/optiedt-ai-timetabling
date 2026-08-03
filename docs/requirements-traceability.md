@@ -7,7 +7,8 @@ built?" without reading code.
 
 Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 
-**Where the project actually is: 11 of 25 requirements are under way, none is finished.**
+**Where the project actually is: 12 of 25 requirements are under way, none is finished.**
+*(FR-2, 3, 4, 5, 6, 7, 13, 14, 15, 16, 17, 18 — count them in the table rather than trusting this line.)*
 
 ⚠️ **Phase 4 delivered all six milestones and the count of finished requirements is still zero. That is
 not a contradiction, and it is the number most likely to be misread.** Every Phase 4 screen exists and

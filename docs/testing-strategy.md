@@ -189,7 +189,22 @@ backend/tests/
   property/     Hypothesis. The analysis-layer properties. No solver
   integration/  API + database. Solver with a small deterministic budget
   acceptance/   One test per FR acceptance criterion
+
+frontend/src/**/*.test.tsx
+                vitest + @testing-library/react. The DISPLAY layer
 ```
+
+⚠️ **The frontend tests are not a fifth pyramid level; they answer a question no backend test can.**
+Added in Phase 4 M5. The acceptance criterion is that the **displayed** contributions sum to the
+**displayed** score difference — and rounding happens in the component, so a table could round each
+term, print an unrounded total, and satisfy every backend test while failing the criterion on screen.
+These render the table and read the figures back out of the DOM. They found exactly that defect on
+their first run: rounding terms independently does not preserve the sum, and the column was out by one
+unit of the last place. Fixed with largest-remainder rounding.
+
+`tests/integration/test_api_runs.py` drives the run endpoints against a **fake solver**, so it stays in
+the fast suite: what is under test there is the lifecycle and the wire format, not the engine. It waits
+on the executor's `Future` rather than sleeping, so it carries no timing assumption.
 
 The ITC-2007 harness itself lives in `backend/src/optiedt/validation/`, not under `tests/`, so that
 mypy strict and ruff cover it — a validation harness whose arithmetic is wrong reports a wrong verdict

@@ -32,6 +32,20 @@ GET  /runs/{id}  → polled     PENDING → PREANALYSIS → SOLVING → SCORING 
 - Candidates are visible as they are produced, not only when the whole portfolio finishes — which
   matters when the first profile completes in seconds and the third takes minutes.
 - Run state lives in the database, so it survives a page reload and is inspectable.
+
+> ⚠️ **Correction, 2026-08-01 (Phase 4 closing audit).** Two of those consequences are **not** what was
+> built, and they are stated above as though they were:
+>
+> - **Candidates are not visible as they are produced.** `services/portfolio.py` returns the whole
+>   portfolio at the end, so the run shows `SOLVING` for the full 105–150 s and every candidate appears
+>   at once. The decision this ADR records — in-process rather than a broker — is unaffected; only this
+>   claimed benefit is unrealised. Closing it means changing a Phase 3 module's contract.
+> - **Run state does not live in the database.** It is in memory (`services/runs.py`), so a restart
+>   loses every run and a page reload survives only because the browser is not the store. Persistence is
+>   FR-19, Phase 5.
+>
+> The "cost" paragraph below therefore understates the position today: a restart loses **all** runs, not
+> only in-flight ones.
 - **The task shares the process with the server**, consistent with ADR-004: no serialisation of the
   problem, no second deployment artefact.
 

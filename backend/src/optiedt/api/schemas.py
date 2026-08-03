@@ -433,9 +433,10 @@ class RunOut(ApiModel):
       there; reporting a conflict set nobody computed would name rules the user
       cannot act on.
 
-    `frontend/src/types/domain.ts` declares both on its `Run`, running ahead of
-    the API on purpose: the shapes are agreed, the work that fills them is not
-    done. Add them here with that work, not before.
+    `frontend/src/types/domain.ts` leaves both off its `Run` for the same
+    reason, and keeps `CheckResult` and `DiagnosisResult` declared beside it —
+    the shapes are agreed, the work that fills them is not done. Add the fields
+    on both sides with that work, not before.
     """
 
     id: str

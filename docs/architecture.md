@@ -134,6 +134,18 @@ Checks and their expected results on the reference instance are in `docs/data-an
 - Each candidate is recorded and scored as soon as it is obtained, so the interface can show it while
   the remaining profiles are still solving.
 
+⚠️ **That last point is the intended design and is NOT implemented.** `services/portfolio.py` scores
+each candidate as it is obtained, exactly as written — but it returns the whole portfolio in one
+`PortfolioReport` at the end, so `tasks/executor.py` can only store them together and the run moves
+`SOLVING → SCORING → COMPLETED` with all candidates appearing at once. On the reference instance that
+means roughly 105–150 s of a screen showing `SOLVING` and nothing else.
+
+Nothing is wrong: the candidates are correct and the states are honest. What is missing is
+*incremental* reporting, which needs `generate_portfolio` to publish each candidate through a callback
+or the store rather than in its return value. Recorded here rather than fixed because it changes a
+Phase 3 module's contract. **Do not describe the interface as showing candidates as they appear** —
+`frontend/README.md` did, and it was false for the whole of Phase 4.
+
 ### Stage 3 — Diagnosis
 
 Entered only on `INFEASIBLE`. Three properties are imposed by CP-SAT itself and are not negotiable:
