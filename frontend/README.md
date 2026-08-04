@@ -13,18 +13,25 @@ npm run test
 
 ## Screens
 
-⚠️ **This table is the plan, and most of it is not built.** Four directories carry a screen; the rest
-hold a `.gitkeep`. Read the State column before believing a row.
+⚠️ **Read the State column before believing a row.** Seven directories are listed; **six carry a
+screen** and the rest hold a `.gitkeep`.
 
 | Directory | Screen | Requirements | State |
 |---|---|---|---|
-| `features/availability/` | Weekly grid, each open slot available **or unavailable** | FR-2 | ✅ Phase 4 |
-| `features/generation/` | Weight profiles, deterministic budget, launch, run state, candidates with sub-scores | FR-13, FR-5, FR-6 | ✅ Phase 4 |
+| `features/auth/` | Sign in. No registration — accounts come from the seed command (C-18) | FR-11 | ✅ Phase 5 M4 |
+| `features/availability/` | Weekly grid, each open slot available **or unavailable**. A teacher edits **their own**, taken from the token | FR-2, FR-11 | ✅ Phase 4, scoped in M4 |
+| `features/generation/` | Weight profiles, deterministic budget, launch, run state, candidates with sub-scores, the pre-analysis report, publish | FR-13, FR-5, FR-6, FR-12 | ✅ Phase 4, extended M1 and M5 |
 | `features/timetable/` | Weekly grid by teacher, group or room, plus room occupancy | FR-7, FR-18 | ✅ Phase 4 |
 | `features/comparison/` | Two candidates side by side, criteria table, contributions | FR-14, FR-15 | ✅ Phase 4 |
-| `features/conflicts/` | Rules named by the data checks and the diagnosis run | FR-8, FR-12 | ⬜ Phase 5 |
-| `features/admin/` | Accounts, holidays, closed half-days, shortened-day window | FR-9, FR-11 | ⬜ Phase 5 |
+| `features/conflicts/` | Rules named by the diagnosis run, and what an empty set means | FR-8 | ✅ Phase 5 M2 |
+| `features/publication/` | Published timetables with the trace back to run, seed and weights | FR-19 | ✅ Phase 5 M5 |
+| `features/admin/` | Holidays, closed half-days, shortened-day window, **account management** | FR-9 | ⬜ not built. ⚠️ FR-11's *authentication* is done; the administrator's **account management** from SRS Table 2 is not, and C-18 records why |
 | `features/assistant/` | Free-text question on the current run, explanation, report | FR-22, FR-24, FR-25 | ⬜ unscheduled (C-1) |
+
+⚠️ **What the navigation hides is not what is forbidden.** `App.tsx` offers Génération and
+Publications only to the person in charge, but every endpoint checks the role for itself — a client
+that hides a control has not prevented the request. If the shell and the API disagree, the API is
+right.
 
 **Not built, and deliberately so:**
 

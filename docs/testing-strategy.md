@@ -225,6 +225,34 @@ frontend/src/**/*.test.tsx
                 vitest + @testing-library/react. The DISPLAY layer
 ```
 
+**Three markers, declared in `pyproject.toml`, and each exists because a whole class of test cannot
+share the fast suite's constraints:**
+
+| Marker | Why | How it runs |
+|---|---|---|
+| `solver` | Invokes CP-SAT on the real instance; can legitimately take minutes | Excluded from `run-checks.ps1`; `uv run pytest -m solver` |
+| `database` | Needs a live PostgreSQL | Its own `run-checks.ps1` step. **Fails** if Docker is up but the container is not — a forgotten `docker compose up -d` is actionable. **Skips** if Docker is absent |
+| `acceptance` | One test per FR criterion | Phase 6 |
+
+⚠️ **Every test runs against in-memory stores unless it asks for a database.** `tests/conftest.py`
+forces `OPTIEDT_PERSISTENCE=memory`, and that is not tidiness: when the default became `database`,
+`test_availability_api.py` kept passing *and quietly wrote two rows into the developer's own
+database*. A green suite that silently depends on PostgreSQL and mutates it is worse than a failing
+one — it hides both facts. The database tests take an explicit session factory against a database of
+their own (`optiedt_test`).
+
+**What Phase 5 added, and the question each answers:**
+
+| File | The question no other test answers |
+|---|---|
+| `unit/test_preanalysis.py` | Does SLOT_COVERAGE apply the **contiguity** bound? The C-13 regression reconstructs the pre-repair room mix and requires both shortfalls to be named |
+| `integration/test_preanalysis_matches_verifier.py` | Do the two independent implementations of the five checks agree, figure for figure? |
+| `unit/test_diagnosis.py` | Does the diagnosis name **exactly** the guilty rule — not "all four"? Asserts exact sets on instances where one rule can be at fault |
+| `integration/test_store_contract.py` | Do the in-memory and PostgreSQL stores satisfy **one** contract? It caught a real divergence on its first run |
+| `integration/test_rbac.py` | Does authentication work against **real tokens**? Every other API test overrides `current_user`; this one must not, or it would test the override |
+| `integration/test_publication.py` | Does the trace match the **run** — rather than a second copy of the seed agreeing with itself? |
+| `unit/test_seed.py` | Does the seed command **refuse** an installation that already has accounts? |
+
 ⚠️ **The frontend tests are not a fifth pyramid level; they answer a question no backend test can.**
 Added in Phase 4 M5. The acceptance criterion is that the **displayed** contributions sum to the
 **displayed** score difference — and rounding happens in the component, so a table could round each

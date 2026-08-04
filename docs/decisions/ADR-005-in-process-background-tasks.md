@@ -46,6 +46,22 @@ GET  /runs/{id}  → polled     PENDING → PREANALYSIS → SOLVING → SCORING 
 >
 > The "cost" paragraph below therefore understates the position today: a restart loses **all** runs, not
 > only in-flight ones.
+
+> ⚠️ **Second correction, 2026-08-04 (Phase 5 M3) — the paragraph above is now itself out of date, and
+> that is worth noticing.** Run state **does** live in the database: `db/repositories.py` behind the
+> same Protocols, verified by killing the API and reading a run back from a fresh process. The "cost"
+> paragraph below is accurate again exactly as originally written — a restart loses an *in-flight* run
+> and nothing else.
+>
+> The first correction was right when written and wrong four days later. **A note that says "this is
+> not built yet" acquires an expiry date the moment someone builds it**, and nothing fails when it
+> passes. The remaining unrealised claim is the other one: candidates are still not visible as they are
+> produced.
+
+> ⚠️ **Still unrealised, 2026-08-04.** `services/portfolio.py` returns the whole portfolio at the end,
+> so the generation screen shows `SOLVING` for the full solve and every candidate arrives at once —
+> measured at 206.9 s on the reference instance during Phase 5 M5. Closing it changes a Phase 3
+> module's contract.
 - **The task shares the process with the server**, consistent with ADR-004: no serialisation of the
   problem, no second deployment artefact.
 

@@ -1,7 +1,7 @@
 # Status
 
-**Increment 1 of 2 · Phases 1–4 complete. Phase 5 (pre-analysis in-app, diagnosis, auth, run record) is
-IN PROGRESS — M5 of 6 done.**
+**Increment 1 of 2 · Phases 1–5 complete.** Phase 5 closed 2026-08-04: six milestones and a closing
+audit that found eight defects, none of which `run-checks.ps1` could catch.
 **C-4, C-12, C-16, C-17 and C-18 resolved; C-14 and C-15 deferred by decision. Four questions remain
 open, none blocking Phase 5.**
 **Last updated 2026-08-04.**
@@ -19,10 +19,10 @@ Keep this file current. A stale status file is worse than none, because the next
 
 | | |
 |---|---|
-| **Current phase** | **Phase 5 — pre-analysis in-app, diagnosis, authentication, run record. IN PROGRESS, M5 of 6 done.** Phase 4 closed 2026-08-01: six milestones and a closing audit. Milestone table in [`docs/dashboard.md`](dashboard.md) |
-| **Last completed phase** | **Phase 4, closed 2026-08-01.** Six milestones: the API foundation, the run lifecycle and executor, and four screens — availability, generation, timetables, comparison. First frontend tests. C-12(a) resolved and C-14 deferred, both recorded before the code was written. Before it, Phase 3 (closed 2026-07-31) delivered the criteria, scorer, ranker, objective, translator, portfolio and the ITC-2007 validation |
-| **Next step** | **Phase 5 M6 — the closing audit**, on Phase 4's method. M1 landed FR-12 with both bounds; M2 landed FR-8 and resolved C-17; M3 landed FR-19 against real PostgreSQL; M4 landed FR-11 and resolved C-18; M5 landed publication and its trace |
-| **Days used** | ~4 of 20 across Phases 1–4, which were budgeted 3 + 5 + 3 + 4 = 15 |
+| **Current phase** | **Phase 6 — tests, documentation, presentation. Not started.** Phase 5 closed 2026-08-04: six milestones and a closing audit. Milestone table in [`docs/dashboard.md`](dashboard.md) |
+| **Last completed phase** | **Phase 5, closed 2026-08-04.** Six milestones: the five checks in-app (FR-12), the diagnosis run (FR-8), the run record in PostgreSQL (FR-19), authentication and rights (FR-11), publication with its trace, and the closing audit. **C-17 and C-18 resolved**, both recorded before the code. Three acceptance criteria moved from unmet to met. Before it, **Phase 4, closed 2026-08-01.** Six milestones: the API foundation, the run lifecycle and executor, and four screens — availability, generation, timetables, comparison. First frontend tests. C-12(a) resolved and C-14 deferred, both recorded before the code was written. Before it, Phase 3 (closed 2026-07-31) delivered the criteria, scorer, ranker, objective, translator, portfolio and the ITC-2007 validation |
+| **Next step** | **Phase 6.** ⚠️ **C-5, C-9 and C-14 must be settled before the acceptance tests are written**, or they fail for reasons that are not defects. Also here: the **instance generator** (owed, PPM §10), the **timed FR-2 walkthrough**, and the three unmet acceptance criteria |
+| **Days used** | Phases 1–5 delivered, budgeted 3 + 5 + 3 + 4 + 2 = **17 of 20**. Phase 6 has the remaining 3 |
 | **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · latest **pushed** commit `8d1194b`, 2026-08-01 (the Phase 4 closing audit); `HEAD` and `origin/main` identical at that point. ⚠️ **No local-commit count is recorded here** — this line has been wrong four times (`0dc0078`, a parent, until 2026-07-31; `acf9aa0` with "9 commits" after eight were pushed; then "1 commit", which the correcting commit itself made 2; then `bfe805a`, left stale by the next push). **A count cannot live in a file that commits change, and a SHA does not survive a push that does not touch this file.** Re-derive: `git rev-parse origin/main`, `git rev-list --count origin/main..HEAD` |
 | **Blocked on** | Nothing for Phase 5. **C-17 resolved 2026-08-04** on measurement — stage 3 withdraws rules and solves plainly instead of using assumption literals. **C-5**, **C-9** and **C-14** land in Phase 6 acceptance; **C-15** blocks FR-13's `✓` |
 
@@ -33,9 +33,9 @@ Keep this file current. A stale status file is worse than none, because the next
 *C-6, C-7, C-13, C-4, C-12, C-16, C-17 and C-18 are all resolved and recorded in `docs/open-questions.md`,
 which is the authority. What follows is only what is still open.*
 
-**Nothing blocks Phase 5.** All four open questions now land in Phase 6's acceptance work. C-14 was the
-one that landed inside Phase 4, and it was **deferred rather than answered** on 2026-08-01: the
-comparison screen ships with no dominance signal at all.
+**Phase 5 is closed and nothing blocked it.** All four open questions land in Phase 6's acceptance
+work. C-14 was the one that landed inside Phase 4, **deferred rather than answered** on 2026-08-01:
+the comparison screen ships with no dominance signal at all.
 
 ### C-4 and C-12 — resolved 2026-07-30
 
@@ -143,13 +143,17 @@ describes the unreachable state. **That wording is a delivered commitment, so it
    ⚠️ One half of verification 5 is deliberately **not** ported: `Instance` excludes `Student`
    (increment 2), so "425 students match the declared sizes" stays with `verify-instance.ps1`. The
    in-application check says so in its own report rather than passing for the documented one.
-8. **Fill H10's dormant gap** when recommendation regeneration needs it: `build_variables` currently
+8. ~~**Phase 5.**~~ **Done 2026-08-04**, six milestones: FR-12 in-app with both bounds, FR-8's diagnosis
+   (C-17 replaced the documented mechanism on measurement), FR-19's run record in PostgreSQL, FR-11's
+   authentication and rights (C-18 decided how accounts are provisioned), publication with its trace,
+   and a closing audit that found eight defects.
+9. **Fill H10's dormant gap** when recommendation regeneration needs it: `build_variables` currently
    refuses to run if any session is locked, because `SolverInput` carries session ids without the
    target slot and room. Safe today only because the reference instance has none.
    `recommendations/translator.py` already reads a `lock_session`'s target slot/room out of the
    candidate correctly (`LockedPlacement`); what is missing is downstream — `SolverInput` needs a way to
    carry that target, and `build_variables` needs to honour it.
-9. **Write the instance generator** (`data/generator/`), a stated deliverable of PPM §10 that does not
+10. **Write the instance generator** (`data/generator/`), a stated deliverable of PPM §10 that does not
    exist. The 13 files in `data/instance/` were produced without it, so the application is unaffected
    and nothing is blocked — but the deliverable is owed, and it must **reproduce *the* documented
    instance, not merely a valid one** (ADR-008), because every figure in these documents is measured
