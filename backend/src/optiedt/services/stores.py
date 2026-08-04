@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from optiedt.core.config import Settings
 from optiedt.services.availability import AvailabilityStore, InMemoryAvailabilityStore
+from optiedt.services.publications import InMemoryPublicationStore, PublicationStore
 from optiedt.services.runs import InMemoryRunStore, RunStore
 from optiedt.services.users import InMemoryUserStore, UserStore
 
@@ -39,6 +40,12 @@ def build_user_store(settings: Settings) -> UserStore:
     if settings.persistence == MEMORY:
         return InMemoryUserStore()
     return _sql_user_store(settings)
+
+
+def build_publication_store(settings: Settings) -> PublicationStore:
+    if settings.persistence == MEMORY:
+        return InMemoryPublicationStore()
+    return _sql_publication_store(settings)
 
 
 # Imported inside the functions, not at module level: `optiedt.db` pulls in
@@ -66,3 +73,10 @@ def _sql_user_store(settings: Settings) -> UserStore:
     from optiedt.db.session import get_session_factory
 
     return SqlUserStore(get_session_factory(settings.database_url))
+
+
+def _sql_publication_store(settings: Settings) -> PublicationStore:
+    from optiedt.db.repositories import SqlPublicationStore
+    from optiedt.db.session import get_session_factory
+
+    return SqlPublicationStore(get_session_factory(settings.database_url))

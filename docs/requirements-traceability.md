@@ -20,8 +20,9 @@ application is safe to demonstrate rather than safe to expose.
 **FR-19 joined in Phase 5 M3.** Runs, weights, pre-analysis checks, the diagnosis, candidates,
 placements and sub-scores are recorded in PostgreSQL behind the Protocols Phase 4 left in place, and
 **no router changed**. Verified by killing the API and reading a run back from a fresh process. It
-stays `WIP` for its acceptance test, and because the criterion it serves — *every **published**
-timetable traces back to its run, seed and weights* — needs publication, which is M5.
+**M5 added publication**, and the criterion it serves — *every **published** timetable traces back to
+its run, seed and weights* — is now **met**: the trace is assembled from the run record and survives a
+restart. FR-19 stays `WIP` only for its acceptance test, which is Phase 6.
 
 **FR-8 joined in Phase 5 M2.** The diagnosis run names exactly the guilty rule on instances where one
 rule can be at fault, and — after **C-17** replaced enforcement literals with rule withdrawal over
@@ -136,7 +137,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking | `unit/test_recommendation` ✓ | **WIP** |
 | **FR-17** | Signal a recommended candidate that another dominates | Expected | `analysis` — dominance | `property` ✓ | **WIP** |
 | **FR-18** | Display occupancy of each classroom and laboratory | Expected | `features/timetable` | `integration` | **WIP** |
-| **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db` ✓ — models, migration, repositories; `services/stores` ✓ | `integration/test_store_contract` ✓, `acceptance/test_fr19` | **WIP** |
+| **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db` ✓ — models, migrations, repositories; `services/stores` ✓; `services/publications` ✓; `features/publication` ✓ | `integration/test_store_contract` ✓, `integration/test_publication` ✓, `frontend TraceTable.test` ✓, `acceptance/test_fr19` | **WIP** |
 | **FR-22** | Explain a candidate's quality from computed figures | Necessary | `assistant` | `acceptance/test_fr22` | — |
 | **FR-23** | Regenerate from an accepted recommendation, preserving H1–H12 | Necessary | `recommendations` | `acceptance/test_fr23` | — |
 | **FR-24** | Answer a question in ordinary language about a run | Necessary | `assistant` | `acceptance/test_fr24` | — |

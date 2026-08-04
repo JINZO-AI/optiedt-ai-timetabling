@@ -3,7 +3,7 @@
 **The handoff file. Read this second, after `CLAUDE.md`.** It carries the whole project state; every
 other document is detail you fetch only when you need it.
 
-**Last updated 2026-08-04. Phase 5 is IN PROGRESS — M4 of 6 done.** FR-12 runs inside the application
+**Last updated 2026-08-04. Phase 5 is IN PROGRESS — M5 of 6 done.** FR-12 runs inside the application
 (the five checks, **both** bounds, displayed as figures rather than ticks) and FR-8's diagnosis run
 exists (rule withdrawal over plain subset solves, `INFEASIBLE → DIAGNOSING → DIAGNOSED`, conflict
 report screen).
@@ -42,16 +42,16 @@ add up by hand. Two questions were decided along the way — **C-12(a)** resolve
 | | |
 |---|---|
 | **Project** | OptiEDT — generates, ranks and explains weekly university timetables (Tunisian public faculty, LMD) |
-| **Overall progress** | **75 % of budgeted effort** — Phases 1–4 delivered, 15 of 20 days budgeted; Phase 5 is under way and its 2 days are not yet counted. By *delivered product*: **5 of 9 acceptance criteria** met, **16 of 25 requirements under way, 0 finished**, because a requirement is `✓` only once a user can reach it *and* it is tested end to end — most now wait on FR-11's authentication and Phase 6's acceptance tests rather than on a missing screen. Both numbers are real; quote the measure with the number |
-| **Current phase** | **Phase 5 — pre-analysis in-app, diagnosis, authentication, run record. IN PROGRESS — M4 of 6 done.** Pick up at **M5, publication and traceability** |
+| **Overall progress** | **75 % of budgeted effort** — Phases 1–4 delivered, 15 of 20 days budgeted; Phase 5 is under way and its 2 days are not yet counted. By *delivered product*: **6 of 9 acceptance criteria** met, **16 of 25 requirements under way, 0 finished**, because a requirement is `✓` only once a user can reach it *and* it is tested end to end — most now wait on FR-11's authentication and Phase 6's acceptance tests rather than on a missing screen. Both numbers are real; quote the measure with the number |
+| **Current phase** | **Phase 5 — pre-analysis in-app, diagnosis, authentication, run record. IN PROGRESS — M5 of 6 done.** Pick up at **M6, the closing audit** |
 | **Last completed phase** | **Phase 4 — COMPLETE 2026-08-01**, six milestones and a closing audit. Four screens (availability, generation, timetables, comparison) over ten `/api` endpoints, an in-process run executor, and the first frontend tests. Before it, Phase 3 delivered the criteria, scoring, ranking, decomposition, dominance, the objective, the portfolio, FR-16 and the ITC-2007 validation |
 | **Milestone reached** | **Phase 4's, in the part that was buildable.** Verified 2026-08-01 end to end: a teacher declared unavailability on the grid, the declaration replaced the generated rows, a run honoured it (T001 never placed in a declared-unavailable slot across all three candidates), and the candidates were ranked, viewed four ways and compared with contributions that add up by hand. ⚠️ **Publication itself is not built** — the milestone's wording says "to publication", and that needs the run record and rights (FR-19, FR-11), which are Phase 5 |
 | **Current goal** | Deliver Phase 5: an infeasible instance must produce a report naming the rules in conflict rather than a timeout, and every published timetable must trace back to its run, seed and weights |
-| **Next task** | **Phase 5 M5 — publication and traceability**, which closes the acceptance criterion *"every published timetable traces back to its run, seed and weights"*. M3 recorded the run; M4 supplies the user who publishes. Then M6, the closing audit. Phase 4 still leaves two things behind: **C-14** (no dominance signal) and the **timed FR-2 walkthrough** |
+| **Next task** | **Phase 5 M6 — the closing audit**, on Phase 4's method: compare every document claim against the repository, never against another document. Phase 4 found 17 defects that way and `run-checks.ps1` was green throughout. Phase 4 still leaves two things behind: **C-14** (no dominance signal) and the **timed FR-2 walkthrough** |
 | **Branch** | `main` — ahead of `origin/main` by unpushed local commits. **No count is recorded here**, deliberately: `git rev-list --count origin/main..HEAD` |
 | **Latest commit** | **Not recorded here** — it is stale the moment anything is committed. `git log -1 --oneline`. The durable fact is the last *pushed* commit, in the row below |
 | **Repository status** | Last pushed: `origin/main` at [`8d1194b`](https://github.com/JINZO-AI/optiedt-ai-timetabling/commit/8d1194b), 2026-08-01 — the Phase 4 closing audit. **`HEAD` and `origin/main` were identical at that point, verified after a fetch.** ⚠️ **This row has now been wrong four times.** `0dc0078` (a *parent* commit) until 2026-07-31; `acf9aa0` with "9 commits ahead" until 2026-08-01, by which time eight of the nine were pushed; then "1 commit ahead", which the very commit correcting it made 2; then `bfe805a`, left stale by the push that followed. **A commit count cannot live in a file that commits change, and a SHA cannot survive a push that does not touch this file.** Re-derive both, always: `git rev-parse origin/main`, `git rev-list --count origin/main..HEAD` |
-| **Project health** | 🟢 **Green.** `scripts/run-checks.ps1` green across **nine** steps: **271 backend tests + 19 frontend**, **10/10 layer contracts** kept, mypy strict on 69 files, instance verified, **30 store-contract tests against real PostgreSQL**. **5 of 9 acceptance criteria met** — a teacher account now obtains only its own data (M4). The engine is validated on all 21 published ITC-2007 instances, and the whole path from declaring availability to comparing candidates is verified against the real solver |
+| **Project health** | 🟢 **Green.** `scripts/run-checks.ps1` green across **nine** steps: **287 backend tests + 24 frontend**, **10/10 layer contracts** kept, mypy strict on 71 files, instance verified, **30 store-contract tests against real PostgreSQL**. **6 of 9 acceptance criteria met** — M4 added the teacher's own data, M5 the published timetable's trace. The engine is validated on all 21 published ITC-2007 instances, and the whole path from declaring availability to comparing candidates is verified against the real solver |
 
 ```
 Increment 1   ███████████████░░░░░  75 % of budgeted days
@@ -60,7 +60,7 @@ Phase 1  Needs, specification, instance verification   ████████�
 Phase 2  Modelling H1–H12, first valid timetable       ████████████████████  ✅ done
 Phase 3  Score, ranking, portfolio, recommendations    ████████████████████  ✅ done
 Phase 4  Web interface — grid, generation, comparison  ████████████████████  ✅ 6/6 milestones
-Phase 5  Pre-analysis in-app, diagnosis, auth, runs    █████████████░░░░░░░  🔄 4/6 milestones ← here
+Phase 5  Pre-analysis in-app, diagnosis, auth, runs    ████████████████░░░░  🔄 5/6 milestones ← here
 Phase 6  Tests, documentation, presentation            ░░░░░░░░░░░░░░░░░░░░  ⬜ not started
 ```
 
@@ -247,8 +247,8 @@ ones without touching a router; `RunState` already carries `PREANALYSIS`, `DIAGN
 | **M2** | **Diagnosis run (FR-8)** — rule withdrawal over plain subset solves, `INFEASIBLE → DIAGNOSING → DIAGNOSED`, conflict report screen | ✅ **done 2026-08-04**, including **C-17 resolved** |
 | **M3** | **Run record (FR-19)** — `db/` models, `migrations/env.py`, first migration, SQL-backed stores behind the existing Protocols, against **real PostgreSQL** | ✅ **done 2026-08-04** |
 | **M4** | **Authentication and rights (FR-11)** — users, JWT, RBAC, teacher scoping, login screen, seed command | ✅ **done 2026-08-04** |
-| **M5** | **Publication + traceability** — closes *"every published timetable traces back to its run, seed and weights"* | ⬜ next |
-| **M6** | **Closing audit + documentation** | ⬜ |
+| **M5** | **Publication + traceability** — closes *"every published timetable traces back to its run, seed and weights"* | ✅ **done 2026-08-04** |
+| **M6** | **Closing audit + documentation** | ⬜ next |
 
 **Three scope decisions taken before any code, on 2026-08-03.** All three were flagged rather than
 assumed, because none is settled by the specification:
@@ -309,6 +309,33 @@ follows existing precedent — `RECOMMENDATION_RULE` ("highest score under the w
 been displayed verbatim inside a French sentence on the comparison screen since Phase 3 — so M1
 matched the convention rather than inventing a localisation layer for one component. **The convention
 itself is worth a decision** before the report goes in front of the supervisor.
+
+#### M5 — what landed, 2026-08-04
+
+`services/publications.py`, `api/routers/publications.py`, a `publications` table with migration
+`04462f0db630`, and a publications screen with the trace displayed in full. **The acceptance
+criterion is met.**
+
+- **The trace is ASSEMBLED, never stored beside the publication.** A publication names its candidate
+  and its run; the seed, the weight vector, the model version and the budget are read from the run
+  record on every request. Copying them would create a second answer to *"what produced this?"*, free
+  to drift from the first — and the criterion exists precisely so that question has one answer.
+- **The publication points at the candidate rather than copying the placements.** A candidate is
+  immutable (invariant 6), so pointing is both sufficient and safer: two records of one timetable can
+  disagree, and then nothing says which was published. The foreign key has **no cascade** — a
+  published timetable is a record of something the department did, and deleting a run that has one
+  now fails rather than erasing it.
+- **The trace is returned by LISTING, not only by publishing.** A criterion satisfied only in the
+  response to the act that created the record is not satisfied at all; nobody re-publishes a
+  timetable in order to read it.
+- ⚠️ **The whole weight vector is displayed, including the zero-weight S10.** A score is only
+  recomputable by hand from every weight, and `TraceTable.test.tsx` pins that a summary cannot creep
+  in.
+
+⚠️ **Verified on a real solve, not a fake**: seed 7, budget 90, 3 distinct candidates in 206.9 s.
+The top candidate was published, **the API process killed**, and a fresh process returned the
+complete trace — run, seed, all seven weights, model version, budget, author, and all 218
+placements. A teacher asking for `/publications` got **403**.
 
 #### M4 — what landed, 2026-08-04
 

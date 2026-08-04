@@ -317,6 +317,28 @@ export interface DiagnosisResult {
 }
 
 /**
+ * A published timetable, WITH the trace back to what produced it.
+ *
+ * ⚠️ The seed, weights, model version and budget are part of the payload
+ * because the acceptance criterion is *"every published timetable traces back
+ * to its run, seed and weights"* — a reader must not have to join three
+ * endpoints to establish provenance. They are assembled server-side from the
+ * run record on every read, never stored beside the publication, so there is
+ * only ever one answer to "what produced this?".
+ */
+export interface PublishedTimetable {
+  candidate: Candidate
+  run: string
+  seed: number
+  weights: Record<string, number>
+  modelVersion: string
+  /** Deterministic time, NOT wall-clock seconds (ADR-011). */
+  deterministicBudget: number
+  publishedAt: string
+  publishedBy: string
+}
+
+/**
  * The signed-in account — FR-11.
  *
  * ⚠️ It decides which screens the interface OFFERS, never what is permitted:

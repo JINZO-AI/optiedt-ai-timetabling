@@ -194,6 +194,34 @@ class SubScoreRow(Base):
     """In [0, 1], 1 = best, against instance-derived bounds (ADR-009)."""
 
 
+class PublicationRow(Base):
+    """A timetable made visible — the acceptance criterion's other half.
+
+    ⚠️ **No placements are copied here.** It points at the candidate, which is
+    immutable (invariant 6), so the published timetable cannot drift from the
+    record of it. Copying would let two rows disagree about one timetable, and
+    then nothing says which was published.
+
+    `run_id` is stored even though it is reachable through the candidate: the
+    trace must survive being read on its own, and a publication that needs a
+    join to name its run is one query away from being reported without it.
+
+    ⚠️ No `ondelete` cascade to `candidates`, deliberately. A published
+    timetable is a record of something the department did, and it must not
+    vanish because a run was tidied away. Deleting a run that has a publication
+    now fails on the foreign key, which is the correct answer.
+    """
+
+    __tablename__ = "publications"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    candidate_id: Mapped[str] = mapped_column(ForeignKey("candidates.id"), index=True)
+    run_id: Mapped[str] = mapped_column(String(64), index=True)
+    published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    published_by: Mapped[str] = mapped_column(String(64))
+    """The username, recorded because publication is an act with an author."""
+
+
 class UserRow(Base):
     """An account and its role — FR-11.
 

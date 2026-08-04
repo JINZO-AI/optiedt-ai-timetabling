@@ -8,6 +8,7 @@ import { AvailabilityScreen } from '@/features/availability/AvailabilityScreen'
 import { LoginScreen } from '@/features/auth/LoginScreen'
 import { ComparisonScreen } from '@/features/comparison/ComparisonScreen'
 import { GenerationScreen } from '@/features/generation/GenerationScreen'
+import { PublicationScreen } from '@/features/publication/PublicationScreen'
 import { TimetableScreen } from '@/features/timetable/TimetableScreen'
 
 /**
@@ -87,6 +88,7 @@ export function App() {
         <nav className="app__nav">
           <NavLink to="/disponibilites">Disponibilités</NavLink>
           {mayGenerate && <NavLink to="/generation">Génération</NavLink>}
+          {mayGenerate && <NavLink to="/publications">Publications</NavLink>}
           <NavLink to="/emplois-du-temps">Emplois du temps</NavLink>
           <NavLink to="/comparaison">Comparaison</NavLink>
         </nav>
@@ -101,6 +103,7 @@ export function App() {
         <Route path="/generation" element={<GenerationScreen />} />
         <Route path="/emplois-du-temps" element={<TimetableScreen />} />
         <Route path="/comparaison" element={<ComparisonScreen />} />
+        <Route path="/publications" element={<PublicationScreen />} />
         <Route path="*" element={<p className="empty">Page inconnue.</p>} />
       </Routes>
     </Shell>

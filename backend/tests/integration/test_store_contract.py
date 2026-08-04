@@ -37,6 +37,7 @@ from optiedt.domain.entities import Candidate, DiagnosisResult, Placement, SubSc
 from optiedt.domain.enums import AvailabilityState, DeclarationSource, RunState
 from optiedt.preanalysis.checks import CheckResult
 from optiedt.services.availability import InMemoryAvailabilityStore, build_declaration
+from optiedt.services.publications import InMemoryPublicationStore, new_publication
 from optiedt.services.runs import InMemoryRunStore, RunRequest, RunStore, new_run_record
 
 pytestmark = pytest.mark.database
@@ -112,7 +113,9 @@ def clean(session_factory: sessionmaker[Session]) -> None:
     it exercises the foreign keys the migration actually created.
     """
     with session_factory() as session, session.begin():
-        session.execute(text("truncate runs, availability_declarations restart identity cascade"))
+        session.execute(
+            text("truncate runs, availability_declarations, publications restart identity cascade")
+        )
 
 
 @pytest.fixture(params=["memory", "database"])
@@ -122,6 +125,15 @@ def run_store(request: pytest.FixtureRequest, session_factory: sessionmaker[Sess
     from optiedt.db.repositories import SqlRunStore
 
     return SqlRunStore(session_factory)
+
+
+@pytest.fixture(params=["memory", "database"])
+def publication_store(request: pytest.FixtureRequest, session_factory: sessionmaker[Session]):
+    if request.param == "memory":
+        return InMemoryPublicationStore()
+    from optiedt.db.repositories import SqlPublicationStore
+
+    return SqlPublicationStore(session_factory)
 
 
 @pytest.fixture(params=["memory", "database"])
@@ -408,3 +420,73 @@ def test_one_teachers_declaration_does_not_touch_another(availability_store) -> 
     assert first is not None
     assert [r.slot for r in first] == [3]
     assert availability_store.declared_teachers() == frozenset({"T001", "T002"})
+
+
+# ── publications ───────────────────────────────────────────────────────
+
+
+@pytest.fixture
+def candidates_exist(session_factory: sessionmaker[Session]) -> None:
+    """A run carrying candidates `c1` and `c2`, so a publication can name one.
+
+    ⚠️ Needed because the database enforces what the in-memory store cannot:
+    `publications.candidate_id` is a foreign key, so an orphan publication is
+    refused outright. That asymmetry is not a divergence to fix — it is the
+    database doing something a dict has no way to do, and the tests below are
+    written to the stricter contract so both implementations satisfy it.
+    """
+    import dataclasses
+
+    from optiedt.db.repositories import SqlRunStore
+
+    store = SqlRunStore(session_factory)
+    record = new_run_record("r1", REQUEST, WEIGHTS)
+    store.create(record)
+    store.save(
+        dataclasses.replace(
+            record.to(RunState.PREANALYSIS).to(RunState.SOLVING).to(RunState.SCORING),
+            candidates=(candidate("c1", 80.0), candidate("c2", 70.0, slot=1)),
+        )
+    )
+
+
+def test_a_publication_round_trips_with_its_run_and_author(
+    publication_store, candidates_exist
+) -> None:
+    """The trace's own half: a publication that lost its run could not be
+    traced back to a seed at all."""
+    publication_store.publish(new_publication("c1", "r1", "responsable"))
+
+    read = publication_store.for_candidate("c1")
+    assert read is not None
+    assert read.candidate == "c1"
+    assert read.run == "r1"
+    assert read.user == "responsable"
+    assert read.published_at.tzinfo is not None
+
+
+def test_publishing_the_same_candidate_twice_keeps_one_record(
+    publication_store, candidates_exist
+) -> None:
+    publication_store.publish(new_publication("c1", "r1", "responsable"))
+    publication_store.publish(new_publication("c1", "r1", "quelqu-un-dautre"))
+
+    assert len(publication_store.all()) == 1
+    read = publication_store.for_candidate("c1")
+    assert read is not None
+    assert read.user == "quelqu-un-dautre", "the later publication wins"
+
+
+def test_an_unpublished_candidate_is_none(publication_store) -> None:
+    assert publication_store.for_candidate("never-published") is None
+    assert publication_store.all() == ()
+
+
+def test_publications_come_back_newest_first(publication_store, candidates_exist) -> None:
+    import time
+
+    publication_store.publish(new_publication("c1", "r1", "responsable"))
+    time.sleep(0.01)  # the clock is the ordering key; ties would be arbitrary
+    publication_store.publish(new_publication("c2", "r1", "responsable"))
+
+    assert [p.candidate for p in publication_store.all()] == ["c2", "c1"]

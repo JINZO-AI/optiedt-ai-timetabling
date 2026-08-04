@@ -20,7 +20,7 @@ import type {
   RunState,
   RunSummary,
 } from '@/types/domain'
-import type { CurrentUser } from '@/types/domain'
+import type { CurrentUser, PublishedTimetable } from '@/types/domain'
 
 /** States in which nothing further will happen without a new request. */
 const TERMINAL: readonly RunState[] = ['COMPLETED', 'INFEASIBLE', 'DIAGNOSED', 'FAILED']
@@ -115,6 +115,31 @@ export function useDeclareAvailability(teacherId: string | null) {
       // already returns the teacher's effective declaration, so a round trip
       // would only add a window in which the grid shows stale cells.
       queryClient.setQueryData(['availability', teacherId], rows)
+    },
+  })
+}
+
+export function usePublications() {
+  return useQuery({
+    queryKey: ['publications'],
+    queryFn: () => apiGet<PublishedTimetable[]>('/publications'),
+    // Only the person in charge may read these; a 403 for anyone else is an
+    // answer, not a transient failure.
+    retry: false,
+  })
+}
+
+export function usePublishCandidate(runId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (candidateId: string) =>
+      apiSend<PublishedTimetable>(
+        'POST',
+        `/runs/${runId as string}/candidates/${candidateId}/publish`,
+        {},
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['publications'] })
     },
   })
 }

@@ -31,6 +31,7 @@ from optiedt.db.models import (
     DiagnosisRow,
     PlacementRow,
     PreAnalysisCheckRow,
+    PublicationRow,
     RunRow,
     RunWeightRow,
     SubScoreRow,
@@ -39,8 +40,10 @@ from optiedt.db.models import (
 from optiedt.domain.entities import (
     Availability,
     Candidate,
+    CandidateId,
     DiagnosisResult,
     Placement,
+    Publication,
     Run,
     RunId,
     SubScore,
@@ -294,6 +297,62 @@ class SqlAvailabilityStore:
     def declared_teachers(self) -> frozenset[TeacherId]:
         with self._sessions() as session:
             return frozenset(session.scalars(select(AvailabilityRow.teacher).distinct()).all())
+
+
+class SqlPublicationStore:
+    """Publications in PostgreSQL — the trace half of FR-19.
+
+    ⚠️ Publishing the same candidate twice REPLACES the record rather than
+    adding a second. Publishing is idempotent by intention: the department
+    publishes *a* timetable, and a history of "published, published again" is
+    not something any requirement asks for or any screen shows. If a change
+    ever needs that history, it needs a new table, not a relaxed primary key.
+    """
+
+    def __init__(self, session_factory: sessionmaker[Session]) -> None:
+        self._sessions = session_factory
+
+    def publish(self, publication: Publication) -> None:
+        with self._sessions() as session, session.begin():
+            existing = session.scalar(
+                select(PublicationRow).where(PublicationRow.candidate_id == publication.candidate)
+            )
+            if existing is not None:
+                existing.published_at = publication.published_at
+                existing.published_by = publication.user
+                return
+            session.add(
+                PublicationRow(
+                    id=f"{publication.run}:{publication.candidate}",
+                    candidate_id=publication.candidate,
+                    run_id=publication.run,
+                    published_at=publication.published_at,
+                    published_by=publication.user,
+                )
+            )
+
+    def all(self) -> tuple[Publication, ...]:
+        with self._sessions() as session:
+            rows = session.scalars(
+                select(PublicationRow).order_by(PublicationRow.published_at.desc())
+            ).all()
+            return tuple(_to_publication(row) for row in rows)
+
+    def for_candidate(self, candidate: CandidateId) -> Publication | None:
+        with self._sessions() as session:
+            row = session.scalar(
+                select(PublicationRow).where(PublicationRow.candidate_id == candidate)
+            )
+            return _to_publication(row) if row is not None else None
+
+
+def _to_publication(row: PublicationRow) -> Publication:
+    return Publication(
+        candidate=row.candidate_id,
+        run=row.run_id,
+        published_at=row.published_at,
+        user=row.published_by,
+    )
 
 
 class SqlUserStore:

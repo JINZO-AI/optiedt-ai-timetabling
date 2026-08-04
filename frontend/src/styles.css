@@ -595,3 +595,36 @@ button.link {
   background: var(--surface-muted, #f4f4f5);
   color: var(--ink-soft);
 }
+
+/* FR-19 — the trace behind a published timetable. Every field shown, because
+   "published on the 4th by the person in charge" satisfies nobody who has to
+   re-derive the timetable a year later. */
+table.trace {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+}
+
+table.trace th,
+table.trace td {
+  text-align: left;
+  padding: 0.28rem 0.4rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+table.trace th {
+  width: 12rem;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+table.trace .num {
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+}

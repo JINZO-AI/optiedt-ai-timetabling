@@ -376,7 +376,23 @@ class Comparison:
 
 @dataclass(frozen=True, slots=True)
 class Publication:
+    """A timetable made visible to teachers and students.
+
+    ⚠️ It names the CANDIDATE and the RUN, not a copy of the placements. The
+    acceptance criterion is that a published timetable *traces back to its run,
+    seed and weights*, and a copy would satisfy the letter of that while
+    destroying it: two records of one timetable can disagree, and then nobody
+    knows which was published. The candidate is immutable (invariant 6), so
+    pointing at it is both sufficient and safer.
+
+    `run` is carried explicitly rather than looked up through the candidate,
+    because the trace must survive being read on its own — a publication that
+    needs a join to say which run it came from is one query away from being
+    reported without it.
+    """
+
     candidate: CandidateId
+    run: RunId
     published_at: datetime
     user: str
 

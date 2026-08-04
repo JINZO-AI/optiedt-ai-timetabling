@@ -1,6 +1,12 @@
 import { useState } from 'react'
 
-import { isTerminal, useCreateRun, useInstance, useRun } from '@/api/queries'
+import {
+  isTerminal,
+  useCreateRun,
+  useInstance,
+  usePublishCandidate,
+  useRun,
+} from '@/api/queries'
 import { ConflictReport } from '@/features/conflicts/ConflictReport'
 import { CandidateCard } from '@/features/generation/CandidateCard'
 import { PreAnalysisReport } from '@/features/generation/PreAnalysisReport'
@@ -25,6 +31,7 @@ export function GenerationScreen() {
   const instance = useInstance()
   const createRun = useCreateRun()
   const run = useRun(runId)
+  const publish = usePublishCandidate(runId)
 
   const catalogue = new Map<string, ConstraintDefinition>(
     (instance.data?.constraints ?? []).map((c) => [c.code, c]),
@@ -149,15 +156,34 @@ export function GenerationScreen() {
           </p>
           <div className="candidates">
             {run.data.candidates.map((candidate, index) => (
-              <CandidateCard
-                key={candidate.id}
-                candidate={candidate}
-                rank={index + 1}
-                catalogue={catalogue}
-                weights={run.data.weights}
-              />
+              <div key={candidate.id}>
+                <CandidateCard
+                  candidate={candidate}
+                  rank={index + 1}
+                  catalogue={catalogue}
+                  weights={run.data.weights}
+                />
+                <button
+                  onClick={() => publish.mutate(candidate.id)}
+                  disabled={publish.isPending}
+                >
+                  {publish.isPending && publish.variables === candidate.id
+                    ? 'Publication…'
+                    : 'Publier'}
+                </button>
+              </div>
             ))}
           </div>
+
+          {publish.isSuccess && (
+            <p className="panel__note">
+              Publié. La provenance — exécution, graine, pondération, version du modèle — est
+              consultable sur l’écran Publications.
+            </p>
+          )}
+          {publish.isError && (
+            <p className="error">La publication a échoué : {String(publish.error)}</p>
+          )}
         </section>
       )}
     </>

@@ -147,7 +147,7 @@ specification requires, and silently invalidates cross-run comparison.
 
 `backend/src/optiedt/db/models.py`, first migration `5d1497398fab`. **Normalised where this document
 names an entity** — `runs`, `run_weights`, `candidates`, `placements`, `sub_scores`, `run_checks`,
-`run_diagnoses`, `availability_declarations` — because those are the things a later question gets
+`run_diagnoses`, `availability_declarations`, `users`, `publications` — because those are the things a later question gets
 asked about. Two short ordered lists of scalars stay as JSON columns (`duplicates_removed`, a
 diagnosis's `conflicting_codes`): nothing joins to them, and a table each would add joins for no
 question anyone asks.
@@ -167,6 +167,19 @@ Three rules the schema carries rather than assumes:
 A published timetable refers to the candidate, the run, the seed and the weights that produced it.
 Every published timetable must be traceable back to its origin — this is an acceptance criterion, not a
 convenience.
+
+**Implemented in Phase 5 M5, and the shape matters.** A `Publication` stores the candidate id, the run
+id, the moment and the author — and **nothing else**. The seed, the weight vector, the model version
+and the budget are *assembled from the run record* on every read.
+
+⚠️ **Storing a copy of the seed beside the publication would satisfy the words and destroy the
+intent.** Two records of one fact can disagree, and then nothing says which is true. For the same
+reason the publication points at the candidate rather than copying its placements: a candidate is
+immutable (invariant 6), so the reference cannot go stale, while a copy could.
+
+⚠️ The foreign key from `publications` to `candidates` carries **no cascade**. A published timetable
+records something the department did; deleting the run it came from now fails rather than erasing the
+evidence.
 
 ---
 

@@ -63,6 +63,7 @@ from optiedt.domain.enums import (
 )
 from optiedt.domain.instance import Instance
 from optiedt.preanalysis.checks import CheckResult
+from optiedt.services.publications import PublishedTimetable
 from optiedt.services.runs import RunRecord
 
 
@@ -607,6 +608,43 @@ class RunSummaryOut(ApiModel):
             state=record.run.state,
             candidate_count=len(record.candidates),
             duplicates_removed=list(record.duplicates_removed),
+        )
+
+
+# ── Publication (FR-19's acceptance criterion) ─────────────────────────
+
+
+class PublishedTimetableOut(ApiModel):
+    """A published timetable WITH the trace back to what produced it.
+
+    ⚠️ The seed, weights, model version and budget are here because the
+    criterion is *"every published timetable traces back to its run, seed and
+    weights"* — and a reader who has to join three endpoints to establish that
+    is exactly the reader the criterion protects. They are ASSEMBLED from the
+    run record on every read, never stored beside the publication: a second
+    copy of the seed is a second answer, free to drift from the first.
+    """
+
+    candidate: CandidateOut
+    run: str
+    seed: int
+    weights: dict[str, float]
+    model_version: str
+    deterministic_budget: float
+    published_at: datetime
+    published_by: str
+
+    @classmethod
+    def of(cls, t: PublishedTimetable) -> PublishedTimetableOut:
+        return cls(
+            candidate=CandidateOut.of(t.candidate),
+            run=t.publication.run,
+            seed=t.seed,
+            weights=dict(t.weights),
+            model_version=t.model_version,
+            deterministic_budget=t.deterministic_budget,
+            published_at=t.publication.published_at,
+            published_by=t.publication.user,
         )
 
 

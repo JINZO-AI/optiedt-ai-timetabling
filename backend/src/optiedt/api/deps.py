@@ -30,9 +30,11 @@ from optiedt.domain.instance import Instance
 from optiedt.instance.loader import load_instance
 from optiedt.instance.loader import resolve_instance_path as loader_instance_path
 from optiedt.services.availability import AvailabilityStore, apply_declarations
+from optiedt.services.publications import PublicationStore
 from optiedt.services.runs import RunStore
 from optiedt.services.stores import (
     build_availability_store,
+    build_publication_store,
     build_run_store,
     build_user_store,
 )
@@ -117,6 +119,12 @@ def get_executor() -> RunExecutor:
 
 
 @lru_cache(maxsize=1)
+def get_publication_store() -> PublicationStore:
+    """Publications — FR-19's trace. Database-backed unless `persistence = memory`."""
+    return build_publication_store(get_settings())
+
+
+@lru_cache(maxsize=1)
 def get_user_store() -> UserStore:
     """Accounts — FR-11. Database-backed unless `persistence = memory`."""
     return build_user_store(get_settings())
@@ -195,6 +203,7 @@ InstanceDep = Annotated[Instance, Depends(get_instance)]
 AvailabilityStoreDep = Annotated[AvailabilityStore, Depends(get_availability_store)]
 RunStoreDep = Annotated[RunStore, Depends(get_run_store)]
 UserStoreDep = Annotated[UserStore, Depends(get_user_store)]
+PublicationStoreDep = Annotated[PublicationStore, Depends(get_publication_store)]
 ExecutorDep = Annotated[RunExecutor, Depends(get_executor)]
 CurrentUserDep = Annotated[User, Depends(current_user)]
 
