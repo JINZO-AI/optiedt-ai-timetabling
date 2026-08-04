@@ -308,6 +308,14 @@ by wall clock passes on one machine and fails on another, and the failure looks 
   commands stall for tens of seconds to minutes — this is expected, not a hung environment. Always
   track a backgrounded solve explicitly and stop it before starting a replacement; an abandoned one
   silently burns CPU for the rest of the session and looks exactly like broken tooling.
+- **`docker compose up -d` succeeds even when another PostgreSQL already owns 5432.** The container
+  starts, reports `healthy`, and `docker ps` shows the mapping — while host connections reach the
+  *other* server. Found 2026-08-04 against a native PostgreSQL 18 Windows service. Set
+  `OPTIEDT_POSTGRES_PORT` (root `.env`) and a matching `OPTIEDT_DATABASE_URL` (`backend/.env`), both
+  gitignored. **Confirm the version you actually reached** — the container is PostgreSQL 17:
+  `docker exec optiedt-postgres psql -U optiedt -d optiedt -tAc "select version();"`. A refused
+  connection is the lucky outcome; a local server that accepts `optiedt/optiedt` would take the
+  migrations.
 
 ---
 

@@ -66,6 +66,23 @@ PostgreSQL. Then:
 docker compose up -d
 ```
 
+⚠️ **If this machine already runs PostgreSQL on 5432, that command appears to work and does not.** The
+container starts, reports `healthy`, and `docker ps` shows `0.0.0.0:5432->5432/tcp` — while every
+connection from the host reaches the *other* server. Found on 2026-08-04 against a native PostgreSQL 18
+service, which rejected the `optiedt` credentials; a local server that happened to accept them would
+have had this project's migrations applied to it instead. Move the host side and point the URL at it:
+
+```bash
+echo OPTIEDT_POSTGRES_PORT=5433 >> .env
+```
+
+Then set `OPTIEDT_DATABASE_URL=postgresql+psycopg://optiedt:optiedt@localhost:5433/optiedt` in
+`backend/.env`. Confirm which server you actually reached — the container is PostgreSQL **17**:
+
+```bash
+docker exec optiedt-postgres psql -U optiedt -d optiedt -tAc "select version();"
+```
+
 ```bash
 cd backend && uv run alembic upgrade head && uv run uvicorn optiedt.api.main:app --reload
 ```

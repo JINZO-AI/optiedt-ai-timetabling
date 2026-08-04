@@ -3,6 +3,19 @@
 # PostgreSQL only. The API and frontend run natively for reload speed, and the
 # solver shares the API's process by design (ADR-004) — there is no separate
 # solver service to start.
+#
+# ⚠️ The HOST port is configurable, and the default is unchanged at 5432.
+# A developer machine may already run its own PostgreSQL on 5432 — one did on
+# 2026-08-04, a native PostgreSQL 18 service — and the failure is quiet and
+# misleading: the container starts, reports healthy, `docker ps` shows
+# 0.0.0.0:5432->5432/tcp, and every connection from the host still reaches the
+# OTHER server, which rejects the optiedt credentials. Worse than a refused
+# connection, because a machine whose local server DOES accept them would have
+# had this project's migrations applied to it.
+#
+# Set OPTIEDT_POSTGRES_PORT in a .env file beside this one to move the host
+# side, and point OPTIEDT_DATABASE_URL at the same port. Nothing changes for a
+# machine with 5432 free.
 
 services:
   postgres:
@@ -13,7 +26,7 @@ services:
       POSTGRES_PASSWORD: optiedt
       POSTGRES_DB: optiedt
     ports:
-      - "5432:5432"
+      - "${OPTIEDT_POSTGRES_PORT:-5432}:5432"
     volumes:
       - optiedt-pgdata:/var/lib/postgresql/data
     healthcheck:

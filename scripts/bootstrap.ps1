@@ -48,10 +48,23 @@ try { npm install } finally { Pop-Location }
 Write-Host "[ok] frontend" -ForegroundColor Green
 
 # ── Database ────────────────────────────────────────────────────────
+# ⚠️ `docker compose up -d` SUCCEEDS when another PostgreSQL already owns the
+# host port: the container starts, reports healthy, and every connection from
+# the host still reaches the other server. So the port is checked BEFORE
+# starting, and the check names the fix rather than leaving a silent
+# misconnection to be discovered by a migration.
 Write-Host "[..] postgres"
+$hostPort = if ($env:OPTIEDT_POSTGRES_PORT) { [int]$env:OPTIEDT_POSTGRES_PORT } else { 5432 }
+$occupied = @(Get-NetTCPConnection -State Listen -LocalPort $hostPort -ErrorAction SilentlyContinue)
+if ($occupied -and -not (docker ps --filter 'name=optiedt-postgres' --format '{{.Names}}')) {
+    Write-Host "[!!] port $hostPort is already in use by another process." -ForegroundColor Yellow
+    Write-Host "     Compose would start anyway and host connections would reach THAT server." -ForegroundColor Yellow
+    Write-Host "     Set OPTIEDT_POSTGRES_PORT in .env, and OPTIEDT_DATABASE_URL in backend/.env." -ForegroundColor Yellow
+}
 Push-Location $root
 try { docker compose up -d postgres } finally { Pop-Location }
-Write-Host "[ok] postgres" -ForegroundColor Green
+Write-Host "[ok] postgres (container is PostgreSQL 17 - verify with:" -ForegroundColor Green
+Write-Host "     docker exec optiedt-postgres psql -U optiedt -d optiedt -tAc ""select version();"")" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "Next:" -ForegroundColor Cyan
