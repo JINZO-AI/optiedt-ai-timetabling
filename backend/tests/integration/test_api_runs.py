@@ -116,7 +116,7 @@ class Wired:
 
 
 @pytest.fixture
-def wired() -> Iterator[Wired]:
+def wired(signed_in) -> Iterator[Wired]:
     for cached in (
         deps.get_settings,
         deps.get_instance,
@@ -148,6 +148,9 @@ def wired() -> Iterator[Wired]:
 
     app.dependency_overrides[deps.get_run_store] = lambda: store
     app.dependency_overrides[deps.get_executor] = lambda: executor
+    # Launching a run is the person in charge's right (FR-11, SRS Table 2).
+    # These tests are about the LIFECYCLE; who may launch is test_rbac.py.
+    signed_in("PERSON_IN_CHARGE")
     with TestClient(app) as client:
         yield Wired(client=client, solver=solver, futures=futures)
     executor.shutdown()

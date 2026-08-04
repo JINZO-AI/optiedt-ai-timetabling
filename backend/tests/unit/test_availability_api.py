@@ -9,6 +9,7 @@ generated rows **wholesale**, so a slot left free can withdraw one.
 from __future__ import annotations
 
 import dataclasses
+from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -27,11 +28,15 @@ from optiedt.services.availability import (
 
 
 @pytest.fixture
-def client() -> TestClient:
+def client(signed_in) -> Iterator[TestClient]:
     get_settings.cache_clear()
     get_instance.cache_clear()
     get_availability_store.cache_clear()
-    return TestClient(app)
+    # The person in charge may write ANY teacher's grid (SRS Table 2), which
+    # keeps these tests about FR-2's replace-wholesale rule. That a TEACHER may
+    # write only their own is FR-11 and is tested in test_rbac.py.
+    signed_in("PERSON_IN_CHARGE")
+    yield TestClient(app)
 
 
 def _a_teacher_with_generated_rows(client: TestClient) -> str:

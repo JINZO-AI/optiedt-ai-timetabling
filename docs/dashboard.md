@@ -3,7 +3,7 @@
 **The handoff file. Read this second, after `CLAUDE.md`.** It carries the whole project state; every
 other document is detail you fetch only when you need it.
 
-**Last updated 2026-08-04. Phase 5 is IN PROGRESS — M3 of 6 done.** FR-12 runs inside the application
+**Last updated 2026-08-04. Phase 5 is IN PROGRESS — M4 of 6 done.** FR-12 runs inside the application
 (the five checks, **both** bounds, displayed as figures rather than ticks) and FR-8's diagnosis run
 exists (rule withdrawal over plain subset solves, `INFEASIBLE → DIAGNOSING → DIAGNOSED`, conflict
 report screen).
@@ -42,16 +42,16 @@ add up by hand. Two questions were decided along the way — **C-12(a)** resolve
 | | |
 |---|---|
 | **Project** | OptiEDT — generates, ranks and explains weekly university timetables (Tunisian public faculty, LMD) |
-| **Overall progress** | **75 % of budgeted effort** — Phases 1–4 delivered, 15 of 20 days budgeted; Phase 5 is under way and its 2 days are not yet counted. By *delivered product*: **4 of 9 acceptance criteria** met, **15 of 25 requirements under way, 0 finished**, because a requirement is `✓` only once a user can reach it *and* it is tested end to end — most now wait on FR-11's authentication and Phase 6's acceptance tests rather than on a missing screen. Both numbers are real; quote the measure with the number |
-| **Current phase** | **Phase 5 — pre-analysis in-app, diagnosis, authentication, run record. IN PROGRESS — M3 of 6 done.** Pick up at **M4, authentication and rights (FR-11)** |
+| **Overall progress** | **75 % of budgeted effort** — Phases 1–4 delivered, 15 of 20 days budgeted; Phase 5 is under way and its 2 days are not yet counted. By *delivered product*: **5 of 9 acceptance criteria** met, **16 of 25 requirements under way, 0 finished**, because a requirement is `✓` only once a user can reach it *and* it is tested end to end — most now wait on FR-11's authentication and Phase 6's acceptance tests rather than on a missing screen. Both numbers are real; quote the measure with the number |
+| **Current phase** | **Phase 5 — pre-analysis in-app, diagnosis, authentication, run record. IN PROGRESS — M4 of 6 done.** Pick up at **M5, publication and traceability** |
 | **Last completed phase** | **Phase 4 — COMPLETE 2026-08-01**, six milestones and a closing audit. Four screens (availability, generation, timetables, comparison) over ten `/api` endpoints, an in-process run executor, and the first frontend tests. Before it, Phase 3 delivered the criteria, scoring, ranking, decomposition, dominance, the objective, the portfolio, FR-16 and the ITC-2007 validation |
 | **Milestone reached** | **Phase 4's, in the part that was buildable.** Verified 2026-08-01 end to end: a teacher declared unavailability on the grid, the declaration replaced the generated rows, a run honoured it (T001 never placed in a declared-unavailable slot across all three candidates), and the candidates were ranked, viewed four ways and compared with contributions that add up by hand. ⚠️ **Publication itself is not built** — the milestone's wording says "to publication", and that needs the run record and rights (FR-19, FR-11), which are Phase 5 |
 | **Current goal** | Deliver Phase 5: an infeasible instance must produce a report naming the rules in conflict rather than a timeout, and every published timetable must trace back to its run, seed and weights |
-| **Next task** | **Phase 5 M4 — authentication and rights (FR-11)**: users, JWT, RBAC dependencies, teacher scoping, a login screen, and the seed command decided before M1. M3 landed the run record, so there is a `users` table to add to a second migration. Phase 4 still leaves two things behind: **C-14** (no dominance signal) and the **timed FR-2 walkthrough** |
+| **Next task** | **Phase 5 M5 — publication and traceability**, which closes the acceptance criterion *"every published timetable traces back to its run, seed and weights"*. M3 recorded the run; M4 supplies the user who publishes. Then M6, the closing audit. Phase 4 still leaves two things behind: **C-14** (no dominance signal) and the **timed FR-2 walkthrough** |
 | **Branch** | `main` — ahead of `origin/main` by unpushed local commits. **No count is recorded here**, deliberately: `git rev-list --count origin/main..HEAD` |
 | **Latest commit** | **Not recorded here** — it is stale the moment anything is committed. `git log -1 --oneline`. The durable fact is the last *pushed* commit, in the row below |
 | **Repository status** | Last pushed: `origin/main` at [`8d1194b`](https://github.com/JINZO-AI/optiedt-ai-timetabling/commit/8d1194b), 2026-08-01 — the Phase 4 closing audit. **`HEAD` and `origin/main` were identical at that point, verified after a fetch.** ⚠️ **This row has now been wrong four times.** `0dc0078` (a *parent* commit) until 2026-07-31; `acf9aa0` with "9 commits ahead" until 2026-08-01, by which time eight of the nine were pushed; then "1 commit ahead", which the very commit correcting it made 2; then `bfe805a`, left stale by the push that followed. **A commit count cannot live in a file that commits change, and a SHA cannot survive a push that does not touch this file.** Re-derive both, always: `git rev-parse origin/main`, `git rev-list --count origin/main..HEAD` |
-| **Project health** | 🟢 **Green.** `scripts/run-checks.ps1` green across **nine** steps: **246 backend tests + 19 frontend**, **10/10 layer contracts** kept, mypy strict on 65 files, instance verified, **30 store-contract tests against real PostgreSQL**. **4 of 9 acceptance criteria met.** The engine is validated on all 21 published ITC-2007 instances, and the whole path from declaring availability to comparing candidates is verified against the real solver |
+| **Project health** | 🟢 **Green.** `scripts/run-checks.ps1` green across **nine** steps: **271 backend tests + 19 frontend**, **10/10 layer contracts** kept, mypy strict on 69 files, instance verified, **30 store-contract tests against real PostgreSQL**. **5 of 9 acceptance criteria met** — a teacher account now obtains only its own data (M4). The engine is validated on all 21 published ITC-2007 instances, and the whole path from declaring availability to comparing candidates is verified against the real solver |
 
 ```
 Increment 1   ███████████████░░░░░  75 % of budgeted days
@@ -60,7 +60,7 @@ Phase 1  Needs, specification, instance verification   ████████�
 Phase 2  Modelling H1–H12, first valid timetable       ████████████████████  ✅ done
 Phase 3  Score, ranking, portfolio, recommendations    ████████████████████  ✅ done
 Phase 4  Web interface — grid, generation, comparison  ████████████████████  ✅ 6/6 milestones
-Phase 5  Pre-analysis in-app, diagnosis, auth, runs    ██████████░░░░░░░░░░  🔄 3/6 milestones ← here
+Phase 5  Pre-analysis in-app, diagnosis, auth, runs    █████████████░░░░░░░  🔄 4/6 milestones ← here
 Phase 6  Tests, documentation, presentation            ░░░░░░░░░░░░░░░░░░░░  ⬜ not started
 ```
 
@@ -125,7 +125,7 @@ favourable measurement cannot settle — but the acceptance test would pass toda
 | **`recommendations/translator.py` cannot build a full `SolverInput`** | `Run`/`Candidate` carry no instance reference, no base profile weights, no prior locks/exclusions | Returns a `RunOverride` (plain domain data) instead; a later layer (`services/`, Phase 4–5) must assemble the actual `SolverInput` |
 | **On ITC-2007, cost quality is far from the published best on the larger instances** | Every timetable produced is *valid* — that is the claim `docs/testing-strategy.md` §1 makes first, and it holds 21 of 21. But at a minute or so per instance, CP-SAT is barely past feasibility on the big ones, and the costs are multiples of the published best | Expected, and the strategy document says so: **"the objective is not to beat published results."** Exact methods are known to trail metaheuristics tuned for this problem at short budgets. The *model* is demonstrably right — comp11 solved to **cost 0**, and comp01 reaches the published optimum of **5** given more search. Quote validity first and cost second, always with the budget |
 | **Candidates are not shown as they are produced** | `architecture.md` stage 2 and ADR-005 both claim incremental visibility; `services/portfolio.py` returns the whole portfolio at the end, so the screen shows `SOLVING` for 105–150 s then everything at once | Found by the Phase 4 closing audit; both documents corrected. Closing it changes a **Phase 3** module's contract |
-| **In-memory stores, no authentication** | A restart loses every run; every endpoint is open | Phase 4's documented position. FR-19 and FR-11 in Phase 5. **Not to be exposed beyond a development machine** |
+| ~~**In-memory stores, no authentication**~~ | ~~a restart loses every run; every endpoint is open~~ | **RESOLVED 2026-08-04, M3 and M4.** ⚠️ **Still not to be exposed**: `secret_key` defaults to `change-me-in-env`, a value published in this repository, so a deployment that does not set `OPTIEDT_SECRET_KEY` signs tokens anyone can forge. Authentication makes this safe to demonstrate, not safe to expose |
 | **Exam multi-room assignment** (R-6) | Breaks a shared `room[s]` abstraction | Keep it out of shared solver code from the start |
 
 ---
@@ -246,8 +246,8 @@ ones without touching a router; `RunState` already carries `PREANALYSIS`, `DIAGN
 | **M1** | **Pre-analysis in the application (FR-12)** — the five checks with both bounds, run in `PREANALYSIS`, recorded, displayed | ✅ **done 2026-08-03** |
 | **M2** | **Diagnosis run (FR-8)** — rule withdrawal over plain subset solves, `INFEASIBLE → DIAGNOSING → DIAGNOSED`, conflict report screen | ✅ **done 2026-08-04**, including **C-17 resolved** |
 | **M3** | **Run record (FR-19)** — `db/` models, `migrations/env.py`, first migration, SQL-backed stores behind the existing Protocols, against **real PostgreSQL** | ✅ **done 2026-08-04** |
-| **M4** | **Authentication and rights (FR-11)** — users, JWT, RBAC, teacher scoping, login screen | ⬜ next |
-| **M5** | **Publication + traceability** — closes *"every published timetable traces back to its run, seed and weights"* | ⬜ |
+| **M4** | **Authentication and rights (FR-11)** — users, JWT, RBAC, teacher scoping, login screen, seed command | ✅ **done 2026-08-04** |
+| **M5** | **Publication + traceability** — closes *"every published timetable traces back to its run, seed and weights"* | ⬜ next |
 | **M6** | **Closing audit + documentation** | ⬜ |
 
 **Three scope decisions taken before any code, on 2026-08-03.** All three were flagged rather than
@@ -309,6 +309,41 @@ follows existing precedent — `RECOMMENDATION_RULE` ("highest score under the w
 been displayed verbatim inside a French sentence on the comparison screen since Phase 3 — so M1
 matched the convention rather than inventing a localisation layer for one component. **The convention
 itself is worth a decision** before the report goes in front of the supervisor.
+
+#### M4 — what landed, 2026-08-04
+
+`core/security.py`, `services/users.py`, `api/routers/auth.py`, the RBAC dependencies in
+`api/deps.py`, a `users` table with migration `4553e7a29780`, the seed command, and a login screen.
+**The acceptance criterion is met**: a teacher account obtains only its own availability.
+
+- ⚠️ **`passlib` was a declared dependency and did not work.** passlib 1.7.4 (2020, unmaintained)
+  reads `bcrypt.__about__`, removed in bcrypt 5, and its `hash()` raised *"password cannot be longer
+  than 72 bytes"* on ANY input. Replaced with `bcrypt` directly — four lines — rather than pinning
+  bcrypt backwards to keep an unmaintained wrapper alive. The 72-byte limit is now **refused**, not
+  truncated: bcrypt ignores the tail silently, so a long password would be far weaker than its owner
+  believes.
+- **Which teacher a caller is comes from the TOKEN.** Phase 4 took it from the path and said so; this
+  is the line it left. An account with no `teacher` link is refused every grid rather than defaulted
+  to one.
+- **The hash never leaves the store.** `domain.User` has no password field, so no router, schema or
+  log line can serialise one. `authenticate()` takes a password and returns a credential-free `User`.
+- ⚠️ **`TokenOut` disables the camelCase alias generator, and must.** Pydantic MERGES `model_config`
+  with the base class's, so declaring only `frozen=True` left `ApiModel`'s generator in force and the
+  endpoint answered `accessToken`/`tokenType` — a 200 no OAuth2 client can read. Caught by
+  `test_rbac.py` on its first run.
+- **`test_rbac.py` uses real tokens.** Every other API test overrides `current_user` so that a test
+  about the wire format is not also a test about signing in; this one must not, because overriding
+  the dependency would test the override.
+
+⚠️ **Account management through the interface is NOT delivered.** SRS Table 2 gives the
+administrator that right; accounts come from `python -m optiedt.services.seed` instead, which
+**refuses to run against an installation that already has accounts**. C-18 records the decision and
+what it leaves owed.
+
+⚠️ **Verified end to end, not asserted**: signed in as `t001` — the interface offered no
+Génération link, the teacher field was read-only at `T001`, and the API answered **403** for
+`T002`'s grid and for `POST /runs`. As `responsable`, the same screens offered the 44-teacher
+dropdown and the full navigation. A wrong password and an unknown username returned identical 401s.
 
 #### M3 — what landed, 2026-08-04
 

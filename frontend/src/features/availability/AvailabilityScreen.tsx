@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { useAvailability, useDeclareAvailability, useInstance } from '@/api/queries'
+import {
+  useAvailability,
+  useCurrentUser,
+  useDeclareAvailability,
+  useInstance,
+} from '@/api/queries'
 import { DAY_NAMES, gridAxes } from '@/features/timetable/model'
 import type { AvailabilityState } from '@/types/domain'
 
@@ -26,8 +31,19 @@ import type { AvailabilityState } from '@/types/domain'
  */
 export function AvailabilityScreen() {
   const instance = useInstance()
+  const me = useCurrentUser()
   const [teacherId, setTeacherId] = useState<string | null>(null)
-  const selectedTeacher = teacherId ?? instance.data?.teachers[0]?.id ?? null
+
+  // ⚠️ A TEACHER edits their own grid and no one else's, and which teacher
+  // that is comes from the TOKEN (FR-11). Until Phase 5 this screen offered a
+  // dropdown of all 44 and the API believed whichever id was in the path.
+  //
+  // The dropdown remains for the person in charge, who has read and write on
+  // all data (SRS Table 2). Hiding it from a teacher is a convenience, not the
+  // protection: the API refuses another teacher's grid with 403 regardless.
+  const ownTeacher = me.data?.role === 'TEACHER' ? me.data.teacher : null
+  const mayChooseTeacher = me.data !== undefined && me.data.role !== 'TEACHER'
+  const selectedTeacher = ownTeacher ?? teacherId ?? instance.data?.teachers[0]?.id ?? null
 
   const declared = useAvailability(selectedTeacher)
   const save = useDeclareAvailability(selectedTeacher)
@@ -94,17 +110,21 @@ export function AvailabilityScreen() {
         <div className="form-row">
           <div className="field">
             <label htmlFor="teacher">Enseignant</label>
-            <select
-              id="teacher"
-              value={selectedTeacher ?? ''}
-              onChange={(e) => setTeacherId(e.target.value)}
-            >
-              {instance.data.teachers.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.id} — {t.rank}
-                </option>
-              ))}
-            </select>
+            {mayChooseTeacher ? (
+              <select
+                id="teacher"
+                value={selectedTeacher ?? ''}
+                onChange={(e) => setTeacherId(e.target.value)}
+              >
+                {instance.data.teachers.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.id} — {t.rank}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input id="teacher" value={selectedTeacher ?? ''} readOnly />
+            )}
           </div>
           <button onClick={submit} disabled={!dirty || save.isPending}>
             {save.isPending ? 'Enregistrement…' : 'Enregistrer'}

@@ -7,8 +7,15 @@ built?" without reading code.
 
 Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 
-**Where the project actually is: 15 of 25 requirements are under way, none is finished.**
-*(FR-2, 3, 4, 5, 6, 7, 8, 12, 13, 14, 15, 16, 17, 18, 19 — count them in the table rather than trusting this line.)*
+**Where the project actually is: 16 of 25 requirements are under way, none is finished.**
+*(FR-2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19 — count them in the table rather than trusting this line.)*
+
+**FR-11 joined in Phase 5 M4**, and it moves an acceptance criterion: *a teacher account obtains only
+its own availability and timetable* is **met** — verified against the real API with seeded accounts.
+⚠️ It stays `WIP` for two reasons beyond the acceptance test. **Account management through the
+interface is not built** (SRS Table 2 gives it to the administrator; C-18 records why a seed command
+stands in), and **`secret_key` still defaults to a value published in this repository**, so the
+application is safe to demonstrate rather than safe to expose.
 
 **FR-19 joined in Phase 5 M3.** Runs, weights, pre-analysis checks, the diagnosis, candidates,
 placements and sub-scores are recorded in PostgreSQL behind the Protocols Phase 4 left in place, and
@@ -121,7 +128,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-8** | Report the rules in conflict when no timetable exists | Necessary | `preanalysis` ✓, `solver` — `diagnose()` ✓; `features/conflicts` ✓ | `unit/test_diagnosis` ✓, `integration/test_api_runs` ✓, `frontend ConflictReport.test` ✓, `acceptance/test_fr08` | **WIP** |
 | **FR-9** | Configure the calendar: holidays, closed slots, shortened day | Necessary | `db`, `features/admin` | `acceptance/test_fr09` | — |
 | **FR-10** | Print or export a timetable view | Expected | `features/timetable` | `integration` | — |
-| **FR-11** | Authenticate users and restrict access by role | Necessary | `core` — security; `api` — deps | `acceptance/test_fr11` | — |
+| **FR-11** | Authenticate users and restrict access by role | Necessary | `core/security` ✓; `services/users` ✓; `api/deps` + `routers/auth` ✓; `features/auth` ✓ | `integration/test_rbac` ✓, `unit/test_seed` ✓, `acceptance/test_fr11` | **WIP** |
 | **FR-12** | Verify data before solving; report structural risks | Necessary | `preanalysis` ✓; `api` — `RunOut.preAnalysis`; `features/generation` ✓ | `unit/test_preanalysis` ✓, `integration/test_preanalysis_matches_verifier` ✓, `frontend PreAnalysisReport.test` ✓, `acceptance/test_fr12` | **WIP** |
 | **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs; `solver` | `unit/test_portfolio` ✓, `acceptance/test_fr13` ⚠️ | **WIP** |
 | **FR-14** | Compare two candidates criterion by criterion | Necessary | `features/comparison` | `integration` | **WIP** |

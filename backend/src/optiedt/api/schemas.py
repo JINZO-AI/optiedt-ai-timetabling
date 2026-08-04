@@ -48,6 +48,7 @@ from optiedt.domain.entities import (
     Slot,
     SubScore,
     Teacher,
+    User,
 )
 from optiedt.domain.enums import (
     AvailabilityState,
@@ -58,6 +59,7 @@ from optiedt.domain.enums import (
     RunState,
     SessionType,
     TeacherRank,
+    UserRole,
 )
 from optiedt.domain.instance import Instance
 from optiedt.preanalysis.checks import CheckResult
@@ -68,6 +70,45 @@ class ApiModel(BaseModel):
     """Base for every wire model: camelCase aliases, immutable."""
 
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, frozen=True)
+
+
+# ── Authentication (FR-11) ─────────────────────────────────────────────
+
+
+class TokenOut(ApiModel):
+    """⚠️ `access_token` and `token_type` are snake_case ON THE WIRE.
+
+    Every other model here is camelCase, and this one deliberately is not: the
+    OAuth2 password flow fixes these field names, and FastAPI's own `/api/docs`
+    "Authorize" button reads them. Renaming them to match house style would
+    break the generated documentation's sign-in for a consistency nobody
+    benefits from. `frontend/src/api/client.ts` reads them as spelled here.
+
+    ⚠️ `alias_generator=None` is REQUIRED and is not tidiness. Pydantic MERGES
+    `model_config` with the base class's rather than replacing it, so declaring
+    only `frozen=True` here left `ApiModel`'s camelCase generator in force and
+    the endpoint answered `accessToken`/`tokenType` — a 200 whose body no
+    OAuth2 client can read. Caught by `test_rbac.py` on its first run.
+    """
+
+    model_config = ConfigDict(alias_generator=None, frozen=True)
+
+    access_token: str
+    token_type: str
+
+
+class UserOut(ApiModel):
+    """The signed-in account. ⚠️ Carries NO credential, by construction —
+    `domain.User` has no password field for this to expose."""
+
+    id: str
+    username: str
+    role: UserRole
+    teacher: str | None
+
+    @classmethod
+    def of(cls, u: User) -> UserOut:
+        return cls(id=u.id, username=u.username, role=u.role, teacher=u.teacher)
 
 
 # ── Structure of the teaching ──────────────────────────────────────────

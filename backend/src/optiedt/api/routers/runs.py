@@ -17,7 +17,14 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, status
 
-from optiedt.api.deps import ExecutorDep, InstanceDep, RunStoreDep, SettingsDep
+from optiedt.api.deps import (
+    CurrentUserDep,
+    ExecutorDep,
+    InstanceDep,
+    PersonInChargeDep,
+    RunStoreDep,
+    SettingsDep,
+)
 from optiedt.api.schemas import RunCreatedOut, RunCreateIn, RunOut, RunSummaryOut
 from optiedt.services.portfolio import catalogue_weights
 from optiedt.services.runs import RunRecord, RunRequest, new_run_record
@@ -43,8 +50,12 @@ def create_run(
     store: RunStoreDep,
     executor: ExecutorDep,
     settings: SettingsDep,
+    _user: PersonInChargeDep,
     payload: RunCreateIn | None = None,
 ) -> RunCreatedOut:
+    """⚠️ Person in charge only (SRS Table 2, via C-8). A run costs minutes of
+    every core on the machine, and the executor serialises them - letting any
+    account launch one would let any account monopolise the engine."""
     request = payload or RunCreateIn()
     record = new_run_record(
         run_id=uuid.uuid4().hex[:12],
@@ -67,10 +78,10 @@ def create_run(
 
 
 @router.get("/runs", response_model=list[RunSummaryOut], summary="Runs, newest first")
-def list_runs(store: RunStoreDep) -> list[RunSummaryOut]:
+def list_runs(store: RunStoreDep, _user: CurrentUserDep) -> list[RunSummaryOut]:
     return [RunSummaryOut.of(r) for r in store.all()]
 
 
 @router.get("/runs/{run_id}", response_model=RunOut, summary="One run, polled")
-def read_run(store: RunStoreDep, run_id: str) -> RunOut:
+def read_run(store: RunStoreDep, _user: CurrentUserDep, run_id: str) -> RunOut:
     return RunOut.of(_require_run(store, run_id))

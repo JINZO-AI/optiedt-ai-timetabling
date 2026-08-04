@@ -317,6 +317,24 @@ export interface DiagnosisResult {
 }
 
 /**
+ * The signed-in account — FR-11.
+ *
+ * ⚠️ It decides which screens the interface OFFERS, never what is permitted:
+ * every endpoint checks the role for itself, because a client that hides a
+ * control has not prevented the request.
+ *
+ * `teacher` is set only for a TEACHER and is the teacher id their account owns.
+ * The availability screen reads it instead of offering a dropdown — which is
+ * the whole of "a teacher account obtains only its own availability".
+ */
+export interface CurrentUser {
+  id: string
+  username: string
+  role: UserRole
+  teacher: string | null
+}
+
+/**
  * One run and its candidates.
  *
  * Two fields report on stages rather than on results, and both are read wrong

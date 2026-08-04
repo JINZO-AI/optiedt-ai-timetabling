@@ -16,6 +16,8 @@ Neither needs a solver or a database, so both run in the fast suite.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -25,13 +27,16 @@ from optiedt.domain.enums import GroupLevel, RoomType, SessionType, TeacherRank
 
 
 @pytest.fixture
-def client() -> TestClient:
+def client(signed_in) -> Iterator[TestClient]:
     # Caches are per-process; clear them so a test never inherits another
     # test's declarations through the in-memory store.
     get_settings.cache_clear()
     get_instance.cache_clear()
     get_availability_store.cache_clear()
-    return TestClient(app)
+    # Every endpoint needs a token since FR-11 (Phase 5 M4). These tests are
+    # about the WIRE FORMAT, so they sign in rather than acquire a concern.
+    signed_in("PERSON_IN_CHARGE")
+    yield TestClient(app)
 
 
 def test_health(client: TestClient) -> None:

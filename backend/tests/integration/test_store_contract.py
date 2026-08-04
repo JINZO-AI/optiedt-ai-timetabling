@@ -77,7 +77,14 @@ def session_factory() -> Iterator[sessionmaker[Session]]:
     url = _test_database_url()
     admin_url = url.rsplit("/", 1)[0] + "/postgres"
     try:
-        admin = sqlalchemy.create_engine(admin_url, isolation_level="AUTOCOMMIT")
+        # ⚠️ A SHORT timeout, and the fixture is session-scoped so the answer is
+        # reached once. Without both, a stopped container cost 4.5 MINUTES of
+        # connection timeouts to arrive at "skipped" - measured 2026-08-04 when
+        # Docker restarted mid-session. A skip that takes longer than the tests
+        # teaches people to stop running them.
+        admin = sqlalchemy.create_engine(
+            admin_url, isolation_level="AUTOCOMMIT", connect_args={"connect_timeout": 3}
+        )
         with admin.connect() as conn:
             exists = conn.execute(
                 text("select 1 from pg_database where datname = :name"), {"name": TEST_DATABASE}
@@ -85,7 +92,7 @@ def session_factory() -> Iterator[sessionmaker[Session]]:
             if not exists:
                 conn.execute(text(f'create database "{TEST_DATABASE}"'))
         admin.dispose()
-    except sqlalchemy.exc.OperationalError as exc:  # pragma: no cover - environment
+    except (sqlalchemy.exc.OperationalError, sqlalchemy.exc.DBAPIError) as exc:  # pragma: no cover
         pytest.skip(
             f"PostgreSQL is not reachable at {admin_url}: {exc}. "
             "Start it with `docker compose up -d`, and check OPTIEDT_POSTGRES_PORT "

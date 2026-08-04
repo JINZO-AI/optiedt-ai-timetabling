@@ -30,6 +30,7 @@ import pytest
 # `@pytest.mark.database` and take an explicit session factory.
 os.environ.setdefault("OPTIEDT_PERSISTENCE", "memory")
 
+
 from optiedt.domain.entities import (
     ConstraintDefinition,
     Course,
@@ -49,6 +50,35 @@ from optiedt.domain.enums import (
     TeacherRank,
 )
 from optiedt.domain.instance import Instance
+
+
+@pytest.fixture
+def signed_in():
+    """Make every request from `app` come from a given account (FR-11).
+
+    Used as `signed_in("PERSON_IN_CHARGE")` or `signed_in("TEACHER", "T001")`.
+
+    ⚠️ This overrides the dependency rather than minting a real token, and the
+    distinction matters: it lets a test about the WIRE FORMAT or about FR-2's
+    replace-wholesale rule stay about that, instead of acquiring a sign-in it
+    does not care about. Authentication itself, and every rule about who may do
+    what, is tested for real against real tokens in
+    `tests/integration/test_rbac.py` — overriding the dependency there would
+    test the override.
+    """
+    from optiedt.api import deps
+    from optiedt.api.main import app
+    from optiedt.domain.entities import User
+    from optiedt.domain.enums import UserRole
+
+    def sign_in(role: str = "PERSON_IN_CHARGE", teacher: str | None = None) -> None:
+        app.dependency_overrides[deps.current_user] = lambda: User(
+            id="test-user", username="test", role=UserRole(role), teacher=teacher
+        )
+
+    yield sign_in
+    app.dependency_overrides.pop(deps.current_user, None)
+
 
 PERIODS_PER_DAY = 5
 # Same shape as the reference calendar, so the noon-straddling period (index 2,

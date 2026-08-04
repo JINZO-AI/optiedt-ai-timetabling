@@ -179,6 +179,18 @@ convenience.
 | **Student** | Read the timetable of their group |
 | **Administrator** | Manage accounts, holidays and the academic calendar |
 
+**Implemented in Phase 5 M4 (FR-11).** A bearer token carries the username, the role and — for a
+teacher — the `teacher_id` their account owns. `api/deps.py` declares the rights per endpoint rather
+than centrally, so a router that must name who may call it cannot acquire a caller by accident.
+
+⚠️ **The administrator's account-management right is NOT implemented.** Accounts come from a seed
+command (C-18) because no requirement describes registration and the instance carries no user data.
+That is recorded rather than quietly dropped; it belongs with FR-1's data management.
+
+⚠️ **A teacher account with no `teacher` link is refused every grid**, rather than defaulted to one.
+An account that cannot say whose week it owns has no business editing one, and a default would hand
+it somebody else's.
+
 **Resolved contradiction.** The Cahier des Charges §4.3 and SRS §3.3 both describe *the administrator*
 loading the department data, while SRS Table 2 gives that right to the person in charge and limits the
 administrator to accounts and calendar. **SRS Table 2 is authoritative**; the two flow sentences are

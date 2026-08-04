@@ -14,21 +14,37 @@ location instead, so it does not depend on where the process was started.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 
 from optiedt.core.config import Settings
+from optiedt.core.security import InvalidTokenError, read_access_token
+from optiedt.domain.entities import User
+from optiedt.domain.enums import UserRole
 from optiedt.domain.instance import Instance
 from optiedt.instance.loader import load_instance
+from optiedt.instance.loader import resolve_instance_path as loader_instance_path
 from optiedt.services.availability import AvailabilityStore, apply_declarations
 from optiedt.services.runs import RunStore
-from optiedt.services.stores import build_availability_store, build_run_store
+from optiedt.services.stores import (
+    build_availability_store,
+    build_run_store,
+    build_user_store,
+)
+from optiedt.services.users import UserStore
 from optiedt.tasks.executor import RunExecutor, cp_sat_factory
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[3]
+
+API_PREFIX = "/api"
+"""Duplicated from `api.main` on purpose: importing it from there would be
+circular, since main imports the routers and the routers import this module.
+Only the OAuth2 token URL needs it here."""
 
 
 @lru_cache(maxsize=1)
@@ -37,11 +53,9 @@ def get_settings() -> Settings:
 
 
 def resolve_instance_path(settings: Settings) -> Path:
-    """Absolute path of `data/instance/`, independent of the working directory."""
-    configured = Path(settings.instance_path)
-    if configured.is_absolute():
-        return configured
-    return (_BACKEND_ROOT / configured).resolve()
+    """Kept as a thin alias: the logic moved to `instance.loader` when
+    `services/seed.py` came to need it too."""
+    return loader_instance_path(settings.instance_path)
 
 
 @lru_cache(maxsize=1)
@@ -102,8 +116,92 @@ def get_executor() -> RunExecutor:
     )
 
 
+@lru_cache(maxsize=1)
+def get_user_store() -> UserStore:
+    """Accounts — FR-11. Database-backed unless `persistence = memory`."""
+    return build_user_store(get_settings())
+
+
+# ── Authentication and rights (FR-11) ──────────────────────────────────
+
+_bearer = OAuth2PasswordBearer(tokenUrl=f"{API_PREFIX}/auth/token", auto_error=False)
+"""`auto_error=False` so a missing token reaches `current_user` and gets the
+same 401 as a bad one. With the default, FastAPI raises a 403 for "no header"
+and this layer raises 401 for "bad token" - two status codes for one situation,
+and the interface would have to know both."""
+
+
+def current_user(
+    settings: SettingsDep,
+    store: Annotated[UserStore, Depends(get_user_store)],
+    token: Annotated[str | None, Depends(_bearer)] = None,
+) -> User:
+    """The signed-in account, or 401.
+
+    ⚠️ The user is re-read from the store on every request rather than
+    reconstructed from the token's claims. A token stays valid until it
+    expires, so an account deleted or given a different role would otherwise
+    keep its old rights for the rest of the token's life.
+    """
+    if token is None:
+        raise _unauthorised()
+    try:
+        claims = read_access_token(token, settings.secret_key)
+    except InvalidTokenError as exc:
+        raise _unauthorised() from exc
+
+    username = claims.get("sub")
+    user = store.by_username(username) if isinstance(username, str) else None
+    if user is None:
+        raise _unauthorised()
+    return user
+
+
+def _unauthorised() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+def require_role(*roles: UserRole) -> Callable[[User], User]:
+    """A dependency admitting only these roles. 403, not 404.
+
+    The rights are `docs/domain-model.md`'s table, which SRS Table 2 governs
+    (C-8). Declared per endpoint rather than centrally: a router that has to
+    name who may call it cannot acquire a caller by accident, which a
+    middleware pattern-matching on paths can.
+    """
+
+    allowed = frozenset(roles)
+
+    def check(user: Annotated[User, Depends(current_user)]) -> User:
+        if user.role not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    f"role {user.role.value} may not do this; "
+                    f"requires one of {', '.join(sorted(r.value for r in allowed))}"
+                ),
+            )
+        return user
+
+    return check
+
+
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 InstanceDep = Annotated[Instance, Depends(get_instance)]
 AvailabilityStoreDep = Annotated[AvailabilityStore, Depends(get_availability_store)]
 RunStoreDep = Annotated[RunStore, Depends(get_run_store)]
+UserStoreDep = Annotated[UserStore, Depends(get_user_store)]
 ExecutorDep = Annotated[RunExecutor, Depends(get_executor)]
+CurrentUserDep = Annotated[User, Depends(current_user)]
+
+PersonInChargeDep = Annotated[User, Depends(require_role(UserRole.PERSON_IN_CHARGE))]
+"""Read and write on ALL data; launch runs; compare; publish (SRS Table 2)."""
+
+ManagesDataDep = Annotated[
+    User, Depends(require_role(UserRole.PERSON_IN_CHARGE, UserRole.ADMINISTRATOR))
+]
+"""The two roles that may see the whole instance rather than their own slice."""

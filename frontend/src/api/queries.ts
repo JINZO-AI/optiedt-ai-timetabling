@@ -20,12 +20,24 @@ import type {
   RunState,
   RunSummary,
 } from '@/types/domain'
+import type { CurrentUser } from '@/types/domain'
 
 /** States in which nothing further will happen without a new request. */
 const TERMINAL: readonly RunState[] = ['COMPLETED', 'INFEASIBLE', 'DIAGNOSED', 'FAILED']
 
 export function isTerminal(state: RunState): boolean {
   return TERMINAL.includes(state)
+}
+
+export function useCurrentUser() {
+  return useQuery({
+    queryKey: ['me'],
+    queryFn: () => apiGet<CurrentUser>('/auth/me'),
+    // One failure means the token is absent, expired or forged; retrying would
+    // just repeat a 401. The shell signs the user out instead.
+    retry: false,
+    staleTime: Infinity,
+  })
 }
 
 export function useInstance() {

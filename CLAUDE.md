@@ -269,6 +269,7 @@ From `backend/`:
 | **One file** | `uv run pytest tests/unit/test_scoring.py` |
 | **One test** | `uv run pytest tests/unit/test_scoring.py::test_decomposition_is_exact` |
 | **Database tests** | `uv run pytest -m database` — needs `docker compose up -d` |
+| **Seed the first accounts** | `uv run python -m optiedt.services.seed` — refuses if any account exists (C-18) |
 | **By name** | `uv run pytest -k decomposition` |
 | Property tests only | `uv run pytest tests/property` |
 | Skip solver tests | `uv run pytest -m "not solver"` (already `run-checks.ps1`'s default — a solver test can legitimately take minutes) |

@@ -16,7 +16,17 @@ dependencies = [
     "scikit-learn>=1.5",       # increment 2 only: weight fitting (ADR-002)
     "httpx>=0.27",             # assistant adapter; no provider SDK on purpose
     "python-jose[cryptography]>=3.3",
-    "passlib[bcrypt]>=1.7",
+    # bcrypt directly, NOT passlib. passlib 1.7.4 (2020, unmaintained) is broken
+    # against bcrypt 5: it reads `bcrypt.__about__`, removed in 5.0, and its
+    # hash() raises "password cannot be longer than 72 bytes" on any input.
+    # Measured 2026-08-04 on passlib 1.7.4 + bcrypt 5.0.0 - hashing did not work
+    # at all. Pinning bcrypt backwards to keep an unmaintained wrapper is the
+    # wrong direction; the direct API is four lines.
+    "bcrypt>=4.0",
+    # Required by the OAuth2 password flow: OAuth2PasswordRequestForm reads
+    # form-encoded credentials, and FastAPI refuses to build the route
+    # without a multipart parser.
+    "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
@@ -27,6 +37,7 @@ dev = [
     "import-linter>=2.1",      # invariant 1 — see .importlinter
     "ruff>=0.7",
     "mypy>=1.13",
+    "types-python-jose>=3.3",   # mypy strict: jose ships no inline types
 ]
 
 [build-system]

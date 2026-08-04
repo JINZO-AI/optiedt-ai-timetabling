@@ -27,11 +27,11 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 | **C-15** | The objective weights raw violation counts of incomparable scale, so "teacher-favouring" favours only S5, not S3. **Deferred by decision 2026-07-30** — recorded, objective unchanged. Phase 4's comparison screen sidesteps it by showing measured sub-scores and making **no claim about what a profile favours** | FR-13's `✓` | Technical lead |
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
-**C-17** (2026-08-04, implemented) ·
+**C-17, C-18** (2026-08-04) ·
 **C-8, C-11** · **C-4, C-12** · **C-16** (2026-07-30, implemented). The sections below keep their full reasoning;
 headings say which is which.
 
-**Twelve resolved plus four open is sixteen, and the codes run C-1 to C-17 — there is no C-10, and that
+**Thirteen resolved plus four open is seventeen, and the codes run C-1 to C-18 — there is no C-10, and that
 is not a lost question.** The number was never assigned. Recorded here for the same reason the retired
 soft-criterion codes S1/S8/S9 are recorded in the errata: a gap in a sequence invites someone to go
 looking for what fell through it.
@@ -342,6 +342,41 @@ finished, because the profiles do not yet differentiate for the documented reaso
 
 **Blocks:** FR-13's eventual `✓`; the Phase 4 comparison screen, which would otherwise explain a
 difference by a cause that is not the real one. **Owner:** technical lead.
+
+### C-18 — Nothing says where the first account comes from · **RESOLVED 2026-08-04 → a seed command**
+
+SRS Table 2 gives the **administrator** account management, and C-8 already settled that Table 2 is
+authoritative where the flow prose disagrees. But no requirement describes **registration**, no screen
+collects it, and the instance carries no user data at all — `teachers.csv` has ids, departments, ranks
+and weekly load, and nothing that identifies a person. So FR-11 can be built and still leave nobody
+able to sign in.
+
+This is a gap in the specification rather than a contradiction inside it, which is why it is recorded
+here before the code rather than decided inside it.
+
+**Decision: a seed command**, `python -m optiedt.services.seed`, creating one person in charge, one
+administrator, one student and **one account per teacher in the instance**, each linked to its
+`teacher_id`. Passwords are read from the environment or generated and printed once, never committed.
+
+⚠️ **`services/`, not `db/`** — this entry said `optiedt.db.seed` when it was written, and that was
+wrong: the command needs the instance loader and the store factory, and `db` depends on `domain`
+alone. Writing it there would have added two upward imports to make a script's name prettier.
+
+**Why not an admin-managed CRUD**, which is what Table 2 literally implies: it needs the first
+administrator to exist anyway, so it does not answer this question — it moves it. The endpoint is
+worth building when accounts are managed for real; it is not what makes the demonstration reachable,
+and Phase 5 has two budgeted days for four requirements.
+
+**What this costs, stated plainly.** Account management through the interface is **not delivered** by
+Phase 5. FR-11 is "authenticate users and restrict access by role", and that is what M4 builds; the
+administrator's account-management right from Table 2 stays unimplemented and belongs with FR-1's data
+management. Do not read a green FR-11 as covering it.
+
+⚠️ **The seed is a development and demonstration tool, not a deployment mechanism.** It creates
+accounts with known roles on a machine that has no authentication until it runs. It must never be run
+against an installation that has real users, and the command says so before it writes anything.
+
+**Blocked:** nothing. **Owner:** technical lead, decided 2026-08-04.
 
 ### C-17 — Assumption literals defeat presolve · **RESOLVED 2026-08-04 → deletion-based subset search**
 

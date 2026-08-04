@@ -194,6 +194,28 @@ class SubScoreRow(Base):
     """In [0, 1], 1 = best, against instance-derived bounds (ADR-009)."""
 
 
+class UserRow(Base):
+    """An account and its role — FR-11.
+
+    ⚠️ `password_hash` is read by `SqlUserStore.authenticate` and by nothing
+    else, ever. It is not on `domain.User`, so it cannot reach a router, a
+    response schema or a log line by accident.
+
+    `teacher` is set only for a TEACHER and links the account to a row of
+    `teachers.csv`. It is what makes "a teacher account obtains only its own
+    availability and timetable" enforceable from the token rather than from the
+    request path.
+    """
+
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    username: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(128))
+    role: Mapped[str] = mapped_column(String(24))
+    teacher: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+
+
 class AvailabilityRow(Base):
     """A declaration made through the application (FR-2).
 

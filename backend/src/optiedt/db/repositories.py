@@ -24,6 +24,7 @@ from __future__ import annotations
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from optiedt.core.security import hash_password, verify_password
 from optiedt.db.models import (
     AvailabilityRow,
     CandidateRow,
@@ -33,6 +34,7 @@ from optiedt.db.models import (
     RunRow,
     RunWeightRow,
     SubScoreRow,
+    UserRow,
 )
 from optiedt.domain.entities import (
     Availability,
@@ -43,8 +45,9 @@ from optiedt.domain.entities import (
     RunId,
     SubScore,
     TeacherId,
+    User,
 )
-from optiedt.domain.enums import AvailabilityState, DeclarationSource, RunState
+from optiedt.domain.enums import AvailabilityState, DeclarationSource, RunState, UserRole
 from optiedt.preanalysis.checks import CheckResult
 from optiedt.services.runs import RunRecord
 
@@ -291,6 +294,69 @@ class SqlAvailabilityStore:
     def declared_teachers(self) -> frozenset[TeacherId]:
         with self._sessions() as session:
             return frozenset(session.scalars(select(AvailabilityRow.teacher).distinct()).all())
+
+
+class SqlUserStore:
+    """Accounts in PostgreSQL — FR-11.
+
+    ⚠️ The hash is read inside `authenticate` and returned by nothing. See
+    `services/users.py` for why that seam matters.
+    """
+
+    def __init__(self, session_factory: sessionmaker[Session]) -> None:
+        self._sessions = session_factory
+
+    def by_username(self, username: str) -> User | None:
+        with self._sessions() as session:
+            row = session.scalar(select(UserRow).where(UserRow.username == username))
+            return _to_user(row) if row is not None else None
+
+    def authenticate(self, username: str, password: str) -> User | None:
+        with self._sessions() as session:
+            row = session.scalar(select(UserRow).where(UserRow.username == username))
+        if row is None:
+            # Hash anyway, so that an unknown username and a wrong password
+            # take comparable time. Without it, the response time alone tells
+            # an attacker which usernames exist.
+            verify_password(password, _TIMING_DECOY)
+            return None
+        return _to_user(row) if verify_password(password, row.password_hash) else None
+
+    def create(self, user: User, password: str) -> None:
+        with self._sessions() as session, session.begin():
+            if session.scalar(select(UserRow).where(UserRow.username == user.username)):
+                raise KeyError(f"user {user.username} already exists")
+            session.add(
+                UserRow(
+                    id=user.id,
+                    username=user.username,
+                    password_hash=hash_password(password),
+                    role=user.role.value,
+                    teacher=user.teacher,
+                )
+            )
+
+    def all(self) -> tuple[User, ...]:
+        with self._sessions() as session:
+            rows = session.scalars(select(UserRow).order_by(UserRow.username)).all()
+            return tuple(_to_user(row) for row in rows)
+
+
+def _to_user(row: UserRow) -> User:
+    return User(
+        id=row.id,
+        username=row.username,
+        role=UserRole(row.role),
+        teacher=row.teacher,
+    )
+
+
+_TIMING_DECOY = hash_password("timing-decoy-never-a-real-password")
+"""A real bcrypt hash, verified against when the username is unknown.
+
+Computed once at import: bcrypt is deliberately slow, and doing this per
+request would cost every failed sign-in a second hash for no extra protection.
+"""
 
 
 _DECLARED_MARKER_SLOT = -1

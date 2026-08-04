@@ -25,6 +25,7 @@ from optiedt.domain.enums import (
     RunState,
     SessionType,
     TeacherRank,
+    UserRole,
 )
 
 type ProgrammeId = str
@@ -337,6 +338,29 @@ class DiagnosisResult:
     is_minimal: bool = False
     is_conclusive: bool = True
     detail: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class User:
+    """An account, and the role that decides what it may reach (FR-11).
+
+    ⚠️ **There is no password or hash on this entity, deliberately.** A
+    credential that lives on the object every router, schema and log statement
+    handles is a credential that gets serialised by accident exactly once. The
+    hash stays inside the store: `UserStore.authenticate()` takes a password
+    and returns a `User`, and nothing outside `db/` ever holds the hash.
+
+    `teacher` links an account to a row of `teachers.csv` and is set **only for
+    a TEACHER**. It is what makes FR-11's acceptance criterion expressible —
+    *a teacher account obtains only its own availability and timetable* — and
+    it comes from the token rather than from the path, which is the line
+    Phase 5 moves (`api/main.py` said so from Phase 4 onwards).
+    """
+
+    id: str
+    username: str
+    role: UserRole
+    teacher: TeacherId | None = None
 
 
 @dataclass(frozen=True, slots=True)

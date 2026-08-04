@@ -91,6 +91,18 @@ cd backend && uv run alembic upgrade head && uv run uvicorn optiedt.api.main:app
 cd frontend && npm run dev
 ```
 
+The application requires a sign-in since Phase 5 (FR-11), and there is no registration screen —
+accounts come from a seed command, which **refuses to run if any account already exists**:
+
+```bash
+cd backend && uv run python -m optiedt.services.seed
+```
+
+It creates `responsable`, `administrateur`, `etudiant` and one account per teacher (`t001` … lowercased
+teacher ids), all sharing one password: `OPTIEDT_SEED_PASSWORD` if set, otherwise generated and printed
+once. ⚠️ Development and demonstration only — and set `OPTIEDT_SECRET_KEY`, because its default is
+published in this repository and tokens signed with it can be forged by anyone.
+
 The API serves its own interactive documentation at `http://localhost:8000/docs`. That generated
 OpenAPI page **is** the API reference — there is no hand-written copy to fall out of date with it.
 
@@ -125,15 +137,22 @@ catalogued in `docs/open-questions.md` rather than resolved silently.
 
 ## Status
 
-**Increment 1 of 2 · Phases 1–3 complete.** The decision layer is built: all twelve hard constraints
-are implemented and the reference instance produces a conflict-free timetable in about three seconds,
-with every constraint re-verified from the raw data rather than trusted from the solver's own status.
-The analysis layer is built on top of it: seven quality criteria, an exact weighted score, ranking,
-the term-by-term decomposition, dominance, and a portfolio that returns three distinct candidates
-reproducibly. The engine is also validated on the 21 published ITC-2007 instances.
+**Increment 1 of 2 · Phases 1–4 complete, Phase 5 in progress (4 of 6 milestones).**
 
-**Phase 4 — the web interface — is next**, and is what turns all of the above into something a user
-can reach. Nothing is blocked.
+The decision layer is built: all twelve hard constraints, a conflict-free timetable on the reference
+instance in about three seconds, every constraint re-verified from the raw data rather than trusted
+from the solver's own status. The analysis layer sits on top: seven quality criteria, an exact
+weighted score, ranking, the term-by-term decomposition, dominance, and a portfolio returning three
+distinct candidates reproducibly. The engine is validated on the 21 published ITC-2007 instances.
+The web interface reaches all of it — availability grid, generation, four timetable views, comparison.
+
+Phase 5 has added the five pre-solve checks inside the application, a diagnosis run that names the
+rules in conflict, the run record in PostgreSQL, and authentication with rights. Publication and the
+closing audit remain.
+
+⚠️ **Not deployable as it stands.** `OPTIEDT_SECRET_KEY` defaults to a value published in this
+repository, so tokens signed with it can be forged; account management through the interface is not
+built; and the seed command gives every account the same password. Safe to demonstrate, not to expose.
 
 **[`docs/dashboard.md`](docs/dashboard.md) is the one page that answers "where is this project".**
 `docs/status.md` holds the detail, `docs/open-questions.md` what is still undecided.

@@ -50,6 +50,26 @@ from optiedt.domain.enums import (
 )
 from optiedt.domain.instance import Instance
 
+_BACKEND_ROOT = Path(__file__).resolve().parents[3]
+
+
+def resolve_instance_path(configured: str) -> Path:
+    """Absolute path of `data/instance/`, independent of the working directory.
+
+    ⚠️ The configured default is `"../data/instance"`, relative to `backend/`.
+    Resolving it against the CURRENT directory would make the application work
+    under `uvicorn` started from `backend/` and fail under pytest started from
+    the repository root - a difference that surfaces as "the instance is
+    missing" rather than as a path bug. It is resolved against this file's
+    location instead.
+
+    Lives here rather than in `api/deps.py` because `services/seed.py` needs it
+    too, and reaching up into the API layer for it would invert the module map
+    for the sake of one path.
+    """
+    path = Path(configured)
+    return path if path.is_absolute() else (_BACKEND_ROOT / path).resolve()
+
 
 def _rows(path: Path, filename: str) -> list[dict[str, str]]:
     with (path / filename).open(encoding="utf-8-sig", newline="") as fh:

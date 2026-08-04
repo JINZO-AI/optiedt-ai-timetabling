@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from optiedt.api.deps import RunStoreDep
+from optiedt.api.deps import CurrentUserDep, RunStoreDep
 from optiedt.api.schemas import (
     CandidateOut,
     DecompositionOut,
@@ -60,7 +60,7 @@ def _require_candidate(record: RunRecord, candidate_id: str) -> Candidate:
     response_model=list[CandidateOut],
     summary="Candidates of a run, best first",
 )
-def list_candidates(store: RunStoreDep, run_id: str) -> list[CandidateOut]:
+def list_candidates(store: RunStoreDep, _user: CurrentUserDep, run_id: str) -> list[CandidateOut]:
     """Returned in RANK order. The client displays this order, it does not sort."""
     return [CandidateOut.of(c) for c in _require_run(store, run_id).candidates]
 
@@ -70,7 +70,9 @@ def list_candidates(store: RunStoreDep, run_id: str) -> list[CandidateOut]:
     response_model=CandidateOut,
     summary="One candidate with its placements and sub-scores",
 )
-def read_candidate(store: RunStoreDep, run_id: str, candidate_id: str) -> CandidateOut:
+def read_candidate(
+    store: RunStoreDep, _user: CurrentUserDep, run_id: str, candidate_id: str
+) -> CandidateOut:
     record = _require_run(store, run_id)
     return CandidateOut.of(_require_candidate(record, candidate_id))
 
@@ -82,6 +84,7 @@ def read_candidate(store: RunStoreDep, run_id: str, candidate_id: str) -> Candid
 )
 def compare(
     store: RunStoreDep,
+    _user: CurrentUserDep,
     run_id: str,
     a: str = Query(description="Candidate id on the left"),
     b: str = Query(description="Candidate id on the right"),
@@ -102,7 +105,7 @@ def compare(
     response_model=list[DominanceVerdictOut],
     summary="FR-17 — candidates another improves on across the board",
 )
-def dominance(store: RunStoreDep, run_id: str) -> list[DominanceVerdictOut]:
+def dominance(store: RunStoreDep, _user: CurrentUserDep, run_id: str) -> list[DominanceVerdictOut]:
     """⚠️ The top-ranked candidate is never dominated — provably (C-14).
 
     A dominated runner-up is ordinary and is what this reports. Do not build a
@@ -117,7 +120,9 @@ def dominance(store: RunStoreDep, run_id: str) -> list[DominanceVerdictOut]:
     response_model=RecommendedCandidateOut | None,
     summary="FR-16 — the candidate put forward, and the rule that chose it",
 )
-def recommendation(store: RunStoreDep, run_id: str) -> RecommendedCandidateOut | None:
+def recommendation(
+    store: RunStoreDep, _user: CurrentUserDep, run_id: str
+) -> RecommendedCandidateOut | None:
     """None while a run has produced no candidate yet."""
     result = recommendation_for(_require_run(store, run_id))
     return RecommendedCandidateOut.of(result) if result is not None else None
