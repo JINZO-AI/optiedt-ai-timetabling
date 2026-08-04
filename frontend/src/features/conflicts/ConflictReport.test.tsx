@@ -51,19 +51,27 @@ describe('a named conflict', () => {
     expect(screen.getByText(/au plus une séance par créneau/)).toBeTruthy()
   })
 
-  it('says the set is sufficient, never the smallest', () => {
-    renderReport(diagnosis())
-    // Exact match: the word is emphasised on its own, and the surrounding
-    // paragraph also contains "suffisant" in "nécessairement suffisant".
-    expect(screen.getByText('suffisant')).toBeTruthy()
-    expect(screen.getByText(/sans garantie de minimalité/)).toBeTruthy()
-    expect(screen.queryByText(/plus petit ensemble/)).toBeNull()
+  it('claims minimality only when the solver decided every removal', () => {
+    renderReport(diagnosis({ isMinimal: true }))
+    expect(screen.getByText('minimal')).toBeTruthy()
+    expect(screen.getByText(/Retirer l’une quelconque/)).toBeTruthy()
+    // Minimal among the four withdrawable rules only — never in general.
+    expect(screen.getByText(/quatre règles retirables seulement/)).toBeTruthy()
   })
 
-  it('does not present the codes as a repair list', () => {
-    /** An unsat core, not a fix. Relaxing these need not make it solvable. */
+  it('says so plainly when a removal could not be decided', () => {
+    /** ⚠️ A rule kept for want of evidence must not pass for one shown to be
+     *  needed — that is the whole distinction C-17 required. */
+    renderReport(diagnosis({ isMinimal: false }))
+    expect(screen.getByText('suffisant mais non minimal')).toBeTruthy()
+    expect(screen.getByText(/faute de\s+preuve/)).toBeTruthy()
+    expect(screen.getByText(/budget déterministe/)).toBeTruthy()
+    expect(screen.queryByText('minimal')).toBeNull()
+  })
+
+  it('does not present the named rules as the only possible explanation', () => {
     renderReport(diagnosis())
-    expect(screen.getByText(/nécessaire, pas nécessairement suffisant/)).toBeTruthy()
+    expect(screen.getByText(/ce n’est pas la seule réponse vraie/)).toBeTruthy()
   })
 })
 

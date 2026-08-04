@@ -285,122 +285,97 @@ class CpSatSolver:
         )
 
     def diagnose(self, request: SolverInput) -> DiagnosisResult:
-        """Stage 3 - rules SUFFICIENT to explain an infeasibility (FR-8).
+        """Stage 3 - which rules are responsible for an infeasibility (FR-8).
 
-        Entered only after `solve` returns infeasible. Three properties are
-        imposed by CP-SAT itself and are not choices (docs/architecture.md):
+        Entered only after `solve` returns infeasible.
 
-        1. **A single worker**, whatever `self.workers` says. Overridden here
-           rather than configured, because a diagnosis that returned a
-           different conflict set on a different machine would be worse than
-           none - the report names the rule a user is told to change.
-        2. **No objective.** With a function to minimise, the solver returns
-           the whole assumption set and the mechanism becomes useless. That is
-           why `build_occupancy` and `build_objective` are not called at all
-           here, not merely left unposted.
-        3. **A sufficient set, not a minimal one.** `is_minimal` stays False.
-           The interface must say "rules sufficient to explain the conflict",
-           never "the smallest such set".
+        **How it works: withdraw one rule at a time, and solve plainly.**
+        Establish first that no timetable exists at all. Then, for each rule
+        that may be withdrawn (H1, H3, H7, H12 - C-6), solve the model without
+        it: if the model is STILL infeasible, that rule was not needed for the
+        contradiction and is dropped for good. What survives is the answer.
 
-        ⚠️ **What the returned set means, precisely**, because the natural
-        reading is backwards. `sufficient_assumptions_for_infeasibility()`
-        returns an UNSAT CORE: a subset of the assumptions whose conjunction is
-        ALREADY infeasible on its own. So "H1, H3" means *enforcing H1 and H3
-        alone, with H7 and H12 set aside, admits no timetable* - NOT "relaxing
-        H1 and H3 would admit one". Measured: two sessions of one teacher into
-        one slot with one room returns `('H1',)`, even though relaxing H1 alone
-        would leave H3 forbidding the same pair.
+        ⚠️ **This is not the mechanism docs/architecture.md originally
+        specified, and the reason is measured (C-17).** That design declared
+        every rule under an enforcement literal and read CP-SAT's unsat core
+        back. It is implementable - OR-Tools 9.15 honours `only_enforce_if` on
+        `no_overlap`, `cumulative` and `exactly_one` - and it does not work at
+        this project's scale. An enforcement literal takes its constraint OUT
+        OF PRESOLVE: it stops being a fact the propagators may reason with and
+        becomes a conditional obligation. Measured on the reference instance
+        with four computer laboratories withdrawn - an area contradiction of
+        exactly the kind AddCumulative reasons about:
 
-        **The same builders post stage 2 and stage 3.** Only H1, H3, H7 and H12
-        take a literal (C-6, `carries_assumption_literal`); the rest ignore the
-        argument. Building a separate diagnosis model would let stage 3 name a
-        conflict that does not exist in the model actually solved, and nothing
-        would catch it.
+            plain solve, 1 worker           INFEASIBLE     0.0 s
+            plain solve, 4 workers          INFEASIBLE     0.0 s
+            under four assumption literals  UNKNOWN      240.0 s  (budget 120)
 
-        ⚠️ **Verified before this was relied on, not assumed.** OR-Tools
-        9.15.6755 honours `only_enforce_if` on `no_overlap`, `cumulative` AND
-        `exactly_one`, in both directions, and
-        `sufficient_assumptions_for_infeasibility()` returns only the guilty
-        literals. A version that SILENTLY IGNORED the literal would report
-        rules that were never relaxed, which is why
-        `tests/unit/test_diagnosis.py` pins the relaxation itself rather than
-        trusting the library - the same treatment `interleave_search` got.
+        Not a budget problem: four times the budget changed nothing. Every
+        solve below is a PLAIN solve, so presolve keeps working, and the same
+        instance is answered `('H3',)` in 1.6 s.
 
-        ⚠️ **`interleave_search` is NOT set here.** It exists to make a
-        parallel race deterministic; at one worker there is no race, and it is
-        an Experimental parameter whose measured side effect is on the reported
-        objective (ADR-011). Nothing is gained by carrying it into a solve that
-        has no objective and no parallelism.
+        Three properties, and only one of them is still imposed by CP-SAT:
+
+        1. **No objective** - imposed. A feasibility question is being asked;
+           `build_occupancy` and `build_objective` are not called at all here.
+        2. **A single worker** - kept, but for a NEW reason. The old one was
+           that assumptions admit no parallelism, and there are no assumptions
+           now. `max_deterministic_time` is a PER-WORKER budget, so more
+           workers do more total work and could flip an `UNKNOWN` into an
+           `INFEASIBLE` between machines. A report that named different rules
+           on different machines would be worse than none.
+        3. **Sufficient, not minimal** - no longer forced. Every removal here
+           is tested, so the surviving set is irreducible with respect to the
+           four. `is_minimal` is set True ONLY when every removal was decided;
+           a subset solve that returns `UNKNOWN` keeps its rule for want of
+           evidence, and saying "minimal" then would be a claim nobody checked.
+
+        ⚠️ "Minimal" means irreducible **with respect to the four withdrawable
+        rules, with all the others enforced**. H4-H6 and H8-H10 restrict a
+        variable's domain before the model exists and are always present, so
+        they can be the real cause - in which case every rule is dropped and
+        the set comes back empty, pointing at the pre-analysis report.
+
+        The budget and the wall-clock ceiling are divided across the solves
+        this makes, so the whole stage stays inside the bound the run was
+        given - the same rule `services/portfolio.py` follows for profiles.
         """
-        model = cp_model.CpModel()
-        try:
+        withdrawable = tuple(b.code for b in ALL_HARD_CONSTRAINTS if b.carries_assumption_literal)
+        solves = 1 + len(withdrawable)
+        budget = request.deterministic_budget / solves
+        ceiling = self.wall_clock_ceiling_seconds / solves
+
+        def status_without(omitted: frozenset[str]) -> cp_model.CpSolverStatus:
+            model = cp_model.CpModel()
             variables = build_variables(model, request)
+            for builder in ALL_HARD_CONSTRAINTS:
+                if builder.code not in omitted:
+                    builder.apply(model, variables, request.instance)
+            solver = cp_model.CpSolver()
+            solver.parameters.max_deterministic_time = budget
+            solver.parameters.max_time_in_seconds = ceiling
+            solver.parameters.random_seed = request.seed
+            solver.parameters.num_workers = 1
+            return solver.solve(model)
+
+        try:
+            baseline = status_without(frozenset())
         except ValueError as exc:
             # H4/H5 left a session with no room, or H6/H8/H9 with no start.
             # There is no model to diagnose: the domain was empty before the
-            # search began, and no assumption literal can relax a domain.
+            # search began, and withdrawing a posted constraint cannot widen a
+            # domain.
             return DiagnosisResult(
                 conflicting_codes=(),
                 is_conclusive=True,
                 detail=(
-                    "No model could be built, so no rule can be relaxed to explain the "
+                    "No model could be built, so no rule can be withdrawn to explain the "
                     f"conflict: {exc} The pre-analysis report names the resource and the "
                     "quantity missing."
                 ),
             )
 
-        literal_of_code: dict[int, str] = {}
-        assumptions: list[cp_model.IntVar] = []
-        for builder in ALL_HARD_CONSTRAINTS:
-            if not builder.carries_assumption_literal:
-                builder.apply(model, variables, request.instance)
-                continue
-            literal = model.new_bool_var(f"assume[{builder.code}]")
-            literal_of_code[literal.index] = builder.code
-            assumptions.append(literal)
-            builder.apply(model, variables, request.instance, literal)
-
-        model.add_assumptions(assumptions)
-
-        solver = cp_model.CpSolver()
-        solver.parameters.max_deterministic_time = request.deterministic_budget
-        solver.parameters.max_time_in_seconds = self.wall_clock_ceiling_seconds
-        solver.parameters.random_seed = request.seed
-        solver.parameters.num_workers = 1
-
-        status = solver.solve(model)
-
-        if status == cp_model.INFEASIBLE:
-            codes = tuple(
-                literal_of_code[index]
-                for index in solver.sufficient_assumptions_for_infeasibility()
-                if index in literal_of_code
-            )
-            if not codes:
-                return DiagnosisResult(
-                    conflicting_codes=(),
-                    is_conclusive=True,
-                    detail=(
-                        "No timetable exists, and no relaxable rule explains it. Only H1, "
-                        "H3, H7 and H12 are posted constraints an assumption can be "
-                        "attached to; H4, H5, H6, H8, H9 and H10 restrict a variable's "
-                        "domain before the search begins and cannot be relaxed. The "
-                        "conflict is in the data - read the pre-analysis report."
-                    ),
-                )
-            return DiagnosisResult(
-                conflicting_codes=codes,
-                is_conclusive=True,
-                detail=(
-                    f"{', '.join(codes)} are together SUFFICIENT to explain the conflict: "
-                    "enforcing them alone, with every other rule set aside, already admits "
-                    "no timetable. The set is heuristically reduced and is NOT guaranteed "
-                    "to be the smallest one, and other rules may also be violated - "
-                    "changing these is necessary, not necessarily enough."
-                ),
-            )
-
-        if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        if baseline in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             # Reachable only if `solve` and `diagnose` were given different
             # instances, since H1-H12 are declared identically whatever the
             # weights. Reported rather than raised: the run already has a
@@ -416,15 +391,68 @@ class CpSatSolver:
                 ),
             )
 
+        if baseline != cp_model.INFEASIBLE:
+            return DiagnosisResult(
+                conflicting_codes=(),
+                is_conclusive=False,
+                detail=(
+                    "Inconclusive: the solver neither found a timetable nor proved that "
+                    "none exists, within the budget. This is NOT evidence that the "
+                    "instance is sound - an instance can genuinely have no solution while "
+                    "the propagators cannot construct the proof, which is what cost three "
+                    "sessions on C-13. Read the pre-analysis report, and raise the "
+                    "deterministic budget."
+                ),
+            )
+
+        dropped: set[str] = set()
+        undecided: list[str] = []
+        for code in withdrawable:
+            status = status_without(frozenset(dropped | {code}))
+            if status == cp_model.INFEASIBLE:
+                dropped.add(code)  # the contradiction survives without it
+            elif status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+                undecided.append(code)  # kept for want of evidence, not proof
+
+        kept = tuple(code for code in withdrawable if code not in dropped)
+
+        if not kept:
+            return DiagnosisResult(
+                conflicting_codes=(),
+                is_conclusive=True,
+                detail=(
+                    "No timetable exists, and no withdrawable rule explains it: the "
+                    "instance is still infeasible with H1, H3, H7 and H12 all removed. "
+                    "H4, H5, H6, H8, H9 and H10 restrict a variable's domain before the "
+                    "search begins and cannot be withdrawn, so the conflict is in the "
+                    "data - read the pre-analysis report."
+                ),
+            )
+
+        if undecided:
+            return DiagnosisResult(
+                conflicting_codes=kept,
+                is_minimal=False,
+                is_conclusive=True,
+                detail=(
+                    "No timetable exists. The conflict is explained by: "
+                    f"{', '.join(kept)}. The set is NOT known to be irreducible: removing "
+                    f"{', '.join(undecided)} left the solver unable to decide within the "
+                    "budget, so each was kept for want of evidence rather than because it "
+                    "was shown to be needed. Raise the deterministic budget to narrow it."
+                ),
+            )
+
         return DiagnosisResult(
-            conflicting_codes=(),
-            is_conclusive=False,
+            conflicting_codes=kept,
+            is_minimal=True,
+            is_conclusive=True,
             detail=(
-                f"Inconclusive: CP-SAT returned {solver.status_name(status)} within the "
-                "budget - it neither found a timetable nor proved that none exists. This "
-                "is NOT evidence that the instance is sound: an instance can genuinely "
-                "have no solution while the propagators cannot construct the proof, which "
-                "is what cost three sessions on C-13. Read the pre-analysis report, and "
-                "raise the deterministic budget."
+                "No timetable exists. The conflict is explained by: "
+                f"{', '.join(kept)}. The set is irreducible: removing any one of them "
+                "admits a timetable, and every other withdrawable rule was removed without "
+                "lifting the infeasibility. Irreducible among the four withdrawable rules "
+                "only - H4 to H6 and H8 to H10 restrict domains before the search begins "
+                "and are always in force."
             ),
         )

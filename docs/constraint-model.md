@@ -121,16 +121,21 @@ Two pairs overlap:
   arithmetic form.
 
 Neither hurts feasibility. Both would hurt the **diagnosis run**, whose entire value is naming the rule
-the user must change. If two assumption literals covered overlapping ground, the solver could return
-either, and the report would name a rule the user cannot act on.
+the user must change. If two withdrawable rules covered overlapping ground, withdrawing either would
+lift the conflict, and the report could name one the user cannot act on independently.
 
-**C-6 — RESOLVED 2026-07-30.** The constraint → assumption-literal mapping is 1:1 and non-redundant by
-construction: `carries_assumption_literal` is `True` only for **H1, H3, H7 and H12** — the four
-constraints that are real CP-SAT postings a literal could attach to. H2 and H11 are registered as
-documented no-ops (`solver/constraints/noop.py`) with `carries_assumption_literal = False`, since there
-is no separate posting to attach a literal to. H4, H5, H6, H8, H9 and H10 are likewise `False` — they
-are domain restrictions applied at variable construction (`solver/variables.py`), never posted as
-constraints at all.
+**C-6 — RESOLVED 2026-07-30.** The withdrawable set is 1:1 and non-redundant by construction:
+`carries_assumption_literal` is `True` only for **H1, H3, H7 and H12** — the four constraints that are
+real CP-SAT postings, and so the only ones that can be left unposted. H2 and H11 are registered as
+documented no-ops (`solver/constraints/noop.py`) with the flag `False`, since there is no separate
+posting to withdraw. H4, H5, H6, H8, H9 and H10 are likewise `False` — they are domain restrictions
+applied at variable construction (`solver/variables.py`), never posted as constraints at all, so an
+infeasibility caused by one of them comes back as an *empty* conflict set pointing at the pre-analysis.
+
+⚠️ **The property name predates the mechanism (C-17, 2026-08-04) and no longer describes a literal.**
+Read `carries_assumption_literal` as *"may be withdrawn individually"*. It is kept because C-6's
+resolution references it across four documents and identifiers in this project are stable; the four
+constraints it selects, and the reason, are unchanged.
 
 ⚠️ **H1, H3, H7 and H12 being correct does not mean a solution exists.** For three sessions this
 section warned instead that full room interchangeability at high occupancy "makes room assignment a
@@ -286,8 +291,8 @@ screen meaningful.
 | Time bound | `max_deterministic_time` | Reproducibility. **Not** `max_time_in_seconds` — parallel workers race under a wall clock, and a fixed seed does not fix it (ADR-011) |
 | Wall-clock ceiling | safety net only | Prevents a hang. Reaching it is an anomaly to log, not a normal exit |
 | Workers (stage 2) | all available | |
-| Workers (stage 3) | **1** | Imposed: solving under assumptions does not admit parallelism |
-| Objective (stage 3) | **none** | Imposed: with an objective the solver returns the whole assumption set |
+| Workers (stage 3) | **1** | **Reproducibility of the verdict**, not a solver requirement. `max_deterministic_time` is per worker, so more workers do more total work and could flip an `UNKNOWN` into an `INFEASIBLE` between machines (C-17) |
+| Objective (stage 3) | **none** | Imposed: stage 3 asks a feasibility question, one subset at a time |
 | Seed | recorded with the run | Reproducibility is an acceptance criterion |
 
 ⚠️ The deterministic-time → wall-clock ratio is **machine-dependent and must be calibrated on the

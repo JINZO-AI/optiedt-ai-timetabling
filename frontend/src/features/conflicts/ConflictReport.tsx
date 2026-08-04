@@ -6,14 +6,16 @@ import type { ConstraintDefinition, DiagnosisResult } from '@/types/domain'
  * Three things this component is careful about, all of them ways a conflict
  * report can mislead while looking correct:
  *
- * 1. **It never says "the smallest set".** The subset CP-SAT returns is
- *    heuristically reduced. The wording is "sufficient to explain", which is
- *    what `docs/architecture.md` requires of the interface.
+ * 1. **It claims minimality only when the solver proved it.** Each rule is
+ *    withdrawn and re-solved, so a set can be genuinely irreducible — but a
+ *    withdrawal the solver could not decide keeps its rule for want of
+ *    evidence, and then `isMinimal` is false and the wording says so (C-17).
  *
- * 2. **It never says "change these and it will solve".** The codes are an
- *    unsat core — enforcing exactly those rules already admits no timetable —
- *    not a repair list. Relaxing them need not make the instance solvable,
- *    because other rules may forbid the same placements.
+ * 2. **It never implies the named rules are the only possible explanation.**
+ *    When two rules both forbid the same placement, either alone explains the
+ *    conflict and the search reports one of them — the same one every time,
+ *    because rules are withdrawn in catalogue order, but not the only true
+ *    answer.
  *
  * 3. **An empty list is not reassurance.** Conclusive-and-empty means no
  *    relaxable rule explains the conflict, so the answer is in the data and
@@ -83,12 +85,27 @@ export function ConflictReport({
         ))}
       </ul>
 
+      {diagnosis.isMinimal ? (
+        <p className="panel__note">
+          Ensemble <b>minimal</b> : chaque règle a été retirée puis le modèle résolu à nouveau.
+          Retirer l’une quelconque d’entre elles suffit à rendre l’instance solvable, et toutes
+          les autres règles retirables l’ont été sans lever le conflit. ⚠️ Minimal parmi les
+          quatre règles retirables seulement — H4 à H6 et H8 à H10 restreignent le domaine avant
+          la recherche et restent toujours en vigueur.
+        </p>
+      ) : (
+        <p className="warning">
+          ⚠️ Ensemble <b>suffisant mais non minimal</b> : le retrait d’au moins une règle n’a pas
+          pu être tranché dans le budget accordé, et cette règle a donc été conservée faute de
+          preuve, non parce qu’elle s’est révélée nécessaire. Augmentez le budget déterministe
+          pour resserrer le diagnostic.
+        </p>
+      )}
+
       <p className="panel__note">
-        ⚠️ Ensemble <b>suffisant</b>, et non le plus petit : le sous-ensemble renvoyé par le
-        solveur est réduit heuristiquement, sans garantie de minimalité. Imposer ces seules règles,
-        toutes les autres étant mises de côté, suffit déjà à rendre l’instance insoluble — ce n’est
-        donc pas une liste de réparations : les modifier est nécessaire, pas nécessairement
-        suffisant.
+        ⚠️ Lorsque deux règles interdisent le même placement, chacune suffit à elle seule à
+        expliquer le conflit : le rapport en nomme une, toujours la même — les règles sont
+        retirées dans l’ordre du catalogue — mais ce n’est pas la seule réponse vraie.
       </p>
     </>
   )

@@ -1,10 +1,10 @@
 # Status
 
 **Increment 1 of 2 · Phases 1–4 complete. Phase 5 (pre-analysis in-app, diagnosis, auth, run record) is
-IN PROGRESS — M1 of 6 done.**
-**C-4, C-12 — both halves — and C-16 resolved; C-14 and C-15 deferred by decision. Four questions remain
+IN PROGRESS — M2 of 6 done.**
+**C-4, C-12, C-16 and now C-17 resolved; C-14 and C-15 deferred by decision. Four questions remain
 open, none blocking Phase 5.**
-**Last updated 2026-08-03.**
+**Last updated 2026-08-04.**
 
 Keep this file current. A stale status file is worse than none, because the next session trusts it.
 
@@ -19,19 +19,19 @@ Keep this file current. A stale status file is worse than none, because the next
 
 | | |
 |---|---|
-| **Current phase** | **Phase 5 — pre-analysis in-app, diagnosis, authentication, run record. IN PROGRESS, M1 of 6 done.** Phase 4 closed 2026-08-01: six milestones and a closing audit. Milestone table in [`docs/dashboard.md`](dashboard.md) |
+| **Current phase** | **Phase 5 — pre-analysis in-app, diagnosis, authentication, run record. IN PROGRESS, M2 of 6 done.** Phase 4 closed 2026-08-01: six milestones and a closing audit. Milestone table in [`docs/dashboard.md`](dashboard.md) |
 | **Last completed phase** | **Phase 4, closed 2026-08-01.** Six milestones: the API foundation, the run lifecycle and executor, and four screens — availability, generation, timetables, comparison. First frontend tests. C-12(a) resolved and C-14 deferred, both recorded before the code was written. Before it, Phase 3 (closed 2026-07-31) delivered the criteria, scorer, ranker, objective, translator, portfolio and the ITC-2007 validation |
-| **Next step** | **Phase 5 M2 — the diagnosis run (FR-8).** M1 landed FR-12 with both bounds. Then M3 the run record, M4 authentication and rights, M5 publication, M6 the closing audit |
+| **Next step** | **Phase 5 M3 — the run record (FR-19)**, against a verified PostgreSQL. M1 landed FR-12 with both bounds; M2 landed FR-8 and resolved C-17. Then M4 authentication and rights, M5 publication, M6 the closing audit |
 | **Days used** | ~4 of 20 across Phases 1–4, which were budgeted 3 + 5 + 3 + 4 = 15 |
 | **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · latest **pushed** commit `8d1194b`, 2026-08-01 (the Phase 4 closing audit); `HEAD` and `origin/main` identical at that point. ⚠️ **No local-commit count is recorded here** — this line has been wrong four times (`0dc0078`, a parent, until 2026-07-31; `acf9aa0` with "9 commits" after eight were pushed; then "1 commit", which the correcting commit itself made 2; then `bfe805a`, left stale by the next push). **A count cannot live in a file that commits change, and a SHA does not survive a push that does not touch this file.** Re-derive: `git rev-parse origin/main`, `git rev-list --count origin/main..HEAD` |
-| **Blocked on** | **C-17 needs a decision** (new 2026-08-04): the documented stage-3 mechanism is inconclusive at reference scale, measured. M2 shipped it anyway so the phase is not blocked, and the limitation is recorded. **C-5**, **C-9** and **C-14** land in Phase 6 acceptance; **C-15** blocks FR-13's `✓` |
+| **Blocked on** | Nothing for Phase 5. **C-17 resolved 2026-08-04** on measurement — stage 3 withdraws rules and solves plainly instead of using assumption literals. **C-5**, **C-9** and **C-14** land in Phase 6 acceptance; **C-15** blocks FR-13's `✓` |
 
 ---
 
 ## Blockers, precisely
 
-*C-6, C-7, C-13, C-4, C-12 and C-16 are all resolved and recorded in `docs/open-questions.md`, which is
-the authority. What follows is only what is still open.*
+*C-6, C-7, C-13, C-4, C-12, C-16 and C-17 are all resolved and recorded in `docs/open-questions.md`,
+which is the authority. What follows is only what is still open.*
 
 **Nothing blocks Phase 5.** All four open questions now land in Phase 6's acceptance work. C-14 was the
 one that landed inside Phase 4, and it was **deferred rather than answered** on 2026-08-01: the
@@ -67,6 +67,16 @@ amended rather than reversed: deterministic time bounds the *work*, `interleave_
 *race between workers*, and both are needed. Full account in `docs/open-questions.md`, including the
 reasoning error that made this look like a specification conflict for one session.
 
+### C-17 — resolved 2026-08-04
+
+**C-17 — RESOLVED 2026-08-04 → deletion-based subset search.** Enforcement literals defeat CP-SAT's presolve: an infeasibility a plain solve proves in
+0.0 s returns `UNKNOWN` after 240 s under assumptions, on both realistic infeasible variants of the
+reference instance. A deletion-based search over plain subset solves answers `('H3',)` in 1.6 s.
+Replaced: stage 3 now withdraws one rule at a time and solves plainly, so presolve keeps working. The
+same instance is answered **`('H3',)`, minimal, in 1.9 s**. `docs/architecture.md` stage 3 is rewritten,
+and two of its three "imposed" properties changed — they were imposed by the assumption mechanism, not
+by CP-SAT. **Blocks nothing.**
+
 ### Still open, blocking something later
 
 **C-5 — "at least three candidates" can fail when duplicates are removed.** Blocks the FR-13
@@ -86,14 +96,6 @@ describes the unreachable state. **That wording is a delivered commitment, so it
 
 **C-9 — four requirements have no detailed specification.** Blocks Phase 6 acceptance tests.
 
-**C-17 — the documented stage-3 mechanism is inconclusive at reference scale. NEW 2026-08-04,
-measured.** Enforcement literals defeat CP-SAT's presolve: an infeasibility a plain solve proves in
-0.0 s returns `UNKNOWN` after 240 s under assumptions, on both realistic infeasible variants of the
-reference instance. A deletion-based search over plain subset solves answers `('H3',)` in 1.6 s.
-Phase 5 M2 shipped the documented mechanism so the phase is not blocked, and the limitation is
-recorded rather than hidden. **Blocks FR-8 being useful on this project's own instance**, and the
-acceptance criterion that depends on it. Changing it changes `docs/architecture.md`'s stage 3 and two
-of its three "imposed" properties — technical lead's decision.
 
 ---
 
@@ -243,7 +245,7 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 
 | Measurement | Value | Taken on | Notes |
 |---|---|---|---|
-| **Toolchain** | **all green** | 2026-08-03 | **9/9** layer contracts kept · ruff · format · mypy strict on **60** source files · **200 backend tests** (178 fast + 22 solver-marked) · instance verified · frontend `tsc` clean · **12 frontend tests** (`vitest`). Phase 5 M1 added 32 backend and 5 frontend tests. Ninth contract (`api ⇸ solver`) added in Phase 4 M1 and verified to fire; `pytest` exit 5 no longer tolerated |
+| **Toolchain** | **all green** | 2026-08-04 | **9/9** layer contracts kept · ruff · format · mypy strict on **60** source files · **216 backend tests** (194 fast + 22 solver-marked) · instance verified · frontend `tsc` clean · **19 frontend tests** (`vitest`). Phase 5 M1 added 32 backend and 5 frontend; M2 added 13 backend and 6 frontend. Ninth contract (`api ⇸ solver`) added in Phase 4 M1 and verified to fire; `pytest` exit 5 no longer tolerated |
 | **FR-12 in the application** | **the five checks reproduce `verify-instance` exactly** | 2026-08-03 | Phase 5 M1. Rendered on the generation screen during a real run: Amphi 32/56 = 57.1 % · Lab_Info 160/224 = 71.4 % **and 80/88 two-period windows = 90.9 %** · Lab_Sciences 48/84 = 57.1 % and 24/33 = 72.7 % · Salle 82/196 = 41.8 %; heaviest load 12 periods (18 h); smallest margin 11 free slots. Two independent implementations agreeing is what makes the figures trustworthy rather than merely self-consistent |
 | **The report survives a failed run** | **verified** | 2026-08-03 | Budget 3 makes CP-SAT return `UNKNOWN` and the run lands in `FAILED` — and the pre-analysis report is still displayed. That is the C-13 case: when the solver cannot prove an infeasibility, the report is the only thing that says whether the instance is structurally sound |
 | **Python** | **3.14.2** | 2026-07-29 | Resolved by uv 0.12.0 |
@@ -265,8 +267,8 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 | **The complete Phase 4 path, end to end** | **a declaration reaches the solver and is honoured** | 2026-08-01 | T001 marked Monday 08:30 and Wednesday 15:40 unavailable on the grid; the generated Wednesday-14:00 row was withdrawn by the replace-wholesale rule and the rows came back marked `TEACHER`, while a teacher who declared nothing kept their `SYNTHETIC` rows. A run then placed T001's two sessions at slots 24/18, 21/22 and 25/22 across the three candidates — **never** at slot 0 or 14. This is the milestone's claim measured rather than asserted |
 | **FR-18 room occupancy, rendered** | **matches `verify-instance` exactly, all four room types** | 2026-08-01 | The timetable screen's occupancy view sums to Amphi **32**, Salle **82**, Lab_Info **160**, Lab_Sciences **48** periods on the candidate it displays — the same figures `scripts/verify-instance.ps1` reports for the instance. Independent arithmetic (frontend, over placements) agreeing with the verifier is what makes the view trustworthy rather than merely plausible. ⚠️ It is the *period* figure; the bound that binds for laboratories is two-period windows, and the view says so on screen |
 | **A budget too small to solve** | **run lands in `FAILED` carrying the reason** | 2026-08-01 | Total budget 3 (1 per profile) makes CP-SAT return `UNKNOWN`; `solver/engine.py` raises rather than reporting it as a normal result, the executor records `FAILED`, and the API surfaces the message. Correct behaviour, not a defect — and the C-13 lesson working: an `UNKNOWN` is never quietly passed off as an answer |
-| ⚠️ **Diagnosis run on an infeasible instance** | **inconclusive at reference scale — C-17** | 2026-08-04 | Phase 5 M2. Four computer laboratories withdrawn (an **area** contradiction, 160 periods against 112): a plain solve returns `INFEASIBLE` in **0.0 s**; the same model under four assumption literals returns **`UNKNOWN` after 240 s** at budget 120. Enforcement literals take `no_overlap`/`cumulative` out of presolve. The original pre-C-13 mix behaves the same way. **The mechanism is correct and tested — 14 tests naming exactly `('H1',)`, `('H12',)`, `('H3',)` on small instances — and unusable on this instance.** See C-17 |
-| **Deletion-based subset search, measured as the alternative** | **`('H3',)` in 1.6 s** | 2026-08-04 | Four plain solves, each omitting one assumable rule, dropping it if the model stays infeasible. Presolve keeps working because no constraint is conditional. On the contiguity case it returns all four in 92 s having dropped nothing — the honest outcome, since CP-SAT cannot prove that infeasibility at all (C-13) and the pre-analysis is what catches it. **Not implemented**: it changes a documented design (C-17) |
+| ~~**Diagnosis run — assumption literals**~~ | ~~inconclusive at reference scale~~ **SUPERSEDED, C-17 resolved** | 2026-08-04 | Phase 5 M2. Four computer laboratories withdrawn (an **area** contradiction, 160 periods against 112): a plain solve returns `INFEASIBLE` in **0.0 s**; the same model under four assumption literals returns **`UNKNOWN` after 240 s** at budget 120. Enforcement literals take `no_overlap`/`cumulative` out of presolve. The original pre-C-13 mix behaves the same way. **The mechanism is correct and tested — 14 tests naming exactly `('H1',)`, `('H12',)`, `('H3',)` on small instances — and unusable on this instance.** See C-17 |
+| **Diagnosis run — deletion-based subset search** | **`('H3',)`, minimal, in 1.9 s** | 2026-08-04 | ✅ **Implemented** (C-17). The shipped `CpSatSolver.diagnose` on the reference instance with four computer laboratories withdrawn: one baseline solve establishes infeasibility, then each withdrawable rule is removed in turn. On the **contiguity** case (the original pre-C-13 mix) it returns **empty and NOT conclusive** in 60 s — the baseline solve cannot prove that infeasibility at all, which is exactly C-13, and the report says so instead of inventing a verdict. The pre-analysis catches that one in milliseconds |
 | **Effective `y[s][t]` count after pruning** | **5,328** of 6,104 | 2026-07-30 | 87.3% of the upper bound. Start indicators `x[s,t₀]`: **4,720**. Together 10,048 variables (C-7) |
 | **Cost of building the C-7 accounting** | **2.9–4.1 s → 7.6–8.0 s** | 2026-07-30 | Same configuration, three seeds; deterministic time 0.4–1.9 → ~6.1. Why `build_occupancy()` is called on demand and not by the feasibility solve |
 | **First solve with the C-4/C-12 objective posted** | **~49 s wall · ~84 deterministic units**, feasible (not proven optimal) | 2026-07-30 | Seed 42, catalogue default weights, `deterministic_budget=30`, `num_workers=0`. 218/218 placed. ⚠️ The ~84 deterministic units against a budget of 30 is the **per-worker sum**, not an overshoot — see the two calibration rows above. This row previously read it as confirming a "calibration live again" risk that turned out not to exist |

@@ -88,19 +88,24 @@ class ConstraintBuilder(Protocol):
       This costs nothing during solving and shrinks the space to explore.
 
     - **``carries_assumption_literal`` must be False for any constraint that
-      overlaps another.** H2 is subsumed by H12; H11 is implied by H3. Redundant
-      literals let the solver return either one, so the conflict report can name
-      a rule the user cannot act on. The mapping constraint → literal must be
-      1:1 and non-redundant. This is C-6, RESOLVED: only H1, H3, H7 and H12
-      carry one, because they are the only constraints that are posted objects
-      at all.
+      overlaps another.** H2 is subsumed by H12; H11 is implied by H3. If two
+      relaxable constraints covered the same ground, the diagnosis could name
+      either, and the report would name a rule the user cannot act on. The
+      mapping must be 1:1 and non-redundant. This is C-6, RESOLVED: only H1,
+      H3, H7 and H12 qualify, because they are the only constraints that are
+      posted objects at all.
 
-    ``apply`` takes an optional enforcement ``literal``, used only by the
-    diagnosis run (stage 3, ``Solver.diagnose``). **Stage 2 and stage 3 post
-    through the SAME builders**, deliberately: a separate diagnosis model could
-    name a conflict that does not exist in the model actually solved, and
-    nothing would catch it. A builder whose ``carries_assumption_literal`` is
-    False ignores the argument — it has no posting to attach one to.
+    ⚠️ **``carries_assumption_literal`` no longer describes a literal.** Read it
+    as *"may be withdrawn individually"*: it selects which constraints
+    ``Solver.diagnose`` omits, one at a time, to find which are responsible for
+    an infeasibility (C-17). The name is kept because C-6's recorded resolution
+    references it across four documents and codes in this project are stable
+    identifiers; the four constraints it selects, and the reason, are unchanged.
+
+    **Stage 2 and stage 3 post through the SAME builders**, deliberately: a
+    separate diagnosis model could name a conflict that does not exist in the
+    model actually solved, and nothing would catch it. Stage 3 differs only in
+    which builders it calls.
     """
 
     @property
@@ -109,13 +114,7 @@ class ConstraintBuilder(Protocol):
     @property
     def carries_assumption_literal(self) -> bool: ...
 
-    def apply(
-        self,
-        model: cp_model.CpModel,
-        variables: Variables,
-        instance: Instance,
-        literal: cp_model.IntVar | None = None,
-    ) -> None: ...
+    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None: ...
 
 
 class Solver(Protocol):

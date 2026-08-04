@@ -17,21 +17,21 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 
 ## Index — what is actually still open
 
-**Five.** Everything else on this page is resolved and kept for its reasoning.
+**Four.** Everything else on this page is resolved and kept for its reasoning.
 
 | # | Still open | Blocks | Owner |
 |---|---|---|---|
-| **C-17** | **The documented stage-3 mechanism is implementable but unusable at reference scale.** Enforcement literals defeat CP-SAT's presolve: the same infeasibility that a plain solve proves in **0.0 s** returns **UNKNOWN after 240 s** under assumptions. A deletion-based search over plain solves answers `('H3',)` in **1.6 s**. **NEW 2026-08-04, measured** | FR-8 being useful on this project's own instance; the acceptance criterion "an instance without a solution produces a report naming the rules in conflict" | Technical lead |
 | **C-5** | "At least three candidates" can fail when duplicates are removed | Phase 6 acceptance | Lead + supervisor |
 | **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
 | **C-14** | Dominance uses the strict reading; S10's zero weight makes ties common. **Also: the "dominated *top* candidate" signal both documents require is provably unreachable.** **Deferred 2026-08-01** — Phase 4 ships **no dominance signal**; the reading and the specification's wording are still undecided | FR-17's `✓`; Phase 6 acceptance | Technical lead + supervisor |
 | **C-15** | The objective weights raw violation counts of incomparable scale, so "teacher-favouring" favours only S5, not S3. **Deferred by decision 2026-07-30** — recorded, objective unchanged. Phase 4's comparison screen sidesteps it by showing measured sub-scores and making **no claim about what a profile favours** | FR-13's `✓` | Technical lead |
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
+**C-17** (2026-08-04, implemented) ·
 **C-8, C-11** · **C-4, C-12** · **C-16** (2026-07-30, implemented). The sections below keep their full reasoning;
 headings say which is which.
 
-**Eleven resolved plus five open is sixteen, and the codes run C-1 to C-17 — there is no C-10, and that
+**Twelve resolved plus four open is sixteen, and the codes run C-1 to C-17 — there is no C-10, and that
 is not a lost question.** The number was never assigned. Recorded here for the same reason the retired
 soft-criterion codes S1/S8/S9 are recorded in the errata: a gap in a sequence invites someone to go
 looking for what fell through it.
@@ -343,7 +343,7 @@ finished, because the profiles do not yet differentiate for the documented reaso
 **Blocks:** FR-13's eventual `✓`; the Phase 4 comparison screen, which would otherwise explain a
 difference by a cause that is not the real one. **Owner:** technical lead.
 
-### C-17 — Assumption literals defeat presolve, so stage 3 is inconclusive at reference scale · **NEW, OPEN — measured 2026-08-04**
+### C-17 — Assumption literals defeat presolve · **RESOLVED 2026-08-04 → deletion-based subset search**
 
 `docs/architecture.md` stage 3 specifies the mechanism: *"Constraints are declared under enforcement
 literals passed as assumptions. The solver returns a subset explaining the infeasibility."* That is
@@ -419,13 +419,43 @@ shape, the API, and the screen. This is a change of *how the set is computed*, n
   documented design and the most code; the fallback would fire every time on this instance, so the
   first half would be paying for nothing.
 
-**Recommendation: (b)**, with the inconclusive/definite distinction carried in the report. **Not
-decided here** — it changes a documented design, and `docs/architecture.md` states the current one as
-the mechanism.
+#### RESOLVED 2026-08-04 → (b), deletion-based subset search
 
-**Blocks:** FR-8 being useful on the reference instance, and the acceptance criterion "an instance
-without a solution produces a report naming the rules in conflict". Phase 5 M2 shipped **(a)** so that
-the phase is not blocked on a decision. **Owner:** technical lead.
+**Decision: replace the assumption mechanism.** `Solver.diagnose` now establishes infeasibility with
+one plain solve, then withdraws each assumable rule in turn and keeps the rule only when the model
+without it stops being infeasible. Every solve is plain, so presolve keeps working.
+
+**What the report gains.** `('H3',)` in 1.6 s on the area case, where assumptions gave 240 s of
+`UNKNOWN`. And because each removal is *tested*, the surviving set is irreducible rather than merely
+sufficient — `is_minimal` can now be true, and is set **only when every removal was decided**. A
+subset solve that returns `UNKNOWN` keeps its rule for want of evidence, and the report says so rather
+than presenting an untested set as minimal.
+
+⚠️ **"Minimal" here means irreducible with respect to the four relaxable rules, with all the others
+enforced.** It is not the smallest explanation in any absolute sense — H4–H6 and H8–H10 are always
+present and can be the real cause, in which case *every* rule is dropped and the set comes back empty.
+
+**What changed in the documented design**, all in `docs/architecture.md` stage 3:
+
+- The mechanism itself: subset solves, not enforcement literals.
+- **"A single worker"** — it was imposed because solving under assumptions admits no parallelism. That
+  reason is gone. One worker is kept anyway, and the new reason is **reproducibility of the verdict**:
+  `max_deterministic_time` is a per-worker budget, so more workers do more total work and could flip an
+  `UNKNOWN` to an `INFEASIBLE` between machines. A conflict report that named different rules on
+  different machines would be worse than none.
+- **"Sufficient, not minimal"** — now sufficient *and* irreducible, when every removal was decided.
+
+**Unchanged:** C-6 (still exactly four relaxable rules, still 1:1 and non-redundant), no objective, the
+`DiagnosisResult` shape, the API and the screen. `ConstraintBuilder.apply` loses the literal parameter
+it briefly carried — with no mechanism using it, it was dead weight, and the Phase 4 audit's lesson
+about dead code applies.
+
+⚠️ **`carries_assumption_literal` keeps its name and no longer describes a literal.** It selects which
+constraints the deletion search may withdraw — the same four, for the same reason: they are the only
+posted objects. The name is referenced by C-6's recorded resolution in four documents, so renaming it
+mid-phase would cost more clarity than it buys. **Read it as "may be withdrawn individually".**
+
+**Blocked:** nothing. **Resolved by:** technical lead, 2026-08-04, on measurement.
 
 ### C-16 — Reproducibility and portfolio diversity · **RESOLVED 2026-07-30 → both, via `interleave_search` and withholding the hint**
 

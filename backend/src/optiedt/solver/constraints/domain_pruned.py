@@ -10,15 +10,15 @@ They are still registered as ConstraintBuilder instances, one per code, so
 the catalogue stays traceable (every H-code maps to something in the
 codebase) and so carries_assumption_literal has a real, checkable answer
 for all six: False, because none of them is a posted constraint object -
-there is nothing for an assumption literal to attach to.
+there is nothing to withdraw.
 
-⚠️ The `literal` argument each apply() below accepts is therefore IGNORED,
-and that is the honest behaviour rather than a gap. These six cannot be
-relaxed: the domain is already narrowed by the time the model exists, so an
-infeasibility caused by one of them is invisible to the diagnosis run and
-comes back as an EMPTY conflict set. `Solver.diagnose` says so in words
-(DiagnosisResult.detail) and points at the pre-analysis report, which is
-where an unplaceable session or an over-declared unavailability shows up.
+⚠️ These six therefore cannot be relaxed, and that shapes the diagnosis
+run: the domain is already narrowed by the time the model exists, so an
+infeasibility caused by one of them is invisible to a search that withdraws
+posted constraints, and comes back as an EMPTY conflict set. `Solver.diagnose`
+says so in words (DiagnosisResult.detail) and points at the pre-analysis
+report, which is where an unplaceable session or an over-declared
+unavailability shows up.
 """
 
 from __future__ import annotations
@@ -48,13 +48,7 @@ class H4:
     def carries_assumption_literal(self) -> bool:
         return False
 
-    def apply(
-        self,
-        model: cp_model.CpModel,
-        variables: Variables,
-        instance: Instance,
-        literal: cp_model.IntVar | None = None,
-    ) -> None:
+    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None:
         return None
 
 
@@ -72,13 +66,7 @@ class H5:
     def carries_assumption_literal(self) -> bool:
         return False
 
-    def apply(
-        self,
-        model: cp_model.CpModel,
-        variables: Variables,
-        instance: Instance,
-        literal: cp_model.IntVar | None = None,
-    ) -> None:
+    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None:
         return None
 
 
@@ -96,13 +84,7 @@ class H6:
     def carries_assumption_literal(self) -> bool:
         return False
 
-    def apply(
-        self,
-        model: cp_model.CpModel,
-        variables: Variables,
-        instance: Instance,
-        literal: cp_model.IntVar | None = None,
-    ) -> None:
+    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None:
         return None
 
 
@@ -120,13 +102,7 @@ class H8:
     def carries_assumption_literal(self) -> bool:
         return False
 
-    def apply(
-        self,
-        model: cp_model.CpModel,
-        variables: Variables,
-        instance: Instance,
-        literal: cp_model.IntVar | None = None,
-    ) -> None:
+    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None:
         return None
 
 
@@ -146,13 +122,7 @@ class H9:
     def carries_assumption_literal(self) -> bool:
         return False
 
-    def apply(
-        self,
-        model: cp_model.CpModel,
-        variables: Variables,
-        instance: Instance,
-        literal: cp_model.IntVar | None = None,
-    ) -> None:
+    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None:
         return None
 
 
@@ -177,11 +147,5 @@ class H10:
     def carries_assumption_literal(self) -> bool:
         return False
 
-    def apply(
-        self,
-        model: cp_model.CpModel,
-        variables: Variables,
-        instance: Instance,
-        literal: cp_model.IntVar | None = None,
-    ) -> None:
+    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None:
         return None

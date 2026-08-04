@@ -161,34 +161,41 @@ Phase 3 module's contract. **Do not describe the interface as showing candidates
 
 ### Stage 3 — Diagnosis
 
-Entered only on `INFEASIBLE`. Three properties are imposed by CP-SAT itself and are not negotiable:
+Entered only on `INFEASIBLE`. **Built in Phase 5 M2** (`CpSatSolver.diagnose`), through the *same*
+constraint builders stage 2 uses — a separate diagnosis model could name a conflict that does not
+exist in the model actually solved.
 
-1. **A single worker.** Solving under assumptions does not admit parallelism.
-2. **No objective.** With a function to minimise, the solver returns the *whole* assumption set and the
-   mechanism becomes useless.
-3. **A sufficient set, not a minimal one.** The returned subset is heuristically reduced. The interface
-   must say "rules sufficient to explain the conflict", never "the smallest such set".
+**The mechanism: withdraw one rule at a time and solve plainly.** Establish first that no timetable
+exists. Then, for each rule that may be withdrawn — H1, H3, H7, H12 (C-6) — solve without it: if the
+model is *still* infeasible, that rule was not needed for the contradiction and is dropped for good.
+What survives is the report.
 
-Constraints are declared under enforcement literals passed as assumptions. The solver returns a subset
-explaining the infeasibility, and each is reported by its catalogue code. **Built in Phase 5 M2**
-(`CpSatSolver.diagnose`), through the *same* constraint builders stage 2 uses — a separate diagnosis
-model could name a conflict that does not exist in the model actually solved.
+**This only works if the withdrawable set is 1:1 and non-redundant.** See C-6: H2 is subsumed by H12
+and H11 is implied by H3, so a report could otherwise name a rule the user cannot act on independently.
 
-**This only works if the constraint → literal mapping is 1:1 and non-redundant.** See C-6 in
-`docs/open-questions.md`: H2 is subsumed by H12, and H11 is implied by H3, so overlapping literals can
-make the report name a rule the user cannot act on.
+Three properties, and **only the second is imposed by CP-SAT**:
 
-⚠️ **What the returned set means is the reverse of the natural reading.** It is an unsat core:
-*enforcing exactly those rules, with the others set aside, already admits no timetable.* It is **not** a
-repair list — relaxing them need not make the instance solvable. Measured: two sessions of one teacher
-into one slot with one room returns `('H1',)`, though relaxing H1 leaves H3 forbidding the same pair.
+1. **A single worker** — kept for **reproducibility of the verdict**, not because the solver requires
+   it. `max_deterministic_time` is a per-worker budget, so more workers do more total work and could
+   flip an `UNKNOWN` into an `INFEASIBLE` between machines. A report naming different rules on
+   different machines would be worse than none.
+2. **No objective** — imposed. A feasibility question is being asked; occupancy and the objective are
+   not built at all.
+3. **Minimal only when proved.** Every removal is tested, so the surviving set is normally irreducible
+   and `is_minimal` says so. A removal the solver could not decide keeps its rule *for want of
+   evidence*, and the flag goes false. ⚠️ "Minimal" means irreducible **among the four withdrawable
+   rules**, never in general.
 
-⚠️ **The mechanism is inconclusive at reference scale, and this is C-17, open.** Attaching an
-enforcement literal to `no_overlap` or `cumulative` takes it out of presolve: an area contradiction a
-plain solve proves in **0.0 s** returns **UNKNOWN after 240 s** under assumptions. A deletion-based
-search over plain subset solves answers `('H3',)` in **1.6 s** on the same instance. The three
-properties listed above are imposed by *this* mechanism, not by CP-SAT in general, and two of them
-would change if the mechanism did. **Read C-17 before treating this section as settled.**
+⚠️ **Several minimal explanations can exist and exactly one is reported.** When two rules both forbid
+the same placement, either alone explains the conflict. Rules are withdrawn in catalogue order, so the
+answer is arbitrary between them but **reproducible**.
+
+⚠️ **This replaced the enforcement-literal mechanism this section used to specify, on measurement —
+C-17, resolved 2026-08-04.** Attaching an enforcement literal to `no_overlap` or `cumulative` takes it
+out of presolve: an area contradiction a plain solve proves in **0.0 s** returned **`UNKNOWN` after
+240 s** under assumptions. The mechanism now answers `('H3',)`, minimal, in **1.9 s** on that same
+instance. Two of the three properties above changed with it, and the "imposed by CP-SAT" framing was
+part of what made the old design look unarguable — it was imposed by the *assumption mechanism*.
 
 ---
 

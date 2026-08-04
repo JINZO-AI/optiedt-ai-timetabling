@@ -5,20 +5,22 @@ sessions and CP-SAT proves infeasibility in milliseconds. The reference
 instance is NOT diagnosed here — it is feasible, and an infeasible variant of
 it would take a solve worth minutes for no extra confidence about the encoding.
 
-⚠️ **The first test is the one that matters most, and it is not about
-timetables at all.** `only_enforce_if` on `no_overlap` and `cumulative` is
-honoured by OR-Tools 9.15.6755 — verified, not assumed — but nothing in the
-library's contract promises it stays that way, and a version that SILENTLY
-IGNORED the literal would produce a conflict report naming rules that were
-never relaxed. It would fail no other test: every constraint would still hold,
-every timetable would still be valid, and the diagnosis would simply always
-return the full assumption set while looking correct.
+Each instance below is built so that exactly one rule can be at fault, which is
+why the assertions are on the EXACT set rather than on membership. A mechanism
+that returned "all four" every time would satisfy a membership check and be
+useless — and that is not hypothetical: it is what the assumption-literal
+mechanism did at reference scale before C-17 replaced it.
 
-So `test_an_enforcement_literal_actually_relaxes_the_constraint` pins the
-relaxation itself. It is the same treatment `interleave_search` got in
-tests/integration/test_reproducibility.py, for the same reason: an Experimental
-or under-documented solver behaviour that a written requirement rests on must
-be verified in this repository rather than trusted from the documentation.
+The two properties worth stating, because both are easy to get wrong:
+
+- **Several minimal explanations can exist**, and exactly one is reported. When
+  H1 and H3 both forbid the same pair, either alone explains the conflict. The
+  search withdraws rules in catalogue order, so the answer is arbitrary between
+  them but **reproducible** — which is the property that matters when the
+  report tells a user which rule to change.
+- **`is_minimal` is evidence, not a label.** It is set only when every removal
+  was decided. A subset solve that returns UNKNOWN keeps its rule for want of
+  evidence, and the report says so.
 """
 
 from __future__ import annotations
@@ -34,6 +36,7 @@ from optiedt.domain.instance import Instance
 from optiedt.solver.constraints import ALL_HARD_CONSTRAINTS
 from optiedt.solver.engine import CpSatSolver
 from optiedt.solver.interfaces import SolverInput
+from optiedt.solver.variables import build_variables
 
 BUDGET = 10.0
 SEED = 42
@@ -80,72 +83,21 @@ def one_slot(instance: Instance) -> Instance:
     )
 
 
-# ── The trap: is the enforcement literal honoured, or ignored? ─────────
+def _status_without(instance: Instance, omitted: set[str]) -> int:
+    """Solve the model with those rules left unposted.
 
-
-def test_an_enforcement_literal_actually_relaxes_the_constraint() -> None:
-    """⚠️ Guards the whole diagnosis mechanism. Read the module docstring.
-
-    Two unit intervals pinned to the same instant, under one `no_overlap`
-    carrying an enforcement literal:
-
-      - literal forced FALSE -> the constraint must be RELAXED  -> SAT
-      - literal forced TRUE  -> the constraint must be ENFORCED -> INFEASIBLE
-
-    If a future OR-Tools ignores the literal, the first case returns INFEASIBLE
-    and this test fails loudly — instead of the diagnosis quietly reporting
-    every rule for every conflict.
+    Re-derived here rather than reached through a private helper on the solver:
+    a test that asks the implementation to confirm itself proves nothing.
     """
-    for forced, expected in ((0, cp_model.OPTIMAL), (1, cp_model.INFEASIBLE)):
-        model = cp_model.CpModel()
-        literal = model.new_bool_var("assume")
-        model.add(literal == forced)
-        intervals = [
-            model.new_interval_var(
-                model.new_int_var(0, 0, f"s{name}"), 1, model.new_int_var(1, 1, f"e{name}"), name
-            )
-            for name in ("a", "b")
-        ]
-        model.add_no_overlap(intervals).only_enforce_if(literal)
-
-        solver = cp_model.CpSolver()
-        solver.parameters.num_workers = 1
-        status = solver.solve(model)
-        assert status == expected, (
-            f"enforcement literal forced to {forced} gave {solver.status_name(status)}. "
-            "If a FALSE literal no longer relaxes no_overlap, the diagnosis run reports "
-            "rules that were never relaxed and every other test still passes."
-        )
-
-
-def test_the_same_holds_for_cumulative_and_exactly_one() -> None:
-    """H3 uses cumulative for interchangeable room types; H7 uses exactly_one."""
-    for forced, expected in ((0, cp_model.OPTIMAL), (1, cp_model.INFEASIBLE)):
-        model = cp_model.CpModel()
-        literal = model.new_bool_var("assume")
-        model.add(literal == forced)
-        intervals = [
-            model.new_interval_var(
-                model.new_int_var(0, 0, f"s{name}"), 1, model.new_int_var(1, 1, f"e{name}"), name
-            )
-            for name in ("a", "b")
-        ]
-        model.add_cumulative(intervals, [1, 1], 1).only_enforce_if(literal)
-        solver = cp_model.CpSolver()
-        solver.parameters.num_workers = 1
-        assert solver.solve(model) == expected
-
-    for forced, expected in ((0, cp_model.OPTIMAL), (1, cp_model.INFEASIBLE)):
-        model = cp_model.CpModel()
-        literal = model.new_bool_var("assume")
-        model.add(literal == forced)
-        a, b = model.new_bool_var("a"), model.new_bool_var("b")
-        model.add(a == 1)
-        model.add(b == 1)
-        model.add_exactly_one([a, b]).only_enforce_if(literal)
-        solver = cp_model.CpSolver()
-        solver.parameters.num_workers = 1
-        assert solver.solve(model) == expected
+    model = cp_model.CpModel()
+    variables = build_variables(model, request_for(instance))
+    for builder in ALL_HARD_CONSTRAINTS:
+        if builder.code not in omitted:
+            builder.apply(model, variables, instance)
+    solver = cp_model.CpSolver()
+    solver.parameters.max_deterministic_time = BUDGET
+    solver.parameters.num_workers = 1
+    return solver.solve(model)
 
 
 # ── Naming the rule ────────────────────────────────────────────────────
@@ -241,17 +193,22 @@ def test_a_room_conflict_is_reported_as_h3_and_nothing_else(
     assert result.conflicting_codes == ("H3",)
 
 
-def test_the_set_is_an_unsat_core_not_a_repair_list(tiny_instance: Instance) -> None:
-    """⚠️ The natural reading of the report is backwards. Pinned here.
+def test_when_two_rules_both_forbid_it_one_minimal_set_is_returned(
+    tiny_instance: Instance,
+) -> None:
+    """⚠️ Several minimal explanations can exist. Exactly one is reported.
 
-    One teacher, ONE room, one slot, two sibling sessions: H1 and H3 are BOTH
-    violated, and the report names only H1. That is correct — the returned set
-    is a subset whose conjunction is ALREADY infeasible ("enforcing H1 alone
-    admits no timetable"), not a set whose removal would fix the instance.
-    Relaxing H1 here would leave H3 forbidding the very same pair.
+    One teacher, ONE room, one slot, two sibling sessions: H1 and H3 BOTH
+    forbid the pair, and either alone explains the infeasibility. The search
+    withdraws rules in catalogue order, so H1 is dropped first — the model
+    stays infeasible without it, because H3 still forbids the pair — and the
+    report names H3.
 
-    So the interface must never say "change these and it will solve". The
-    detail string says "necessary, not necessarily enough" for this reason.
+    Both answers would be correct and the report gives one. What makes that
+    acceptable is that it is **reproducible**: the order is the catalogue's,
+    fixed, so the same instance always yields the same rule rather than
+    whichever the solver happened to surface. A report that named a different
+    rule on a different machine would be worse than none.
     """
     instance = one_slot(
         siblings(
@@ -264,8 +221,43 @@ def test_the_set_is_an_unsat_core_not_a_repair_list(tiny_instance: Instance) -> 
     )
     result = diagnose(instance)
 
-    assert result.conflicting_codes == ("H1",)
-    assert "necessary, not necessarily enough" in result.detail
+    assert result.conflicting_codes == ("H3",)
+    assert diagnose(instance).conflicting_codes == result.conflicting_codes
+
+
+def test_the_reported_set_is_irreducible_removing_any_one_admits_a_timetable(
+    tiny_instance: Instance,
+) -> None:
+    """What "minimal" claims, checked rather than asserted.
+
+    The mechanism tests each removal, so the surviving set should be
+    irreducible: withdrawing every rule the report does NOT name must leave the
+    instance infeasible, and withdrawing one it does name must admit a
+    timetable. This re-derives both directions from the solver instead of
+    trusting the flag.
+    """
+    instance = one_slot(
+        siblings(
+            dataclasses.replace(
+                tiny_instance,
+                sessions=(session("a", "G1", "T1"), session("b", "G2", "T2")),
+                rooms=(Room(id="R1", building="B", code="R1", capacity=30, type=RoomType.SALLE),),
+            )
+        )
+    )
+    result = diagnose(instance)
+    assert result.is_minimal
+    named = set(result.conflicting_codes)
+
+    withdrawable = {b.code for b in ALL_HARD_CONSTRAINTS if b.carries_assumption_literal}
+    assert _status_without(instance, withdrawable - named) == cp_model.INFEASIBLE, (
+        "withdrawing every unnamed rule should leave the conflict standing"
+    )
+    for code in named:
+        assert _status_without(instance, (withdrawable - named) | {code}) in (
+            cp_model.OPTIMAL,
+            cp_model.FEASIBLE,
+        ), f"withdrawing {code} as well should admit a timetable, or it was not needed"
 
 
 def test_only_the_four_postable_codes_can_ever_be_named(tiny_instance: Instance) -> None:
@@ -288,15 +280,29 @@ def test_only_the_four_postable_codes_can_ever_be_named(tiny_instance: Instance)
     assert literal_carriers == {"H1", "H3", "H7", "H12"}
 
 
-def test_the_report_never_claims_to_be_minimal(tiny_instance: Instance) -> None:
-    """Imposed by CP-SAT: the subset it returns is heuristically reduced."""
+def test_minimality_is_claimed_only_when_every_removal_was_decided(
+    tiny_instance: Instance,
+) -> None:
+    """`is_minimal` is evidence, not a label.
+
+    Every removal here is decided, so the flag is True and the detail says
+    "irreducible". When a removal returns UNKNOWN the rule is kept for want of
+    evidence, and the flag must go False — claiming minimality on an untested
+    set would be a claim nobody checked. That branch is exercised at scale, not
+    here: forcing an UNKNOWN on a three-session instance would need a budget so
+    small the baseline solve becomes undecided too, which tests the budget
+    rather than the mechanism.
+    """
     instance = one_slot(
         dataclasses.replace(
             tiny_instance,
             sessions=(session("a", "G", "T1"), session("b", "T", "T1")),
         )
     )
-    assert diagnose(instance).is_minimal is False
+    result = diagnose(instance)
+    assert result.is_minimal is True
+    assert "irreducible" in result.detail
+    assert "want of evidence" not in result.detail
 
 
 # ── The outcomes that are NOT a named conflict ─────────────────────────

@@ -66,13 +66,7 @@ class H3:
     def carries_assumption_literal(self) -> bool:
         return True
 
-    def apply(
-        self,
-        model: cp_model.CpModel,
-        variables: Variables,
-        instance: Instance,
-        literal: cp_model.IntVar | None = None,
-    ) -> None:
+    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None:
         rooms_per_type: dict[RoomType, int] = defaultdict(int)
         for room in instance.rooms:
             rooms_per_type[room.type] += 1
@@ -89,16 +83,10 @@ class H3:
                 by_room[room_id].append(variables.room_interval[(session.id, room_id)])
 
         for intervals in by_room.values():
-            posted = model.add_no_overlap(intervals)
-            if literal is not None:
-                posted.only_enforce_if(literal)
+            model.add_no_overlap(intervals)
 
         for room_type, intervals in cumulative_intervals.items():
-            cumulative = model.add_cumulative(
-                intervals, [1] * len(intervals), rooms_per_type[room_type]
-            )
-            if literal is not None:
-                cumulative.only_enforce_if(literal)
+            model.add_cumulative(intervals, [1] * len(intervals), rooms_per_type[room_type])
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,17 +106,9 @@ class H7:
     def carries_assumption_literal(self) -> bool:
         return True
 
-    def apply(
-        self,
-        model: cp_model.CpModel,
-        variables: Variables,
-        instance: Instance,
-        literal: cp_model.IntVar | None = None,
-    ) -> None:
+    def apply(self, model: cp_model.CpModel, variables: Variables, instance: Instance) -> None:
         for session in instance.sessions:
             if session.required_room_type in variables.cumulative_room_types:
                 continue
             candidates = variables.candidate_rooms[session.id]
-            posted = model.add_exactly_one(variables.assign[(session.id, r)] for r in candidates)
-            if literal is not None:
-                posted.only_enforce_if(literal)
+            model.add_exactly_one(variables.assign[(session.id, r)] for r in candidates)
