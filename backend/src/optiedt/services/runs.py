@@ -148,6 +148,34 @@ class RunStore(Protocol):
     def all(self) -> tuple[RunRecord, ...]: ...
 
 
+def _keep_written_once(existing: RunRecord, incoming: RunRecord) -> RunRecord:
+    """Three fields are written once and never rewritten.
+
+    ⚠️ **`candidates` is invariant 6**: a candidate is immutable once recorded,
+    because its sub-scores describe its content and editing it would leave them
+    describing something that no longer exists. A regenerated timetable is a
+    NEW candidate under a NEW run.
+
+    `pre_analysis` and `diagnosis` follow the same rule for a weaker reason -
+    each stage runs once per run, so a second, different value means a caller
+    is confused rather than that the record should change.
+
+    ⚠️ **This exists because the two store implementations disagreed.** The
+    database store enforces write-once naturally (it inserts rows only when
+    none are present); this one replaced the whole record and silently accepted
+    an overwrite. `tests/integration/test_store_contract.py` runs one suite over
+    both and caught it - which is exactly what that suite is for, since the
+    divergence would otherwise have surfaced only in production, after a
+    restart, as a run that came back different from the one written.
+    """
+    return replace(
+        incoming,
+        candidates=existing.candidates or incoming.candidates,
+        pre_analysis=existing.pre_analysis or incoming.pre_analysis,
+        diagnosis=existing.diagnosis if existing.diagnosis is not None else incoming.diagnosis,
+    )
+
+
 class InMemoryRunStore:
     """Dict-backed, guarded by a lock.
 
@@ -172,7 +200,10 @@ class InMemoryRunStore:
 
     def save(self, record: RunRecord) -> None:
         with self._lock:
-            self._records[record.run.id] = record
+            existing = self._records.get(record.run.id)
+            self._records[record.run.id] = (
+                record if existing is None else _keep_written_once(existing, record)
+            )
 
     def all(self) -> tuple[RunRecord, ...]:
         with self._lock:

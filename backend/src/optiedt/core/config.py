@@ -15,6 +15,20 @@ class Settings(BaseSettings):
 
     # ── Database ───────────────────────────────────────────────────
     database_url: str = "postgresql+psycopg://optiedt:optiedt@localhost:5432/optiedt"
+    """⚠️ The port is 5432 by default and a developer machine may already run
+    its own PostgreSQL there. `docker compose up -d` SUCCEEDS in that case -
+    container healthy, mapping shown - while every connection reaches the OTHER
+    server (found 2026-08-04, README.md). Set OPTIEDT_POSTGRES_PORT for the
+    container and point this at the same port."""
+
+    persistence: str = "database"
+    """`database` (FR-19) or `memory`.
+
+    ⚠️ **Configuration, never detection.** A store that fell back to memory when
+    the database was unreachable would lose every run of that session while the
+    application looked healthy - and FR-19 is exactly the requirement that runs
+    survive a restart. `memory` has to be asked for; it exists for tests and for
+    a demonstration on a machine with no database."""
 
     # ── Security ───────────────────────────────────────────────────
     secret_key: str = "change-me-in-env"

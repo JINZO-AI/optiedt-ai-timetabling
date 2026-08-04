@@ -169,3 +169,24 @@ forbidden_modules =
 # catches is a router or a schema writing `import optiedt.solver` itself -
 # which is how a solve ends up inside a request handler.
 allow_indirect_imports = True
+
+# ── The REST surface does not know how anything is stored ──────────────
+# docs/architecture.md's module map gives optiedt.api `domain` and
+# `services` and nothing else. Phase 5 M3 made the stores database-backed,
+# and the natural way to wire that up - `api/deps.py` importing
+# SqlRunStore - would have put the ORM in the router layer and made every
+# API test depend on SQLAlchemy being importable.
+#
+# services/stores.py is the factory that keeps this true: the API asks for
+# a store and never learns what it is.
+#
+# DIRECT imports only, like api-cannot-reach-the-solver. `api -> services
+# -> db` is the sanctioned path and the factory takes it.
+[importlinter:contract:api-cannot-reach-the-database]
+name = API layer must not import the persistence layer
+type = forbidden
+source_modules =
+    optiedt.api
+forbidden_modules =
+    optiedt.db
+allow_indirect_imports = True

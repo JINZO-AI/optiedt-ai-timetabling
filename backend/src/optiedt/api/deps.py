@@ -23,12 +23,9 @@ from fastapi import Depends
 from optiedt.core.config import Settings
 from optiedt.domain.instance import Instance
 from optiedt.instance.loader import load_instance
-from optiedt.services.availability import (
-    AvailabilityStore,
-    InMemoryAvailabilityStore,
-    apply_declarations,
-)
-from optiedt.services.runs import InMemoryRunStore, RunStore
+from optiedt.services.availability import AvailabilityStore, apply_declarations
+from optiedt.services.runs import RunStore
+from optiedt.services.stores import build_availability_store, build_run_store
 from optiedt.tasks.executor import RunExecutor, cp_sat_factory
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[3]
@@ -60,14 +57,20 @@ def get_instance() -> Instance:
 
 @lru_cache(maxsize=1)
 def get_availability_store() -> AvailabilityStore:
-    """In-memory in Phase 4; Phase 5 substitutes a database-backed store."""
-    return InMemoryAvailabilityStore()
+    """Database-backed by default (FR-19, Phase 5 M3).
+
+    Built through `services.stores` rather than named here: this layer may not
+    import `optiedt.db` at all (`.importlinter`,
+    `api-cannot-reach-the-database`), and the module map gives it `domain` and
+    `services` only.
+    """
+    return build_availability_store(get_settings())
 
 
 @lru_cache(maxsize=1)
 def get_run_store() -> RunStore:
-    """In-memory in Phase 4; the run record proper is FR-19, Phase 5."""
-    return InMemoryRunStore()
+    """The run record — FR-19. Database-backed unless `persistence = memory`."""
+    return build_run_store(get_settings())
 
 
 def solve_instance() -> Instance:

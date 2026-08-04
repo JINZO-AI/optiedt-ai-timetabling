@@ -45,7 +45,25 @@ try {
     # Exit 5 (pytest collected nothing) is NOT tolerated. It was, while the
     # scaffold had no tests; allowing it now would let a broken collection -
     # an import error in conftest, a renamed directory - pass as success.
-    Invoke-Step 'tests'            { uv run pytest -m "not solver" }
+    Invoke-Step 'tests'            { uv run pytest -m "not solver and not database" }
+
+    # ── The store contract, against real PostgreSQL ────────────────────
+    # FAILS when Docker is running but the container is not: that is a
+    # forgotten `docker compose up -d`, it is actionable, and letting it pass
+    # would mean green certified nothing about FR-19's persistence.
+    #
+    # SKIPS when Docker itself is absent, matching how the frontend steps skip
+    # without node_modules. A machine with no Docker cannot be told to start a
+    # container it has no way to run.
+    $dockerUp = $false
+    try { docker info 2>&1 | Out-Null; $dockerUp = ($LASTEXITCODE -eq 0) } catch { $dockerUp = $false }
+
+    if ($dockerUp) {
+        Invoke-Step 'database tests' { uv run pytest -m database }
+    } else {
+        Write-Host "[skip] database tests - Docker is not running" -ForegroundColor Yellow
+        Write-Host "       FR-19's persistence is NOT covered by this run." -ForegroundColor Yellow
+    }
 } finally { Pop-Location }
 
 Invoke-Step 'instance' { & (Join-Path $root 'scripts\verify-instance.ps1') }
@@ -75,6 +93,13 @@ if ($failed.Count -gt 0) {
         Write-Host ""
         Write-Host "The instance no longer matches its documentation. Either the data" -ForegroundColor Yellow
         Write-Host "changed or the documents are now false - fix both." -ForegroundColor Yellow
+    }
+    if ($failed -contains 'database tests') {
+        Write-Host ""
+        Write-Host "PostgreSQL is not reachable. Start it with:" -ForegroundColor Yellow
+        Write-Host "    docker compose up -d" -ForegroundColor Yellow
+        Write-Host "If another server already owns 5432, set OPTIEDT_POSTGRES_PORT in .env" -ForegroundColor Yellow
+        Write-Host "and OPTIEDT_DATABASE_URL in backend/.env - see README.md." -ForegroundColor Yellow
     }
     exit 1
 }

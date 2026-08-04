@@ -125,10 +125,14 @@ Stages 1 and 2 always run. **Stage 3 runs only when stage 2 returns `INFEASIBLE`
    check that a solution exists before concluding the solver is slow.**
 2. **Optimisation** — one solve per weight profile, sequential, carries the objective, all workers,
    bounded by `max_deterministic_time` (ADR-011).
-3. **Diagnosis** — three properties imposed by CP-SAT itself, not choices: **a single worker**
-   (assumptions admit no parallelism), **no objective** (with one, the whole assumption set comes back
-   and the mechanism is useless), and the result is **sufficient, not minimal** — never present it as
-   the smallest conflict set.
+3. **Diagnosis** — **withdraw one rule at a time and solve plainly.** Establish that no timetable
+   exists, then remove each of H1/H3/H7/H12 in turn: if the model is still infeasible without it, that
+   rule was not needed. **A single worker** (reproducibility of the verdict, not a solver requirement),
+   **no objective** (imposed — it is a feasibility question), and **minimal only when every removal was
+   decided**; a removal the solver could not decide keeps its rule *for want of evidence*.
+   ⚠️ This replaced enforcement literals on measurement (**C-17**): a literal takes its constraint out
+   of presolve, and an infeasibility a plain solve proves in **0.0 s** returned `UNKNOWN` after 240 s.
+   Several minimal explanations can exist; one is reported, in catalogue order, so it is reproducible.
 
 ### Run lifecycle — asynchronous by necessity
 
@@ -178,9 +182,9 @@ code-review comment.
    `slot.is_open = 0` and H9 does the rest; a shortened-day window shifts *displayed* hours only.
    Adding a CP-SAT constraint for Ramadan or a closed Saturday is a bug (ADR-003).
 
-**Invariants 1 and 3 fail the build.** `backend/.importlinter` carries **nine** contracts and forbids
-`analysis → solver`, `analysis → db`, `assistant → db`, `api → solver`, and any product package
-importing `optiedt.validation`; the recommendation catalogue is a union type so a fourth variant is a
+**Invariants 1 and 3 fail the build.** `backend/.importlinter` carries **ten** contracts and forbids
+`analysis → solver`, `analysis → db`, `assistant → db`, `api → solver`, `api → db`, and any product
+package importing `optiedt.validation`; the recommendation catalogue is a union type so a fourth variant is a
 type error. Every contract is verified to fire before being relied on. **Do not weaken either to make a
 change compile.** The ninth (`api ⇸ solver`, Phase 4) earned that within one commit: it broke twice on
 new code and both times the fix was to move the import, never to relax the rule.
@@ -264,6 +268,7 @@ From `backend/`:
 | All tests | `uv run pytest` |
 | **One file** | `uv run pytest tests/unit/test_scoring.py` |
 | **One test** | `uv run pytest tests/unit/test_scoring.py::test_decomposition_is_exact` |
+| **Database tests** | `uv run pytest -m database` — needs `docker compose up -d` |
 | **By name** | `uv run pytest -k decomposition` |
 | Property tests only | `uv run pytest tests/property` |
 | Skip solver tests | `uv run pytest -m "not solver"` (already `run-checks.ps1`'s default — a solver test can legitimately take minutes) |

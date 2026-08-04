@@ -76,7 +76,7 @@ boundary does.
 
 ### Enforcement
 
-`backend/.importlinter` turns **nine** of these into build failures:
+`backend/.importlinter` turns **ten** of these into build failures:
 
 - `optiedt.analysis` ⇸ `optiedt.solver` — invariant 1
 - `optiedt.analysis` ⇸ `optiedt.db`
@@ -87,6 +87,7 @@ boundary does.
 - `optiedt.instance` ⇸ the decision and application layers — the loader is a leaf
 - every product package ⇸ `optiedt.validation` — the benchmark harness is not product code
 - `optiedt.api` ⇸ `optiedt.solver` — added Phase 4, verified to fire before being relied on
+- `optiedt.api` ⇸ `optiedt.db` — added Phase 5 M3, likewise verified by injecting a violation
 
 ⚠️ The ninth names the **solver only, not the analysis layer**. The comparison endpoint has to type its
 response against `analysis.interfaces` (`Decomposition`, `Contribution`, `DominanceVerdict`), which are
@@ -102,7 +103,7 @@ Run with `uv run lint-imports`. A specification sentence that is only prose deca
 does not.
 
 ⚠️ **Keep this list and `backend/.importlinter` in step.** This section said "three" until 2026-08-01,
-by which time the file carried eight — a contract that exists but is not documented gets weakened by
+by which time the file carried eight (and "nine" until 2026-08-04, by which time it carried ten) — a contract that exists but is not documented gets weakened by
 someone who never knew it was load-bearing. The file is the authority; this list restates it.
 
 ---
@@ -268,3 +269,13 @@ Five boundaries carry design weight rather than convenience:
 One unit. The server and the engine share an execution environment, which avoids serialising the whole
 problem between two processes at every generation (ADR-004). Development uses `docker compose` for
 PostgreSQL and runs the API and frontend natively for reload speed.
+
+⚠️ **The compose host port is configurable and defaults to 5432.** A machine already running its own
+PostgreSQL there makes `docker compose up -d` succeed while every host connection reaches the *other*
+server — container healthy, mapping shown, nothing wrong at the Docker layer. Set
+`OPTIEDT_POSTGRES_PORT` and a matching `OPTIEDT_DATABASE_URL`; see `README.md`.
+
+**Which store a process uses is configuration** (`persistence`), never detection. `services/stores.py`
+is the factory, so `optiedt.api` never imports `optiedt.db` — the tenth contract. A store that fell
+back to memory when the database was unreachable would lose every run while the application looked
+healthy, which is the precise opposite of what FR-19 asks for.

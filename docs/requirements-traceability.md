@@ -7,15 +7,24 @@ built?" without reading code.
 
 Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 
-**Where the project actually is: 14 of 25 requirements are under way, none is finished.**
-*(FR-2, 3, 4, 5, 6, 7, 8, 12, 13, 14, 15, 16, 17, 18 — count them in the table rather than trusting this line.)*
+**Where the project actually is: 15 of 25 requirements are under way, none is finished.**
+*(FR-2, 3, 4, 5, 6, 7, 8, 12, 13, 14, 15, 16, 17, 18, 19 — count them in the table rather than trusting this line.)*
 
-⚠️ **FR-8 joined in Phase 5 M2, and it stays `WIP` for a reason beyond its acceptance test.** The
-diagnosis run exists, is tested against real CP-SAT and names exactly the guilty rule on instances
-where one rule can be at fault. But it is **inconclusive on the reference instance**: enforcement
-literals defeat CP-SAT's presolve, so an infeasibility a plain solve proves in 0.0 s returns `UNKNOWN`
-after 240 s. That is **C-17**, open and measured. Do not promote FR-8 to `✓` on the strength of the
-unit tests — the requirement is that a report names the rules in conflict *for this faculty's data*.
+**FR-19 joined in Phase 5 M3.** Runs, weights, pre-analysis checks, the diagnosis, candidates,
+placements and sub-scores are recorded in PostgreSQL behind the Protocols Phase 4 left in place, and
+**no router changed**. Verified by killing the API and reading a run back from a fresh process. It
+stays `WIP` for its acceptance test, and because the criterion it serves — *every **published**
+timetable traces back to its run, seed and weights* — needs publication, which is M5.
+
+**FR-8 joined in Phase 5 M2.** The diagnosis run names exactly the guilty rule on instances where one
+rule can be at fault, and — after **C-17** replaced enforcement literals with rule withdrawal over
+plain subset solves — it answers on the reference instance too: `('H3',)`, minimal, in 1.9 s where the
+old mechanism returned `UNKNOWN` after 240 s.
+
+⚠️ It stays `WIP` for its acceptance test, and one limit belongs in it: on an infeasibility CP-SAT
+cannot prove at all — the C-13 contiguity shape — the report is honestly **inconclusive**, and the
+pre-analysis is what names the resource. Do not write the acceptance test as though stage 3 always
+produces codes.
 
 **FR-12 joined in Phase 5 M1.** The five checks run in `optiedt.preanalysis.verifications`, carry both
 the period bound and the contiguity bound, are recorded on every run and are displayed on the
@@ -120,7 +129,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking | `unit/test_recommendation` ✓ | **WIP** |
 | **FR-17** | Signal a recommended candidate that another dominates | Expected | `analysis` — dominance | `property` ✓ | **WIP** |
 | **FR-18** | Display occupancy of each classroom and laboratory | Expected | `features/timetable` | `integration` | **WIP** |
-| **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db`, `services` | `acceptance/test_fr19` | — |
+| **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db` ✓ — models, migration, repositories; `services/stores` ✓ | `integration/test_store_contract` ✓, `acceptance/test_fr19` | **WIP** |
 | **FR-22** | Explain a candidate's quality from computed figures | Necessary | `assistant` | `acceptance/test_fr22` | — |
 | **FR-23** | Regenerate from an accepted recommendation, preserving H1–H12 | Necessary | `recommendations` | `acceptance/test_fr23` | — |
 | **FR-24** | Answer a question in ordinary language about a run | Necessary | `assistant` | `acceptance/test_fr24` | — |

@@ -11,9 +11,24 @@ so a fixture they both consume is what makes drift between them visible.
 
 from __future__ import annotations
 
+import os
 from datetime import time
 
 import pytest
+
+# ⚠️ Every test runs against IN-MEMORY stores unless it asks for a database.
+#
+# Set before anything imports `optiedt.core.config`, because `get_settings()`
+# is lru_cached and the first call wins.
+#
+# This is not tidiness. When `persistence` began defaulting to "database" on
+# 2026-08-04, `test_availability_api.py` kept passing and quietly wrote two
+# rows into the developer's own database: it clears the dependency cache but
+# does not override the store. A green suite that depends on PostgreSQL being
+# up, and mutates it as a side effect, is worse than a failing one - it hides
+# both facts. Tests that mean to exercise the database say so with
+# `@pytest.mark.database` and take an explicit session factory.
+os.environ.setdefault("OPTIEDT_PERSISTENCE", "memory")
 
 from optiedt.domain.entities import (
     ConstraintDefinition,

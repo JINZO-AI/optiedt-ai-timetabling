@@ -60,4 +60,5 @@ pythonpath = ["src"]
 markers = [
     "solver: requires the CP-SAT solver; must fix a seed and a deterministic budget (ADR-011)",
     "acceptance: verifies a requirement against its acceptance criterion",
+    "database: requires a live PostgreSQL; run `docker compose up -d` first",
 ]

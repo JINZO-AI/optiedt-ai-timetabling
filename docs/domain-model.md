@@ -143,6 +143,25 @@ candidates produced, and are recorded with the run so a score can be recomputed 
 displayed. See ADR-009 — the candidate-derived alternative breaks the monotonicity property the
 specification requires, and silently invalidates cross-run comparison.
 
+### How the entities are stored · Phase 5 M3
+
+`backend/src/optiedt/db/models.py`, first migration `5d1497398fab`. **Normalised where this document
+names an entity** — `runs`, `run_weights`, `candidates`, `placements`, `sub_scores`, `run_checks`,
+`run_diagnoses`, `availability_declarations` — because those are the things a later question gets
+asked about. Two short ordered lists of scalars stay as JSON columns (`duplicates_removed`, a
+diagnosis's `conflicting_codes`): nothing joins to them, and a table each would add joins for no
+question anyone asks.
+
+Three rules the schema carries rather than assumes:
+
+- **Candidate order is data.** `candidates.rank_order` preserves the ranking the run produced, because
+  the interface displays that order and must not sort for itself. Read back with `ORDER BY`.
+- **Invariant 6 is enforced by omission.** No code path updates a candidate, a placement or a
+  sub-score; they are inserted once, when a run first carries them.
+- **A teacher who declared nothing is not a teacher who was never asked.** An empty declaration is
+  recorded with a marker row, so that "I am free all week" withdraws the generated rows while "not yet
+  asked" leaves them standing — the distinction "Origin of a declaration" above requires.
+
 ### Traceability of a publication
 
 A published timetable refers to the candidate, the run, the seed and the weights that produced it.
