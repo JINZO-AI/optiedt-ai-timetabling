@@ -179,10 +179,10 @@ requirement itself**. Tests live in `backend/tests/acceptance/`, one per criteri
 | FR-2 | Fill in the availability grid | Recorded in under 5 minutes | ⚠️ **not automatable** — a person, Phase 6 M6 |
 | FR-3 | Generate on the reference instance | No hard-constraint violation | ✅ `test_fr03`, `solver` |
 | FR-5 | Read a candidate | Overall score and sub-scores displayed | ✅ `test_fr05` |
-| FR-8 | Generate on a deliberately infeasible instance | Report naming the rules in conflict by code | ⬜ Phase 6 M3 |
+| FR-8 | Generate on a deliberately infeasible instance | Report naming the rules in conflict by code | ✅ `test_fr08`, `solver` — ⚠️ **both shapes**, and the criterion holds on only one |
 | FR-9 | Close a half-day in configuration | Those slots disappear from every timetable, **with no code change** | ⬜ Phase 6 M4 |
 | FR-11 | Connect with a teacher account | Access limited to own data | ✅ `test_fr11`, real tokens |
-| FR-12 | Verify an instance with insufficient rooms | The resource concerned and quantity missing are named | ⬜ Phase 6 M3 |
+| FR-12 | Verify an instance with insufficient rooms | The resource concerned and quantity missing are named | ✅ `test_fr12` |
 | FR-13 | Run on the reference instance | **Three distinct candidates on the reference instance at production settings** (C-5, resolved 2026-08-05) | ✅ `test_fr13`, `solver` |
 | FR-15 | Compare two candidates | Sum of contributions equals the score difference | ✅ `test_fr15` |
 | **FR-17** | Read a run's dominance verdicts | A candidate another matches everywhere and beats somewhere is signalled, **wherever it sits in the portfolio** (C-14) | ✅ `test_fr17` |

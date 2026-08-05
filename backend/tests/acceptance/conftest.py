@@ -125,7 +125,11 @@ class Application:
 
 
 @contextmanager
-def wire_application(solver_factory, role: str = "PERSON_IN_CHARGE") -> Iterator[Application]:
+def wire_application(
+    solver_factory,
+    role: str = "PERSON_IN_CHARGE",
+    instance_provider=None,
+) -> Iterator[Application]:
     """The application, wired to a given solver, as a context manager.
 
     A context manager rather than only a fixture because the expensive suites
@@ -150,10 +154,12 @@ def wire_application(solver_factory, role: str = "PERSON_IN_CHARGE") -> Iterator
     store = InMemoryRunStore()
     executor = RunExecutor(
         store=store,
-        # `solve_instance`, not a fixed instance: it is what the application
-        # itself provides, so a run here resolves declarations exactly as a
-        # real one does. FR-2 meeting FR-13 is part of the path under test.
-        instance_provider=deps.solve_instance,
+        # `solve_instance` by default, not a fixed instance: it is what the
+        # application itself provides, so a run here resolves declarations
+        # exactly as a real one does. FR-2 meeting FR-13 is part of the path
+        # under test. FR-8 and FR-12 pass their own, because their criteria are
+        # about an instance that has no solution.
+        instance_provider=instance_provider or deps.solve_instance,
         solver_factory=solver_factory,
     )
 
@@ -239,6 +245,58 @@ def solve_at_production_settings() -> dict[str, object]:
         run = application.launch(seed=PRODUCTION_SEED, deterministicBudget=PRODUCTION_BUDGET)
     assert run["state"] == "COMPLETED", f"state={run['state']} error={run['error']}"
     return run
+
+
+def keeping_only_computer_laboratories(instance, keep: int):
+    """The AREA case - an infeasibility CP-SAT CAN prove.
+
+    Withdrawing computer laboratories leaves `Lab_Info` demand at 160 periods
+    against `keep` x 28 available, which is the kind of contradiction
+    `AddCumulative` reasons about directly. Measured: `INFEASIBLE` in 5.5 s,
+    diagnosed `('H3',)` in 1.7 s.
+    """
+    import dataclasses
+
+    from optiedt.domain.enums import RoomType
+
+    labs = sorted((r for r in instance.rooms if r.type is RoomType.LAB_INFO), key=lambda r: r.id)
+    withdrawn = {r.id for r in labs[keep:]}
+    return dataclasses.replace(
+        instance, rooms=tuple(r for r in instance.rooms if r.id not in withdrawn)
+    )
+
+
+def the_original_room_mix(instance):
+    """The CONTIGUITY case - the infeasibility CP-SAT could NOT prove: C-13.
+
+    Re-types three rooms back to the mix the instance had before the 2026-07-30
+    repair: Salle 10 / Lab_Info 6 / Lab_Sciences 2. Room ids are read from the
+    data rather than hardcoded, so this survives a renumbering of rooms.csv -
+    the same construction as
+    `tests/unit/test_preanalysis.py::test_the_original_room_mix_is_caught`.
+
+    A room offers 11 two-period windows a week, so 6 computer laboratories
+    offer 66 against 80 needed. The period bound reads a comfortable 95.2 %,
+    which is exactly why it passed verification and cost three sessions.
+    """
+    import dataclasses
+
+    from optiedt.domain.enums import RoomType
+
+    labs_info = sorted(
+        (r for r in instance.rooms if r.type is RoomType.LAB_INFO), key=lambda r: r.id
+    )
+    labs_sciences = sorted(
+        (r for r in instance.rooms if r.type is RoomType.LAB_SCIENCES), key=lambda r: r.id
+    )
+    reverted = {r.id for r in labs_info[-2:]} | {r.id for r in labs_sciences[-1:]}
+    return dataclasses.replace(
+        instance,
+        rooms=tuple(
+            dataclasses.replace(r, type=RoomType.SALLE) if r.id in reverted else r
+            for r in instance.rooms
+        ),
+    )
 
 
 @pytest.fixture(scope="session")
