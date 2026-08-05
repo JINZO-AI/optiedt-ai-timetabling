@@ -44,11 +44,24 @@ to be trusted.
 - This aligns with reference practice — the curriculum-based competition evaluates timetables the same
   way.
 
-**Dominance is surfaced, not used for ordering.** A candidate improved by another on every criterion is
-signalled when it is the top-ranked one. The test is exact and needs no parameters, but it produces no
-order, since most candidates win on one criterion and lose on another. It is shown because **a dominated
-top candidate reveals that the weights are concealing a compromise rather than expressing one** — and
-the person in charge must then decide knowing that.
+**Dominance is surfaced, not used for ordering.** A candidate another matches on every criterion and
+beats on at least one is signalled, **wherever it appears in the portfolio**. The test is exact and
+needs no parameters, but it produces no order, since most candidates win on one criterion and lose on
+another.
+
+> ⚠️ **Correction, 2026-08-05 (C-14) — this paragraph described a signal that could never fire.**
+> It read: "A candidate improved by another on **every** criterion is signalled when it is the
+> **top-ranked** one … a dominated top candidate reveals that the weights are concealing a compromise."
+> Two independent defects. The rule was the strict one (`>` everywhere), which is silent precisely when
+> it matters — S10 carries weight 0, so a candidate beaten on all six *weighted* criteria and tied on
+> the seventh was reported as not dominated. And the top-candidate case is **arithmetically
+> unreachable**: every term of `score(B) − score(A)` is non-negative when B dominates A, and where the
+> sum is zero the tie-break covers all seven criteria and still favours B, so a dominated candidate can
+> never rank first. The stated rationale therefore described a situation the score forbids.
+>
+> The decision itself — dominance as a complement, never as the order — is **unchanged**, and that is
+> why this ADR is corrected rather than superseded. What changed is the rule and where the signal is
+> shown. Full account in `docs/open-questions.md`, C-14.
 
 ## Alternatives considered
 

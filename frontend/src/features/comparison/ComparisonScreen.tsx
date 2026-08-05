@@ -1,7 +1,15 @@
 import { useMemo, useState } from 'react'
 
-import { useComparison, useInstance, useRecommendation, useRun, useRuns } from '@/api/queries'
+import {
+  useComparison,
+  useDominance,
+  useInstance,
+  useRecommendation,
+  useRun,
+  useRuns,
+} from '@/api/queries'
 import { ContributionsTable } from '@/features/comparison/ContributionsTable'
+import { DominanceNotice } from '@/features/comparison/DominanceNotice'
 import type { Candidate, ConstraintDefinition } from '@/types/domain'
 
 /**
@@ -12,13 +20,12 @@ import type { Candidate, ConstraintDefinition } from '@/types/domain'
  * obtained — never its own scoring weight: the exact-decomposition identity
  * only holds when the same w_i prices both sides.
  *
- * ⚠️ **No dominance signal here yet.** `GET /runs/{id}/dominance` exists and is
- * tested, but what to show is open: dominance currently uses the strict reading
- * (better on *every* criterion), S10's zero weight makes ties ordinary, and the
- * "dominated top candidate" indicator both specification documents ask for is
- * provably unreachable — a dominated candidate cannot outscore its dominator.
- * Building it would ship an indicator that can never fire. See **C-14** in
- * docs/open-questions.md; it is the technical lead's decision.
+ * **The dominance signal landed in Phase 6 M1**, once **C-14** was resolved.
+ * Phase 4 shipped none at all, deliberately: under the strict reading then in
+ * force the only signal both specification documents described — "a dominated
+ * *top* candidate" — is provably unreachable, and a control that never fires
+ * teaches the reader it means "no problem found". What is displayed now is
+ * dominance *anywhere in the portfolio*, under the standard Pareto rule.
  *
  * ⚠️ **The screen does not claim what a profile "favours".** Under **C-15** the
  * objective weights raw violation counts of incomparable scale, so
@@ -57,6 +64,7 @@ export function ComparisonScreen() {
   const b = candidates.find((c) => c.id === bId) ?? candidates[1]
 
   const comparison = useComparison(selectedRunId, a?.id ?? null, b?.id ?? null)
+  const dominance = useDominance(selectedRunId)
 
   const catalogue = useMemo(
     () =>
@@ -149,6 +157,18 @@ export function ComparisonScreen() {
                 decomposition={comparison.data}
                 catalogue={catalogue}
                 digits={COMPARISON_DIGITS}
+              />
+            )}
+          </section>
+
+          <section className="panel">
+            <h2>Dominance</h2>
+            {dominance.isLoading && <p className="empty">Vérification…</p>}
+            {dominance.data && (
+              <DominanceNotice
+                verdicts={dominance.data}
+                candidates={candidates}
+                compared={[a.id, b.id]}
               />
             )}
           </section>

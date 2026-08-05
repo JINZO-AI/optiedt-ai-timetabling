@@ -697,10 +697,15 @@ class DecompositionOut(ApiModel):
 class DominanceVerdictOut(ApiModel):
     """A candidate another improves on across the board.
 
+    The rule is the standard Pareto one since C-14 was resolved on 2026-08-05:
+    at least as good on every criterion, strictly better on at least one.
+
     ⚠️ `dominated_by` is never set for the TOP-ranked candidate — that state is
-    provably unreachable under a linear weighted sum with non-negative weights
-    (C-14). A dominated runner-up is ordinary. Do not build a "top candidate is
-    dominated" indicator from this field.
+    provably unreachable under a linear weighted sum with non-negative weights,
+    and adopting Pareto did not change that (TIE_BREAK_ORDER covers all seven
+    criteria, so even a tie on score resolves in the dominator's favour). A
+    dominated runner-up is ordinary and is what the comparison screen reports.
+    Do not build a "top candidate is dominated" indicator from this field.
     """
 
     candidate: str

@@ -48,18 +48,47 @@ try {
     Invoke-Step 'tests'            { uv run pytest -m "not solver and not database" }
 
     # ── The store contract, against real PostgreSQL ────────────────────
-    # FAILS when Docker is running but the container is not: that is a
+    # FAILS when Docker is running but no database was reached: that is a
     # forgotten `docker compose up -d`, it is actionable, and letting it pass
     # would mean green certified nothing about FR-19's persistence.
     #
     # SKIPS when Docker itself is absent, matching how the frontend steps skip
     # without node_modules. A machine with no Docker cannot be told to start a
     # container it has no way to run.
+    #
+    # ⚠️ The failing half did NOT work until 2026-08-05, and it failed in the
+    # worst direction. This checked only whether the DAEMON was up. With the
+    # daemon running and the container stopped, the session fixture in
+    # tests/integration/test_store_contract.py skips, pytest exits 0, and this
+    # step printed [ok] - so `run-checks.ps1` reported "All checks passed" while
+    # FR-19's persistence was covered by nothing at all. Found by reading the
+    # step's own output during Phase 6 M1: "38 skipped" under a green tick.
+    #
+    # The check is therefore on the RESULT, not on the daemon: the run must
+    # report tests that actually passed. That also covers the case a container
+    # check would miss - `docker compose up -d` succeeds while another
+    # PostgreSQL owns the port, so a running container is not proof that the
+    # suite reached the database this repository ships (see CLAUDE.md).
     $dockerUp = $false
     try { docker info 2>&1 | Out-Null; $dockerUp = ($LASTEXITCODE -eq 0) } catch { $dockerUp = $false }
 
     if ($dockerUp) {
-        Invoke-Step 'database tests' { uv run pytest -m database }
+        Write-Host "[..] database tests" -ForegroundColor Cyan
+        $dbOutput = & { uv run pytest -m database } 2>&1
+        $dbOutput | Out-Host
+        $dbExit = $LASTEXITCODE
+        $ranSomething = ($dbOutput | Out-String) -match '\d+\s+passed'
+
+        if ($dbExit -ne 0) {
+            Write-Host "[FAIL] database tests (exit $dbExit)" -ForegroundColor Red
+            $failed.Add('database tests')
+        } elseif (-not $ranSomething) {
+            Write-Host "[FAIL] database tests - every test skipped, so nothing was verified" -ForegroundColor Red
+            Write-Host "       Docker is running but no database was reached." -ForegroundColor Yellow
+            $failed.Add('database tests')
+        } else {
+            Write-Host "[ok] database tests" -ForegroundColor Green
+        }
     } else {
         Write-Host "[skip] database tests - Docker is not running" -ForegroundColor Yellow
         Write-Host "       FR-19's persistence is NOT covered by this run." -ForegroundColor Yellow

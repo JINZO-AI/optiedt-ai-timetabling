@@ -154,7 +154,7 @@ example would demonstrate something weaker than what is promised to the departme
 | Exactness of decomposition | The sum of the contributions equals the difference of the two scores |
 | Invariance of order | The order does not depend on the order candidates are read in |
 | Monotonicity | Reducing violations of one criterion never lowers the score |
-| Detection of dominance | A candidate improved on every criterion is signalled |
+| Detection of dominance | A candidate another matches on every criterion and beats on at least one is signalled (Pareto — C-14) |
 | Fidelity of formulation | Every figure in the model's sentence appears in the structured explanation |
 
 Two notes:
@@ -231,7 +231,7 @@ share the fast suite's constraints:**
 | Marker | Why | How it runs |
 |---|---|---|
 | `solver` | Invokes CP-SAT on the real instance; can legitimately take minutes | Excluded from `run-checks.ps1`; `uv run pytest -m solver` |
-| `database` | Needs a live PostgreSQL | Its own `run-checks.ps1` step. **Fails** if Docker is up but the container is not — a forgotten `docker compose up -d` is actionable. **Skips** if Docker is absent |
+| `database` | Needs a live PostgreSQL | Its own `run-checks.ps1` step. **Fails if no database was reached** — a forgotten `docker compose up -d` is actionable. **Skips** if Docker is absent. ⚠️ This said "fails if Docker is up but the container is not", and until Phase 6 M1 that was a description of an intention: the step checked the *daemon*, so a stopped container let all 38 tests skip under a green tick. It now requires the run to report tests that **passed** |
 | `acceptance` | One test per FR criterion | Phase 6 |
 
 ⚠️ **Every test runs against in-memory stores unless it asks for a database.** `tests/conftest.py`

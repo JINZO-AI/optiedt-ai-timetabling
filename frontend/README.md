@@ -13,8 +13,13 @@ npm run test
 
 ## Screens
 
-⚠️ **Read the State column before believing a row.** Seven directories are listed; **six carry a
-screen** and the rest hold a `.gitkeep`.
+⚠️ **Read the State column before believing a row.** **Nine** directories are listed; **seven carry a
+screen** and the other two hold a `.gitkeep`.
+
+⚠️ *Both numbers were wrong until 2026-08-05 — the line said seven listed and six with a screen. The
+Phase 5 audit corrected this row once already, from "four", and corrected it to a figure that was also
+wrong. **Derive it rather than editing it:** `Get-ChildItem src/features -Directory` for the first, and
+the count of non-test `.tsx` files under them for the second.*
 
 | Directory | Screen | Requirements | State |
 |---|---|---|---|
@@ -22,7 +27,7 @@ screen** and the rest hold a `.gitkeep`.
 | `features/availability/` | Weekly grid, each open slot available **or unavailable**. A teacher edits **their own**, taken from the token | FR-2, FR-11 | ✅ Phase 4, scoped in M4 |
 | `features/generation/` | Weight profiles, deterministic budget, launch, run state, candidates with sub-scores, the pre-analysis report, publish | FR-13, FR-5, FR-6, FR-12 | ✅ Phase 4, extended M1 and M5 |
 | `features/timetable/` | Weekly grid by teacher, group or room, plus room occupancy | FR-7, FR-18 | ✅ Phase 4 |
-| `features/comparison/` | Two candidates side by side, criteria table, contributions | FR-14, FR-15 | ✅ Phase 4 |
+| `features/comparison/` | Two candidates side by side, criteria table, contributions, **dominance** | FR-14, FR-15, FR-17 | ✅ Phase 4, dominance added Phase 6 M1 |
 | `features/conflicts/` | Rules named by the diagnosis run, and what an empty set means | FR-8 | ✅ Phase 5 M2 |
 | `features/publication/` | Published timetables with the trace back to run, seed and weights | FR-19 | ✅ Phase 5 M5 |
 | `features/admin/` | Holidays, closed half-days, shortened-day window, **account management** | FR-9 | ⬜ not built. ⚠️ FR-11's *authentication* is done; the administrator's **account management** from SRS Table 2 is not, and C-18 records why |
@@ -35,9 +40,11 @@ right.
 
 **Not built, and deliberately so:**
 
-- **No dominance signal** on the comparison screen (FR-17). C-14 is open, and the "dominated top
-  candidate" indicator both specification documents ask for is *provably unreachable* — a dominated
-  candidate cannot outscore its dominator. Building it would ship a control that can never fire.
+- ~~**No dominance signal** on the comparison screen (FR-17).~~ **Built in Phase 6 M1**, once C-14 was
+  resolved. It reports dominance **portfolio-wide**, never at the top rank: the "dominated top
+  candidate" indicator both specification documents asked for is *provably unreachable* — a dominated
+  candidate cannot outscore its dominator — so it was the *specification wording* that was corrected,
+  not the control that was built. `DominanceNotice.tsx`, eight display tests.
 - **No preferred state** in the availability grid. `teacher_availability.csv` carries a boolean, so a
   third cell would collect an answer with nowhere to record it (C-12(a), decided 2026-08-01).
 - **No printing or export** (FR-10), and **no regeneration from a recommendation** (FR-23).

@@ -94,12 +94,14 @@ class Decomposition:
 
 @dataclass(frozen=True, slots=True)
 class DominanceVerdict:
-    """A candidate improved by another on EVERY criterion is dominated.
+    """A candidate another matches on EVERY criterion and beats on AT LEAST
+    ONE is dominated — the standard Pareto rule (C-14, resolved 2026-08-05).
 
-    Surfaced when it happens to the top-ranked candidate, because that reveals
-    the weights are concealing a compromise rather than expressing one. Exact,
-    needs no parameters — but produces no order, so it complements the weighted
-    sum and never replaces it.
+    Surfaced WHEREVER it occurs in the portfolio. ⚠️ Not at the top rank: a
+    dominated candidate cannot outscore its dominator, so that state is
+    unreachable and an indicator on it would never fire. Exact, needs no
+    parameters — but produces no order, so it complements the weighted sum and
+    never replaces it.
     """
 
     candidate: str
@@ -112,7 +114,7 @@ class Recommendation:
 
     docs/scoring-and-explanation.md states the whole rule: "The recommendation
     designates the candidate of highest score, and states the rule that
-    produced it. A dominated top candidate is signalled alongside."
+    produced it."
 
     ``rule`` is carried as text rather than left for the interface to invent,
     because the point of the rule is that it can be CHECKED: "recommended
@@ -120,11 +122,15 @@ class Recommendation:
     the department can verify against the sub-scores recorded with the run. An
     interface that phrased it differently on each screen would lose that.
 
-    ⚠️ ``dominated_by`` is the part that must not be dropped in display. A
-    dominated top candidate means the weights are *concealing* a compromise
-    rather than expressing one, and the person in charge has to decide knowing
-    that. Recommending it silently would be worse than not recommending at
-    all.
+    ⚠️ ``dominated_by`` is PROVABLY always None and no display reads it. That
+    document carried a third sentence - "A dominated top candidate is signalled
+    alongside" - until C-14 was resolved on 2026-08-05; it described a state a
+    linear weighted sum with non-negative weights forbids, so it was removed
+    rather than left as a promise nothing could keep. The field stays because
+    FR-16's statement names it and because a non-linear score or a negative
+    weight would revive it, and it is pinned dead by
+    test_a_dominated_candidate_is_never_recommended. What a user sees instead
+    is the portfolio-wide verdict above.
     """
 
     candidate: str

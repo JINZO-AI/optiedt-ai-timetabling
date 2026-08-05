@@ -106,11 +106,14 @@ def compare(
     summary="FR-17 — candidates another improves on across the board",
 )
 def dominance(store: RunStoreDep, _user: CurrentUserDep, run_id: str) -> list[DominanceVerdictOut]:
-    """⚠️ The top-ranked candidate is never dominated — provably (C-14).
+    """Pareto dominance across the whole portfolio (C-14, resolved 2026-08-05):
+    at least as good on every criterion, strictly better on at least one.
 
-    A dominated runner-up is ordinary and is what this reports. Do not build a
-    "top candidate is dominated" indicator on it; that state cannot occur under
-    a linear weighted sum with non-negative weights.
+    ⚠️ The top-ranked candidate is never dominated — provably, and adopting
+    Pareto did not change that. A dominated runner-up is ordinary and is what
+    this reports; `features/comparison/DominanceNotice.tsx` displays it. Do not
+    build a "top candidate is dominated" indicator on it; that state cannot
+    occur under a linear weighted sum with non-negative weights.
     """
     return [DominanceVerdictOut.of(v) for v in dominance_for(_require_run(store, run_id))]
 

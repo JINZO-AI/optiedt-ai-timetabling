@@ -60,10 +60,13 @@ display half is now built and tested, and the acceptance criterion it serves —
 summing to the displayed score difference — is **met** (`docs/status.md`). FR-15 stays `WIP` only for
 its acceptance test, which is Phase 6.
 
-⚠️ **FR-17 is deliberately not advanced by M5.** `GET /runs/{id}/dominance` exists and is tested, but
-the comparison screen shows no dominance signal: **C-14** is open, and the "dominated top candidate"
-indicator both documents ask for is provably unreachable. Building it would ship an indicator that can
-never fire. Phase 2 built
+✅ **FR-17 advanced in Phase 6 M1, once C-14 was resolved.** Phase 4's M5 deliberately did not advance
+it: the comparison screen showed no dominance signal at all, because the "dominated top candidate"
+indicator both documents ask for is provably unreachable and building it would have shipped a control
+that can never fire. **C-14 was decided on 2026-08-05** — the standard Pareto rule, with the signal
+moved off the top candidate — and `features/comparison/DominanceNotice.tsx` now reports dominance
+wherever it occurs in the portfolio, with eight display tests. It stays `WIP` for its acceptance test
+(Phase 6 M2), not for a missing decision. Phase 2 built
 the decision layer (FR-3) and Phase 3 built the objective, scoring, ranking, decomposition, dominance,
 the portfolio and the recommendation rule (FR-4, FR-5, FR-6, FR-13, FR-15, FR-16, FR-17) — but a
 requirement is only `✓` once a user can reach it, and there is no API or interface yet. Do not read the
@@ -74,11 +77,15 @@ contradiction: the phases deliver capability, the requirements deliver *reachabl
 remaining `—` needs the interface (Phase 4) or the run record (Phase 5). The one thing to watch is the
 temptation to promote a status because a phase closed.
 
-⚠️ **FR-16 is implemented but one third of it can never fire.** "A dominated top candidate is signalled
-alongside" describes a state the arithmetic forbids — a dominated candidate cannot outscore its
-dominator under a linear weighted sum with non-negative weights, so it can never rank first. The field
-exists, is tested, and is provably always empty. See C-14 in [`docs/open-questions.md`](open-questions.md);
-the specification wording needs revising, which is not a keyboard decision.
+⚠️ **FR-16 lost a clause on 2026-08-05 rather than gaining an implementation.** "A dominated top
+candidate is signalled alongside" describes a state the arithmetic forbids — a dominated candidate
+cannot outscore its dominator under a linear weighted sum with non-negative weights, so it can never
+rank first. **C-14 resolved this by deleting the clause**, and the ERRATA table in
+[`docs/open-questions.md`](open-questions.md) carries the replacement wording for the CdC and SRS. The
+field still exists, is still tested, and is still provably always empty — kept because FR-16's
+statement names it and because a non-linear score or a negative weight would revive it. ⚠️ **Adopting
+the Pareto rule did not revive it**, and that was checked rather than assumed: `TIE_BREAK_ORDER` covers
+all seven criteria, so even the tie Pareto newly admits resolves in the dominator's favour.
 
 **FR-3 is `WIP`, not `✓`, deliberately.** H1–H12 are implemented and demonstrated on the reference
 instance, with every hard constraint re-derived from the raw CSVs rather than trusted from CP-SAT's
@@ -100,7 +107,8 @@ reads, `GET /runs/{id}/comparison`, `/dominance` and `/recommendation` are imple
 seven stay `WIP` regardless, because **a requirement is `✓` only once a user can reach it** and there is
 still no screen. What each is now waiting on is narrower than "no endpoint": FR-5, FR-6 and FR-13 need
 M3's generation screen; FR-14 and FR-15 need M5's comparison screen; FR-16 and FR-17 need M5 too, and
-FR-17 additionally needs **C-14** settled. FR-13 also still carries its own second reason below.
+FR-17 additionally needed **C-14** settled, which it was on 2026-08-05. FR-13 also still carries its own
+second reason below.
 
 **FR-16 is on that list and stays `WIP` for the ordinary reason** — no user can reach the
 recommendation yet. The ⚠️ note above is about something else: one *clause* of FR-16 describes a state
@@ -135,7 +143,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-14** | Compare two candidates criterion by criterion | Necessary | `features/comparison` | `integration` | **WIP** |
 | **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition; `features/comparison` | `property` ✓, `frontend ContributionsTable.test` ✓, `acceptance/test_fr15` | **WIP** |
 | **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking | `unit/test_recommendation` ✓ | **WIP** |
-| **FR-17** | Signal a recommended candidate that another dominates | Expected | `analysis` — dominance | `property` ✓ | **WIP** |
+| **FR-17** | Signal a candidate that another dominates, wherever it appears in the portfolio ⚠️ *statement corrected, C-14* | Expected | `analysis` — dominance ✓; `features/comparison` ✓ | `property` ✓, `unit/test_recommendation` ✓, `frontend DominanceNotice.test` ✓, `acceptance/test_fr17` | **WIP** |
 | **FR-18** | Display occupancy of each classroom and laboratory | Expected | `features/timetable` | `integration` | **WIP** |
 | **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db` ✓ — models, migrations, repositories; `services/stores` ✓; `services/publications` ✓; `features/publication` ✓ | `integration/test_store_contract` ✓, `integration/test_publication` ✓, `frontend TraceTable.test` ✓, `acceptance/test_fr19` | **WIP** |
 | **FR-22** | Explain a candidate's quality from computed figures | Necessary | `assistant` | `acceptance/test_fr22` | — |

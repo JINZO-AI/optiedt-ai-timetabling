@@ -35,7 +35,7 @@ Other fixed vocabulary:
 | **Portfolio** | The set of candidates produced by one run |
 | **Sub-score** | One criterion's value for one candidate, brought into [0, 1] |
 | **Contribution** | The part of the difference between two scores attributable to one criterion |
-| **Dominated candidate** | One that another candidate improves on **every** criterion |
+| **Dominated candidate** | One that another candidate matches on **every** criterion and beats on **at least one** — the standard Pareto rule (C-14, 2026-08-05; this read "improves on every criterion" before) |
 | **Comparison** | The recorded choice when the person in charge retains one candidate over another |
 
 ---

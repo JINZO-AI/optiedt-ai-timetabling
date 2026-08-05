@@ -191,17 +191,23 @@ def test_reducing_a_raw_violation_count_never_lowers_the_score(
     values=st.tuples(*[_normalised for _ in CODES]),
     weight_values=st.tuples(*[_weight for _ in CODES]),
 )
-def test_a_candidate_tied_on_one_criterion_is_not_reported_dominated(values, weight_values):
-    """Pins the STRICT reading of dominance that
-    docs/scoring-and-explanation.md states ("improves on every criterion"),
-    as opposed to the textbook Pareto rule ("at least as good on all, better
-    on one"). A candidate beaten on six criteria but tied on the seventh is
-    NOT dominated here.
+def test_a_candidate_tied_on_one_criterion_is_reported_dominated(values, weight_values):
+    """Pins the PARETO reading adopted 2026-08-05 (C-14): at least as good on
+    every criterion, strictly better on at least one.
 
-    This test exists to make that a deliberate, visible choice rather than an
-    accident of a ``>`` someone might "fix" to ``>=`` - switching it is a
-    specification decision (see ranking.py's dominance docstring and
-    docs/open-questions.md).
+    ⚠️ This test asserted the OPPOSITE until that date, under the strict
+    reading docs/scoring-and-explanation.md then carried ("improves on every
+    criterion"), and it existed to stop anyone "fixing" the ``>`` to ``>=`` by
+    accident. The reading was changed deliberately, so the test is inverted
+    rather than deleted - the case it covers is exactly the one that decided
+    C-14. S10 carries weight 0, nothing optimises for it, so a candidate beaten
+    on all six WEIGHTED criteria and tied on the seventh is ordinary, and the
+    strict rule called it not dominated - silent precisely where the signal
+    exists to speak.
+
+    The reading is a specification decision, not a keyboard one: see
+    ranking.py's dominance docstring and C-14 in docs/open-questions.md before
+    changing it back.
     """
     weights = _weights(weight_values)
     worse = _candidate("worse", values)
@@ -209,18 +215,54 @@ def test_a_candidate_tied_on_one_criterion_is_not_reported_dominated(values, wei
     better_values = tuple(
         v if i == len(CODES) - 1 else min(1.0, v + 0.5) for i, v in enumerate(values)
     )
+    if better_values == values:
+        return  # every criterion already at the ceiling; nothing improved
     better = _candidate("better", better_values)
     ranker = DefaultRanker(weights=weights)
 
     verdicts = {v.candidate: v.dominated_by for v in ranker.dominance([worse, better])}
-    assert verdicts["worse"] is None
+    assert verdicts["worse"] == "better"
+    assert verdicts["better"] is None
+
+
+@given(
+    values=st.tuples(*[_normalised for _ in CODES]),
+    weight_values=st.tuples(*[_weight for _ in CODES]),
+)
+def test_two_candidates_equal_on_every_criterion_dominate_neither(values, weight_values):
+    """The edge the Pareto rule introduces and the strict rule could not reach.
+
+    Under ">= everywhere" alone, two identical candidates would each dominate
+    the other, and the report would name a compromise where there is only a
+    duplicate. The second clause - strictly better on at least one - is what
+    refuses, and it must be tested as a property because it is the whole
+    difference between Pareto and "no worse anywhere".
+
+    Not hypothetical: services/portfolio.py removes duplicate TIMETABLES, but
+    two different timetables can score identically on all seven criteria.
+    """
+    weights = _weights(weight_values)
+    a = _candidate("A", values)
+    b = _candidate("B", values)
+    ranker = DefaultRanker(weights=weights)
+
+    verdicts = {v.candidate: v.dominated_by for v in ranker.dominance([a, b])}
+
+    assert verdicts["A"] is None
+    assert verdicts["B"] is None
 
 
 @given(weight_values=st.tuples(*[_weight for _ in CODES]))
 def test_a_candidate_with_no_sub_scores_is_never_dominated(weight_values):
     """``all()`` over an empty criterion set is vacuously true, so a candidate
     carrying no sub-scores would otherwise be reported as dominated by an
-    arbitrary other candidate on no evidence whatsoever."""
+    arbitrary other candidate on no evidence whatsoever.
+
+    Under the strict reading this needed an explicit guard in
+    ``DefaultRanker.dominance``. Under Pareto (C-14) it falls out of the rule -
+    ``any()`` over the same empty set is False, so the second clause refuses -
+    and the guard was removed as dead code. This test is what keeps the
+    behaviour pinned now that no line of source states it."""
     weights = _weights(weight_values)
     empty = Candidate(
         id="empty",
@@ -249,20 +291,25 @@ def test_a_dominated_candidate_is_never_recommended(base_values, margin, weight_
     """FR-16's third sentence describes an unreachable state, and this is the
     universal form of that claim.
 
-    docs/scoring-and-explanation.md says "a dominated top candidate is
-    signalled alongside" - but under a linear weighted sum with non-negative
-    weights a dominated candidate cannot BE the top candidate:
+    The specification said "a dominated top candidate is signalled alongside" -
+    but under a linear weighted sum with non-negative weights a dominated
+    candidate cannot BE the top candidate:
 
         score(B) - score(A) = 100 * sum( w_i * (n_i(B) - n_i(A)) )
 
-    with every term non-negative when B dominates A, and renormalised weights
-    summing to 1 so at least one is positive. Hence score(B) > score(A).
+    with every term non-negative when B dominates A. Under the strict reading
+    at least one weight was positive and one gain strict, so score(B) >
+    score(A) outright. ⚠️ Under PARETO (C-14) the sum can be exactly zero -
+    when the only strict gain falls on the zero-weight S10 - and the claim
+    still holds, because TIE_BREAK_ORDER covers all seven criteria and resolves
+    the tie in B's favour. **Adopting Pareto did not revive this field**, and
+    that was checked rather than assumed.
 
-    The signal is therefore dead code today. It is kept because the
-    specification requires it and because C-14 (the dominance rule) or any
-    change to the scoring function could revive it - but it must be dead
-    provably, not by accident. Tested as a property rather than an example
-    because the claim is universal over weights and sub-scores.
+    The signal is therefore still dead code. It is kept because the
+    specification names it and because a non-linear score or a negative weight
+    would revive it - but it must be dead provably, not by accident. Tested as
+    a property rather than an example because the claim is universal over
+    weights and sub-scores.
     """
     dominated_values = base_values
     dominator_values = tuple(min(1.0, v + margin) for v in base_values)

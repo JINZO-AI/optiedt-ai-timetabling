@@ -339,7 +339,12 @@ def test_comparing_a_candidate_with_itself_is_refused(wired: Wired) -> None:
 
 
 def test_the_top_candidate_is_never_reported_dominated(wired: Wired) -> None:
-    """C-14: provably unreachable, so the API must never claim it."""
+    """C-14: provably unreachable, so the API must never claim it.
+
+    Still true after C-14 adopted the Pareto rule on 2026-08-05, and checked
+    rather than assumed: TIE_BREAK_ORDER covers all seven criteria, so even the
+    score tie Pareto newly admits resolves in the dominator's favour.
+    """
     run = wired.launch()
     verdicts = wired.client.get(f"/api/runs/{run['id']}/dominance").json()
     top = run["candidates"][0]["id"]

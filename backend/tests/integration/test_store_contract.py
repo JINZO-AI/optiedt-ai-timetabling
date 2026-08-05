@@ -60,10 +60,17 @@ def _test_database_url() -> str:
 def session_factory() -> Iterator[sessionmaker[Session]]:
     """A live PostgreSQL, or skip with a message that names the fix.
 
-    Skipping rather than failing is decided in `scripts/run-checks.ps1`, which
-    knows whether Docker is running: a forgotten `docker compose up -d` fails
-    the build there, while a machine with no Docker at all skips. Here, the
-    only honest thing to do without a server is to say so.
+    Skipping rather than failing is decided in `scripts/run-checks.ps1`: a
+    forgotten `docker compose up -d` fails the build there, while a machine
+    with no Docker at all skips. Here, the only honest thing to do without a
+    server is to say so.
+
+    ⚠️ That sentence was aspirational until 2026-08-05. `run-checks.ps1`
+    checked only whether the Docker DAEMON was up, so a stopped container let
+    this fixture skip all 38 tests, pytest exit 0, and the step print [ok] -
+    the build reported "All checks passed" with FR-19's persistence covered by
+    nothing. The step now fails unless the run reports tests that actually
+    passed, and the guard was verified to fire by stopping the container.
     """
     from optiedt.db import models  # noqa: F401 - registers the tables on Base.metadata
     from optiedt.db.base import Base

@@ -14,6 +14,7 @@ import type {
   Availability,
   AvailabilityState,
   Decomposition,
+  DominanceVerdict,
   InstanceData,
   RecommendedCandidate,
   Run,
@@ -89,10 +90,25 @@ export function useComparison(runId: string | null, a: string | null, b: string 
   })
 }
 
-// No `useDominance` hook, deliberately. `GET /runs/{id}/dominance` exists and is
-// tested, but C-14 is open and Phase 4 ships no dominance signal, so a hook
-// here would be a code path nothing exercises. Add it with the screen that
-// uses it — see C-14 in docs/open-questions.md.
+/**
+ * FR-17 — which candidates another improves on across the board.
+ *
+ * Added in Phase 6 M1, once **C-14** was resolved. Until then there was no hook
+ * here on purpose: the endpoint existed and was tested, but no screen showed a
+ * dominance signal, so a hook would have been a code path nothing exercised.
+ *
+ * ⚠️ The verdicts are portfolio-wide, and that is the point of the resolution.
+ * The signal the specification originally asked for — "a dominated **top**
+ * candidate" — is arithmetically unreachable, so what is displayed is a
+ * dominated candidate *anywhere* in the run.
+ */
+export function useDominance(runId: string | null) {
+  return useQuery({
+    queryKey: ['dominance', runId],
+    queryFn: () => apiGet<DominanceVerdict[]>(`/runs/${runId as string}/dominance`),
+    enabled: runId !== null,
+  })
+}
 
 export function useAvailability(teacherId: string | null) {
   return useQuery({

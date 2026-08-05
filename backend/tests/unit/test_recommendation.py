@@ -13,8 +13,13 @@ that the department can check the sentence.
 
 ⚠️ One of the three sentences describes a state that cannot occur. See
 test_a_dominated_candidate_can_never_rank_first - the proof is short and it
-is why Recommendation.dominated_by is always None. Recorded under C-14 in
-docs/open-questions.md rather than resolved here.
+is why Recommendation.dominated_by is always None.
+
+C-14 resolved that on 2026-08-05, and the outcome is worth stating precisely
+because it is easy to misread: the DOMINANCE RULE changed (strict -> Pareto)
+and the unreachable clause did NOT become reachable. The signal a user sees is
+now the portfolio-wide one; "a dominated TOP candidate" remains impossible, and
+the specification wording was corrected rather than the field revived.
 """
 
 from __future__ import annotations
@@ -108,14 +113,23 @@ def test_a_single_candidate_is_recommended_and_is_not_dominated(ranker):
 def test_a_dominated_candidate_can_never_rank_first(ranker):
     """The proof behind the point above, as an executable statement.
 
-    If B dominates A then n_i(B) > n_i(A) for EVERY criterion, so
+    If B dominates A then n_i(B) >= n_i(A) for EVERY criterion, so
 
         score(B) - score(A) = 100 * sum( w_i * (n_i(B) - n_i(A)) )
 
-    is a sum of non-negative terms, and renormalised weights sum to 1 so at
-    least one weight is positive. Hence score(B) > score(A) strictly, and A
-    cannot be top-ranked. Non-negativity of the weights is what makes this
-    hold - which is exactly why analysis/scoring.py refuses a negative one.
+    is a sum of non-negative terms. Two cases, and BOTH must be covered since
+    C-14 adopted Pareto:
+
+    - Some strict gain falls on a criterion with positive weight, so the sum is
+      strictly positive and score(B) > score(A).
+    - Every strict gain falls on a ZERO-weight criterion (S10 is the real
+      case), so the scores tie - and TIE_BREAK_ORDER covers all seven criteria,
+      resolving the tie in B's favour at the first code where they differ.
+
+    Either way A cannot be top-ranked. Non-negativity of the weights is what
+    makes the first case hold - which is exactly why analysis/scoring.py
+    refuses a negative one - and the completeness of TIE_BREAK_ORDER is what
+    makes the second hold.
     """
     dominated = _candidate("dominated", 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70)
     dominator = _candidate("dominator", 0.11, 0.21, 0.31, 0.41, 0.51, 0.61, 0.71)
@@ -130,11 +144,17 @@ def test_the_recommendation_is_therefore_never_flagged_dominated(ranker):
     """Consequence of the proof above: Recommendation.dominated_by is
     unreachable under a linear weighted sum with non-negative weights.
 
-    The field is kept rather than deleted because
-    docs/scoring-and-explanation.md requires the signal, and because a change
-    to the dominance rule (C-14) or to the scoring function would make it
-    reachable again. It is dead today, and it must be dead for a reason
-    someone can check - not quietly absent.
+    ⚠️ This docstring used to say a change to the dominance rule "would make it
+    reachable again". C-14 made exactly that change on 2026-08-05 - strict to
+    Pareto - and it did NOT. The prediction was wrong because it overlooked
+    TIE_BREAK_ORDER, which covers all seven criteria and settles the one case
+    Pareto adds. Corrected here rather than quietly dropped: a guess about what
+    would break a property is worth keeping only if it is marked when it fails.
+
+    What could still revive the field is a NON-LINEAR score or a negative
+    weight. The field is kept rather than deleted because FR-16 names the
+    signal; it is dead today, and it must be dead for a reason someone can
+    check - not quietly absent.
     """
     dominated = _candidate("dominated", 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70)
     dominator = _candidate("dominator", 0.11, 0.21, 0.31, 0.41, 0.51, 0.61, 0.71)
@@ -157,6 +177,45 @@ def test_dominance_still_reports_non_top_candidates(ranker):
 
     assert verdicts["middling"] == "best"
     assert verdicts["best"] is None
+
+
+def test_a_candidate_beaten_on_every_weighted_criterion_and_tied_on_s10_is_dominated(ranker):
+    """The concrete case C-14 was decided on, at the CATALOGUE weights.
+
+    S10 carries weight 0, so nothing optimises for it and a tie there is
+    ordinary rather than rare. Under the strict reading this candidate - worse
+    on all six criteria that carry weight, equal on the seventh - was reported
+    NOT dominated, which is exactly the concealed compromise the signal exists
+    to surface. Under Pareto it is dominated.
+
+    Kept as an example alongside the property test because the property covers
+    arbitrary weights while this one pins the behaviour under the weights the
+    application actually ships.
+    """
+    worse = _candidate("worse", 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70)
+    better = _candidate("better", 0.11, 0.21, 0.31, 0.41, 0.51, 0.61, 0.70)
+
+    verdicts = {v.candidate: v.dominated_by for v in ranker.dominance([worse, better])}
+
+    assert verdicts["worse"] == "better"
+    assert verdicts["better"] is None
+
+
+def test_two_candidates_scoring_identically_dominate_neither(ranker):
+    """ ">= on every criterion" alone would make each dominate the other and
+    report a compromise where there is only a duplicate. The second clause -
+    strictly better on at least one - is what refuses.
+
+    services/portfolio.py removes duplicate TIMETABLES, not candidates that
+    happen to score alike, so this is reachable in a real portfolio.
+    """
+    a = _candidate("A", 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90)
+    b = _candidate("B", 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90)
+
+    verdicts = {v.candidate: v.dominated_by for v in ranker.dominance([a, b])}
+
+    assert verdicts["A"] is None
+    assert verdicts["B"] is None
 
 
 def test_the_recommendation_agrees_with_the_head_of_the_ranking(ranker):

@@ -96,14 +96,36 @@ candidate only as provenance of how it was obtained, never as its own scoring we
 
 ## Dominance
 
-A candidate that another improves on **every** criterion is **dominated**, and the interface signals it
-when it happens to the top-ranked candidate.
+A candidate that another is **at least as good on every criterion and strictly better on at least one**
+is **dominated**, and the interface signals it **wherever it appears in the portfolio**.
 
-This test is exact and needs no parameters, but it does not produce an order — most candidates win on
-one criterion and lose on another. It is a *complement* to the weighted sum, never a replacement.
+That is the standard Pareto rule. This test is exact and needs no parameters, but it does not produce an
+order — most candidates win on one criterion and lose on another. It is a *complement* to the weighted
+sum, never a replacement.
 
-Why it is surfaced: if the highest-scoring candidate is dominated, the weights are **concealing** a
-compromise rather than expressing one. The person in charge must then decide knowing that.
+Why it is surfaced: a dominated candidate is one the portfolio contains for no reason another does not
+serve better, and saying so lets the person in charge see that the ranking is arbitrating a real
+trade-off rather than concealing one.
+
+⚠️ **The signal is never attached to the top-ranked candidate, and that is arithmetic rather than a
+design preference.** If `B` dominates `A` then every term of
+
+```
+score(B) − score(A) = 100 × Σ ( w_i × ( n_i(B) − n_i(A) ) )
+```
+
+is non-negative, so `score(B) ≥ score(A)`; and where the sum is exactly zero — the strict gain falling
+on a zero-weight criterion — the tie-break covers all seven criteria and still resolves in `B`'s favour.
+**`A` can never rank first.** An indicator built on that state would be permanently silent, and a
+control that never fires teaches its reader that it means "no problem found".
+
+⚠️ **Both statements above changed on 2026-08-05 (C-14), and the previous wording is recorded rather
+than erased.** This section said "a candidate that another **improves on every** criterion" — strict `>`
+everywhere — "and the interface signals it when it happens to the top-ranked candidate". The strict
+reading was silent exactly where the signal matters: S10 carries weight 0, nothing optimises for it, so
+a candidate beaten on all six *weighted* criteria and merely tied on S10 was reported as not dominated.
+The top-candidate clause described a state the arithmetic forbids. The two defects were independent and
+were fixed independently — adopting Pareto does **not** make the top-candidate case reachable.
 
 ---
 
@@ -117,7 +139,7 @@ every input while an example holds for one.
 | **Exactness of decomposition** | The sum of the contributions equals the difference of the two scores |
 | **Invariance of order** | The order does not depend on the order candidates are read in |
 | **Monotonicity** | Reducing violations of one criterion never lowers the score |
-| **Detection of dominance** | A candidate improved on every criterion is signalled |
+| **Detection of dominance** | A candidate another matches on every criterion and beats on at least one is signalled |
 
 Exactness follows from linearity, and its failure means an arithmetic bug. Monotonicity follows from
 weight non-negativity, and it is tested because **the weight fitting of increment 2 could break it**.
@@ -144,10 +166,17 @@ These apply to the components that score, order, explain and adjust weights, and
 ## Recommendation rule
 
 The recommendation designates the **candidate of highest score**, and states the rule that produced it.
-A dominated top candidate is signalled alongside.
 
 That is the entire rule. It is stated plainly so the interface can show it — "recommended because it
 has the highest score under the weights in force" is a sentence the department can check.
+
+⚠️ **A third sentence was removed here on 2026-08-05 (C-14): "A dominated top candidate is signalled
+alongside."** It described a state the arithmetic forbids — see §Dominance above — so it was a promise
+that could never be kept rather than a feature that was never built. `Recommendation.dominated_by`
+still exists, is still computed and is still provably `None`; it is kept because FR-16's statement
+names it and because a non-linear score or a negative weight would revive it, and it is pinned dead by
+`test_a_dominated_candidate_is_never_recommended`. **The signal a user actually sees is the
+portfolio-wide one**, which is a different thing.
 
 ---
 

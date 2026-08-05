@@ -113,28 +113,43 @@ class DefaultRanker:
         )
 
     def dominance(self, candidates: list[Candidate]) -> list[DominanceVerdict]:
-        """A candidate is dominated iff some OTHER candidate is STRICTLY
-        better on EVERY criterion.
+        """A candidate is dominated iff some OTHER candidate is AT LEAST AS
+        GOOD on EVERY criterion and STRICTLY BETTER on AT LEAST ONE.
 
-        The strict reading is what docs/scoring-and-explanation.md states -
-        "a candidate that another improves on **every** criterion" - and is
-        deliberately NOT the textbook Pareto rule ("at least as good on all,
-        strictly better on one"). Two consequences worth knowing, because
-        they are visible in real output rather than theoretical:
+        That is the standard Pareto rule, adopted 2026-08-05 (C-14). Until
+        then this implemented the stricter reading docs/scoring-and-explanation
+        .md carried - "a candidate that another improves on **every**
+        criterion", i.e. strict > everywhere - and the reason for the change is
+        that the strict rule is SILENT EXACTLY WHEN THE SIGNAL MATTERS:
 
-        - A candidate beaten on six criteria but merely TIED on the seventh
-          is reported as not dominated. Under Pareto it would be dominated.
-        - S10 carries weight 0, so nothing optimises for it and ties on it
-          are common - which under this rule can mask a genuine compromise.
+        - S10 carries weight 0, so nothing optimises for it and ties on it are
+          ordinary rather than rare.
+        - A candidate beaten on all six WEIGHTED criteria and merely tied on
+          S10 was therefore reported as NOT dominated - which is precisely the
+          concealed compromise the signal exists to surface.
 
-        Whether to move to the Pareto rule is a specification decision, not a
-        keyboard one (CLAUDE.md), so the documented wording is implemented as
-        written and the risk is recorded in docs/open-questions.md instead of
-        being resolved here. Exact and weight-independent either way.
+        The argument the other way is real and is recorded rather than buried:
+        the strict rule never over-reports, and under Pareto a verdict can be
+        triggered by equality on the one criterion carrying no weight. It was
+        weighed and rejected - a signal that cannot fire when it should is
+        worse than one that fires when the margin is small, because the first
+        teaches the reader it means "no problem found".
 
-        A candidate carrying NO sub-scores is never dominated: ``all()`` over
-        an empty criterion set is vacuously true, which would otherwise report
-        it as dominated by an arbitrary other candidate on no evidence at all.
+        Exact and weight-independent under either reading: no weight appears
+        below except to pick WHICH dominator to name when there are several.
+
+        A candidate carrying NO sub-scores is never dominated, and under this
+        rule that falls out of the rule itself rather than needing a guard -
+        ``all()`` over an empty criterion set is vacuously true, but ``any()``
+        is False, so the second clause refuses. The explicit guard the strict
+        reading required is gone;
+        ``test_a_candidate_with_no_sub_scores_is_never_dominated`` is what
+        keeps the behaviour pinned.
+
+        Criteria are taken from the candidate being judged, not from the union
+        with its rival: a candidate must not become dominated merely because
+        another carries a criterion it does not. Every candidate of a real run
+        carries all seven.
         """
         sub_scores_by_id = {c.id: _sub_scores_by_code(c) for c in candidates}
         scores_by_id = {c.id: self.scorer.score(c, self.weights) for c in candidates}
@@ -142,19 +157,17 @@ class DefaultRanker:
         verdicts = []
         for candidate in candidates:
             own = sub_scores_by_id[candidate.id]
-            dominators = (
-                [
-                    other
-                    for other in candidates
-                    if other.id != candidate.id
-                    and all(
-                        sub_scores_by_id[other.id].get(code, 0.0) > own.get(code, 0.0)
-                        for code in own
-                    )
-                ]
-                if own
-                else []
-            )
+            dominators = [
+                other
+                for other in candidates
+                if other.id != candidate.id
+                and all(
+                    sub_scores_by_id[other.id].get(code, 0.0) >= own.get(code, 0.0) for code in own
+                )
+                and any(
+                    sub_scores_by_id[other.id].get(code, 0.0) > own.get(code, 0.0) for code in own
+                )
+            ]
             dominated_by = None
             if dominators:
                 best = max(dominators, key=lambda o: (scores_by_id[o.id], o.id))
@@ -182,6 +195,21 @@ class DefaultRanker:
         which is different from recommending nothing in particular. An
         infeasible run reaches here with no candidates at all (see
         services/portfolio.py) and must not produce a recommendation.
+
+        ⚠️ ``dominated_by`` is PROVABLY always None, and adopting the Pareto
+        rule in dominance() did not change that. If B dominates A then
+        n_i(B) >= n_i(A) everywhere with one strict gain, so
+
+            score(B) - score(A) = 100 * sum(w_i * (n_i(B) - n_i(A)))
+
+        is a sum of non-negative terms; and where it is zero - the strict gain
+        falling on a zero-weight criterion - TIE_BREAK_ORDER covers all seven
+        criteria and still resolves in B's favour. Either way A cannot rank
+        first. The field is kept because FR-16's statement names it and because
+        a non-linear score or a negative weight would revive it;
+        test_a_dominated_candidate_is_never_recommended keeps it dead VISIBLY.
+        The signal a user actually sees is the portfolio-wide one from
+        dominance(), which is a different thing (C-14).
         """
         if not candidates:
             return None

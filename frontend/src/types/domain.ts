@@ -218,26 +218,27 @@ export interface Decomposition {
 /**
  * A candidate another candidate improves on across the board.
  *
+ * The rule is the standard Pareto one, adopted 2026-08-05 (C-14): at least as
+ * good on EVERY criterion, strictly better on AT LEAST ONE. It replaced a
+ * stricter reading (`>` everywhere) that was silent precisely when it mattered
+ * — S10 carries weight 0, so a candidate beaten on all six weighted criteria
+ * and tied on the seventh was reported as not dominated.
+ *
  * ⚠️ Do NOT build a "the top candidate is dominated" indicator from this. That
  * state is PROVABLY UNREACHABLE, not merely rare: if B dominates A then
- * n_i(B) > n_i(A) for every criterion, so
+ * n_i(B) >= n_i(A) for every criterion, so
  *
  *   score(B) - score(A) = 100 * sum( w_i * ( n_i(B) - n_i(A) ) )
  *
- * is a sum of non-negative terms with at least one positive weight (weights
- * are renormalised to sum to 1). So score(B) > score(A) strictly and A can
- * never rank first. Confirmed over 200,000 random dominated pairs: zero
- * counterexamples. It holds under the Pareto reading too, because
- * TIE_BREAK_ORDER covers all seven criteria.
+ * is a sum of non-negative terms, hence score(B) >= score(A); and where it is
+ * exactly zero — the strict gain landing on a zero-weight criterion —
+ * TIE_BREAK_ORDER covers all seven criteria and resolves in B's favour. So A
+ * can never rank first. Confirmed over 200,000 random dominated pairs: zero
+ * counterexamples. **Adopting Pareto did not change this.**
  *
- * Dominance itself is NOT dead — a dominated RUNNER-UP is ordinary, and the
- * comparison screen can report it. Only the top-candidate case cannot fire,
- * despite both specification documents asking for it.
- *
- * ⚠️ C-14 is OPEN and owned by the technical lead: whether dominance keeps the
- * strict reading (`>` on every criterion, which S10's zero weight makes bite)
- * or moves to the Pareto reading, and how the specification's wording is
- * repaired. Settle it before this drives any UI. See docs/open-questions.md.
+ * Dominance itself is NOT dead — a dominated RUNNER-UP is ordinary, and
+ * `features/comparison/DominanceNotice.tsx` reports it, portfolio-wide, since
+ * Phase 6 M1.
  */
 export interface DominanceVerdict {
   candidate: string
