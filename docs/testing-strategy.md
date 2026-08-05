@@ -180,7 +180,7 @@ requirement itself**. Tests live in `backend/tests/acceptance/`, one per criteri
 | FR-3 | Generate on the reference instance | No hard-constraint violation | ✅ `test_fr03`, `solver` |
 | FR-5 | Read a candidate | Overall score and sub-scores displayed | ✅ `test_fr05` |
 | FR-8 | Generate on a deliberately infeasible instance | Report naming the rules in conflict by code | ✅ `test_fr08`, `solver` — ⚠️ **both shapes**, and the criterion holds on only one |
-| FR-9 | Close a half-day in configuration | Those slots disappear from every timetable, **with no code change** | ⬜ Phase 6 M4 |
+| FR-9 | Close a half-day in configuration | Those slots disappear from every timetable, **with no code change** | ✅ 	est_fr09, solver — ticks criterion 7 |
 | FR-11 | Connect with a teacher account | Access limited to own data | ✅ `test_fr11`, real tokens |
 | FR-12 | Verify an instance with insufficient rooms | The resource concerned and quantity missing are named | ✅ `test_fr12` |
 | FR-13 | Run on the reference instance | **Three distinct candidates on the reference instance at production settings** (C-5, resolved 2026-08-05) | ✅ `test_fr13`, `solver` |
