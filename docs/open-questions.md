@@ -17,21 +17,19 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 
 ## Index — what is actually still open
 
-**Four.** Everything else on this page is resolved and kept for its reasoning.
+**Two.** Everything else on this page is resolved and kept for its reasoning.
 
 | # | Still open | Blocks | Owner |
 |---|---|---|---|
-| **C-5** | "At least three candidates" can fail when duplicates are removed | Phase 6 acceptance | Lead + supervisor |
-| **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
-| **C-14** | Dominance uses the strict reading; S10's zero weight makes ties common. **Also: the "dominated *top* candidate" signal both documents require is provably unreachable.** **Deferred 2026-08-01** — Phase 4 ships **no dominance signal**; the reading and the specification's wording are still undecided | FR-17's `✓`; Phase 6 acceptance | Technical lead + supervisor |
+| **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | ⚠️ **Not the Phase 6 acceptance suite** — see the correction in C-9's own section | Technical lead |
 | **C-15** | The objective weights raw violation counts of incomparable scale, so "teacher-favouring" favours only S5, not S3. **Deferred by decision 2026-07-30** — recorded, objective unchanged. Phase 4's comparison screen sidesteps it by showing measured sub-scores and making **no claim about what a profile favours** | FR-13's `✓` | Technical lead |
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
-**C-17, C-18** (2026-08-04) ·
+**C-17, C-18** (2026-08-04) · **C-5, C-14** (2026-08-05, project-owner decision) ·
 **C-8, C-11** · **C-4, C-12** · **C-16** (2026-07-30, implemented). The sections below keep their full reasoning;
 headings say which is which.
 
-**Thirteen resolved plus four open is seventeen, and the codes run C-1 to C-18 — there is no C-10, and that
+**Fifteen resolved plus two open is seventeen, and the codes run C-1 to C-18 — there is no C-10, and that
 is not a lost question.** The number was never assigned. Recorded here for the same reason the retired
 soft-criterion codes S1/S8/S9 are recorded in the errata: a gap in a sequence invites someone to go
 looking for what fell through it.
@@ -39,9 +37,9 @@ looking for what fell through it.
 ⚠️ C-4 and C-12 **were** one bug waiting to happen, before they were resolved together on 2026-07-30:
 had S5 measured identically zero, the teacher-favouring profile would have differed from the others by
 S3 alone, risking two candidates converging under duplicate removal and failing the three-candidate
-acceptance test (C-5). **C-5 itself remains open** — S5 no longer being identically zero lowers the
-chance of hitting it on the reference instance, but does not resolve the specification's own conflict
-between "duplicates removed" and "at least three candidates".
+acceptance test (C-5). **C-5 was resolved on 2026-08-05** — the specification's wording was clarified
+and the implementation left alone; S5 no longer being identically zero is what makes the reference
+instance's three distinct candidates hold rather than be hoped for.
 
 ---
 
@@ -227,7 +225,7 @@ project-specific with no published definition, now given one above (S5 via C-12)
 
 **Blocks:** Phase 3 scoring — now unblocked. **Owner:** technical lead, decided 2026-07-30.
 
-### C-14 — Dominance uses the strict reading, and S10's zero weight makes that bite · **NEW, OPEN (low urgency)**
+### C-14 — Dominance uses the strict reading, and S10's zero weight makes that bite · **RESOLVED 2026-08-05 → Pareto, and the signal moves off the top candidate**
 
 `docs/scoring-and-explanation.md` says "a candidate that another **improves on every criterion** is
 dominated". `analysis/ranking.py` implements exactly that: strict `>` on every criterion. The textbook
@@ -304,6 +302,59 @@ needs the supervisor** — which is part of why it was not settled inside Phase 
 
 **Now blocks:** FR-17's `✓`, and the Phase 6 acceptance work. Carry it there with C-5 and C-9.
 **Owner:** technical lead, with the supervisor.
+
+#### RESOLVED 2026-08-05 → Pareto, and the signal moves off the top candidate
+
+**Two defects were recorded here, and the decisive fact is that they are independent.** Switching to
+Pareto does **not** make the top-candidate clause reachable: `TIE_BREAK_ORDER` covers all seven
+criteria, so a tie on score still resolves in the dominator's favour and a dominated candidate still
+cannot rank first. Each had to be decided separately, and both were.
+
+**(i) The reading — decision: the standard Pareto rule.** A candidate is dominated iff some other
+candidate is **at least as good on every criterion and strictly better on at least one**.
+`analysis/ranking.py` is changed from the strict `>`-on-everything rule to this one.
+
+*Why.* The strict rule's failure mode is **silence exactly when the signal matters**. S10 carries
+weight 0, nothing optimises for it, and ties on it are ordinary rather than rare — so a candidate
+beaten on all six weighted criteria and merely tied on the seventh was reported *not dominated*. That
+is the concealed compromise the feature exists to expose, and the rule that was implemented called it
+fine. Second reason: "dominated" is a standard term in multi-objective optimisation, and a report using
+it in a non-standard sense misleads any reader who knows what it normally means.
+
+*The argument against, recorded because it is real:* the strict rule never over-reports, and under
+Pareto a verdict can be triggered by a candidate that is merely *equal* on the one criterion carrying
+no weight. That was weighed and rejected — a signal that cannot fire when it should is worse than one
+that fires when the difference is small, because the first teaches the user it means "no problem
+found".
+
+**(ii) The unreachable clause — decision: signal a dominated candidate *anywhere* in the portfolio.**
+The wording "the interface signals it when it happens to the top-ranked candidate" describes a state
+the arithmetic forbids, so leaving it was the only option that was definitely wrong.
+`docs/scoring-and-explanation.md` §Dominance and §Recommendation rule are reworded accordingly, and the
+ERRATA table carries the replacement wording for the CdC and SRS sentences FR-16 and FR-17 derive from.
+
+*Why not delete the signal instead.* `DefaultRanker.dominance()` and `GET /runs/{id}/dominance` are
+exact, parameter-free, already built and already tested, and **ADR-002 adopted dominance deliberately
+as a complement to the weighted sum**. Discarding a working complement because one clause about it was
+impossible would be throwing away the feature to fix the sentence.
+
+**What changes in the software:**
+
+| | Before | After |
+|---|---|---|
+| `DefaultRanker.dominance()` | strict `>` on every criterion | `>=` on every criterion **and** `>` on at least one |
+| `test_a_candidate_tied_on_one_criterion_is_not_reported_dominated` | pinned the strict reading | replaced by its Pareto counterpart — a tie on one criterion with a strict gain elsewhere **is** dominance |
+| The comparison screen | no dominance signal at all (deferred 2026-08-01) | reports a dominated candidate wherever it appears in the portfolio |
+| `Recommendation.dominated_by` | provably always `None` | **still provably always `None`** — see below |
+
+⚠️ **`Recommendation.dominated_by` stays dead, and stays for a reason.** The proof that a dominated
+candidate cannot rank first holds under Pareto too. The field is kept because FR-16's statement names
+it and because any change making the score non-linear, or admitting a negative weight, would revive it;
+`test_a_dominated_candidate_is_never_recommended` keeps it dead **visibly**. Do not read this
+resolution as having made that field reachable — the signal that now fires is the portfolio-wide one,
+which is a different thing.
+
+**Blocked:** nothing. FR-17's `✓` is unblocked. **Resolved by:** project owner, 2026-08-05.
 
 ### C-15 — The objective weights raw violation counts of incomparable scale · **NEW, OPEN — deferred 2026-07-30 by decision**
 
@@ -588,7 +639,7 @@ observed behaviour. Whatever C-5 decides must hold at the worker count C-16 sele
 **Blocked:** nothing now. Both acceptance criteria are satisfied simultaneously at production
 settings. **Resolved by:** technical lead, 2026-07-30, on measurement.
 
-### C-5 — "At least three candidates" can fail when duplicates are removed
+### C-5 — "At least three candidates" can fail when duplicates are removed · **RESOLVED 2026-08-05 → clarify the wording, keep the implementation**
 
 SRS Table 29 says "at most 3, **duplicates removed**". CdC §11 requires "**at least three** candidates";
 SRS §8.6 test FR-13 expects "**three distinct** candidates". PPM Table 10 anticipates the collision:
@@ -600,8 +651,53 @@ If two profiles converge on the same timetable the system behaves **correctly** 
 Options: (a) restate as "at least two distinct candidates, with profiles chosen so three distinct ones
 are obtained on the reference instance"; (b) retain duplicates and flag them as identical.
 
-**Blocks:** Phase 6 acceptance tests. **Owner:** technical lead, with the supervisor — it changes a
-delivered acceptance criterion.
+**This was never a conflict between two behaviours. It is a conflict between a behaviour and a test.**
+SRS Table 29 fixes what the software must *do*; CdC §11 and SRS §8.6 fix what the test must *see*. Only
+one of the two can be adjusted without changing delivered software, and it is the wording.
+
+#### RESOLVED 2026-08-05 → (a), in two clauses
+
+**Decision, taken by the project owner:** keep duplicate removal exactly as SRS Table 29 specifies, keep
+the requirement that the reference instance yields three distinct candidates, and clarify the
+specification so the acceptance criterion is tied to **the verified reference instance** rather than to
+a general guarantee the software cannot make.
+
+The criterion therefore reads, in two clauses that do different jobs:
+
+> **The general contract:** at most three candidates, duplicates removed.
+> **The acceptance criterion:** three *distinct* candidates on the reference instance, at production
+> settings (seed fixed, `interleave_search = true`, warm start withheld under an objective — C-16).
+
+**Nothing in `services/portfolio.py` changes.** That is the point of the decision: the implementation
+already obeys SRS Table 29, and the contradiction lived entirely in what two other documents promised
+about it.
+
+**Why not (b).** Retaining duplicates and flagging them would resolve one contradiction by creating
+another — it contradicts SRS Table 29 directly — and it bends the product to fit the test rather than
+the test to describe the product. It also makes the criterion trivially true (three are always
+returned, so the test can never fail), and it changes a **Phase 3** module's contract with real
+consequences downstream: two identical candidates carry identical scores, so `rank()`'s tie-break is
+left choosing between clones and `recommend()` can name one of two indistinguishable timetables as "the
+highest score under the weights in force".
+
+**Why the acceptance test is not weakened to "at least two".** The measurement is **3 distinct, 0
+removed, reproducibly** at production settings. Writing the test as `>= 2` would trade a criterion the
+project meets for a weaker one nobody asked for — and it would hide a regression: if a future change
+made two profiles converge, a `>= 2` test stays green while the product silently got worse. The test
+asserts **exactly three distinct**.
+
+⚠️ **What this costs, stated plainly: the acceptance test is explicitly instance-specific.** That is
+already true of every acceptance test in this project, but under this decision it must be *written
+down* — if the reference instance changes, the expectation of three has to be re-derived, not assumed.
+The general contract (`≤ 3`, duplicates removed) is what holds on any instance, and the software
+promises nothing more than that.
+
+⚠️ **The failure mode is real, not hypothetical, and this decision does not abolish it.** C-16 records
+the same instance returning **one** candidate at a single worker. Three distinct candidates is a
+property of the reference instance *at production settings*, which is why both halves are named in the
+criterion. A configuration change can still break it, and the acceptance test is what would catch that.
+
+**Blocked:** nothing. **Resolved by:** project owner, 2026-08-05, on the recorded measurement.
 
 ### C-6 — Redundant constraints corrupt the diagnosis report · **RESOLVED 2026-07-30 → four literals only**
 
@@ -712,7 +808,31 @@ Note: SRS Table 36 is nonetheless the only reliable place to reconstruct the FR 
 tables in both CdC and SRS are damaged by cell-offset in the PDF layout, so codes and statements do not
 line up when read literally.
 
-**Blocks:** Phase 6 acceptance. **Owner:** technical lead.
+⚠️ **Correction, 2026-08-05: this entry claimed to block "Phase 6 acceptance", and that claim does not
+survive checking.** It was checked against the two documents that actually define the acceptance work,
+rather than against the assertion:
+
+- The **nine acceptance criteria** in [`docs/status.md`](status.md) name FR-6, FR-10, FR-17 and FR-18
+  **nowhere**. Every one of the nine maps to FR-2, 3, 5, 8, 9, 11, 12, 13, 15 or 19.
+- The **acceptance-test table** in [`docs/testing-strategy.md`](testing-strategy.md) §4 lists thirteen
+  rows and **contains none of the four** either.
+
+So the four requirements without a detailed specification are also the four with no acceptance test to
+write, and C-9 blocks neither Phase 6's completion criteria nor its test suite. **What it still blocks
+is calling FR-6, FR-10, FR-17 or FR-18 `✓`**, since a requirement cannot be verified against a
+criterion nobody wrote.
+
+This is the same shape as the error corrected in `docs/status.md`'s "Next, in order" item 3: **a
+plausible blocker nobody tried to falsify.** It cost nothing here because it was caught before the
+schedule was built on it.
+
+⚠️ **One quarter of it moved on 2026-08-05 and C-9 is still open.** C-14's resolution reworded
+`docs/scoring-and-explanation.md` §Dominance, which *is* the statement FR-17 is verified against, so
+FR-17 now has a testable criterion and an acceptance test. That does **not** resolve C-9: the missing
+input/processing/output rows in SRS §3.2 for FR-6, FR-10 and FR-18 are untouched, and FR-17's SRS row
+is still absent — its criterion now comes from this project's own design document instead.
+
+**Blocks:** the `✓` of FR-6, FR-10 and FR-18. **Not** the Phase 6 acceptance suite. **Owner:** technical lead.
 
 ### C-11 — The generated instance · **RESOLVED — it exists and it verifies**
 
@@ -981,6 +1101,15 @@ Corrections to send in one pass rather than re-argue.
 | **SRS Table 36** | FR-10 absent | Add: FR-10 → §4.1 → "Print or export a timetable view" |
 | **CdC Table 10** (room mix) | Amphi 2 · Salle 10 · Lab_Info 6 · Lab_Sciences 2 | **Amphi 2 · Salle 7 · Lab_Info 8 · Lab_Sciences 3.** Total unchanged at 20. The original mix made the instance infeasible — see C-13 |
 | **CdC Table 11** (verification 2) | "computer laboratories **95%**" | "computer laboratories **91% of two-period windows** (71% of periods)". The period figure is necessary but not sufficient and passed an instance with no solution — see C-13 |
+| **FR-17's statement** (CdC Table 3 · SRS Table 36) | "Signal a **recommended** candidate that another dominates" | "Signal a candidate that another dominates, **wherever it appears in the portfolio**." A dominated candidate cannot outscore its dominator under a linear weighted sum with non-negative weights, so it can never be the recommended one — the stated state is unreachable. See C-14 |
+| **FR-16's statement** (CdC Table 3 · SRS Table 36) | "…and **a dominated top candidate is signalled alongside**" | Delete the clause. It describes the same unreachable state; the portfolio-wide signal in FR-17 is what carries the information. See C-14 |
+| **The definition of dominance** (CdC/SRS, wherever "improves on every criterion" appears) | "a candidate that another **improves on every** criterion is dominated" | "a candidate that another is **at least as good on every criterion and strictly better on at least one** is dominated" — the standard Pareto rule. The strict reading is silent precisely when a candidate is beaten on every weighted criterion and tied on the unweighted S10. See C-14 |
+
+⚠️ **The last three rows name the requirement statements, not a verified section number.** FR-16's and
+FR-17's wording is quoted from `docs/requirements-traceability.md`, which reconstructs it from SRS
+Table 36 because the CdC and SRS summary tables are damaged by cell-offset (see C-9). **Locate the
+sentences in the PDFs before sending these corrections**; the replacement wording is what matters and
+is independent of where they sit.
 
 ### Not errors — recorded so they are not re-investigated
 

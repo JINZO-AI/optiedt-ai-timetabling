@@ -3,7 +3,8 @@
 **The handoff file. Read this second, after `CLAUDE.md`.** It carries the whole project state; every
 other document is detail you fetch only when you need it.
 
-**Last updated 2026-08-04. Phase 5 is COMPLETE — all six milestones, closing audit passed.** FR-12 runs inside the application
+**Last updated 2026-08-05. Phase 6 is UNDER WAY — M0 done: C-5 and C-14 resolved by project-owner
+decision, which is what unblocks the acceptance tests.** Phase 5 is COMPLETE — all six milestones, closing audit passed. FR-12 runs inside the application
 (the five checks, **both** bounds, displayed as figures rather than ticks) and FR-8's diagnosis run
 exists (rule withdrawal over plain subset solves, `INFEASIBLE → DIAGNOSING → DIAGNOSED`, conflict
 report screen).
@@ -43,11 +44,11 @@ add up by hand. Two questions were decided along the way — **C-12(a)** resolve
 |---|---|
 | **Project** | OptiEDT — generates, ranks and explains weekly university timetables (Tunisian public faculty, LMD) |
 | **Overall progress** | **75 % of budgeted effort** — Phases 1–4 delivered, 15 of 20 days budgeted; Phase 5 is under way and its 2 days are not yet counted. By *delivered product*: **6 of 9 acceptance criteria** met, **16 of 25 requirements under way, 0 finished**, because a requirement is `✓` only once a user can reach it *and* it is tested end to end — most now wait on FR-11's authentication and Phase 6's acceptance tests rather than on a missing screen. Both numbers are real; quote the measure with the number |
-| **Current phase** | **Phase 5 — pre-analysis in-app, diagnosis, authentication, run record. COMPLETE 2026-08-04**, six milestones and a closing audit. Pick up at **Phase 6 — tests, documentation, presentation** |
+| **Current phase** | **Phase 6 — tests, documentation, presentation. UNDER WAY**, M0 of 8. Phase 5 completed 2026-08-04 with six milestones and a closing audit. Milestone table in the Phase 6 block below |
 | **Last completed phase** | **Phase 4 — COMPLETE 2026-08-01**, six milestones and a closing audit. Four screens (availability, generation, timetables, comparison) over ten `/api` endpoints, an in-process run executor, and the first frontend tests. Before it, Phase 3 delivered the criteria, scoring, ranking, decomposition, dominance, the objective, the portfolio, FR-16 and the ITC-2007 validation |
 | **Milestone reached** | **Phase 5's, verified 2026-08-04.** The phase's stated milestone is *an infeasible instance produces a report naming the rules in conflict*, and M2 delivers it — ⚠️ with the limit C-17 measured: on an infeasibility CP-SAT cannot prove at all (the C-13 contiguity shape) the report is honestly **inconclusive**, and the pre-analysis is what names the resource. **Phase 4's milestone is also now complete**: it read "the complete path from declaring availability to publication", and publication landed in M5 — a candidate is published and traces back to its run, seed and weights across a restart |
 | **Current goal** | Deliver Phase 5: an infeasible instance must produce a report naming the rules in conflict rather than a timeout, and every published timetable must trace back to its run, seed and weights |
-| **Next task** | **Phase 6 — tests, documentation, presentation.** ⚠️ **C-5, C-9 and C-14 must be settled before the acceptance tests are written**, or they will fail for reasons that are not defects. Also lands here: the **instance generator** (a stated PPM §10 deliverable that does not exist), the **timed FR-2 walkthrough**, and the three unmet acceptance criteria |
+| **Next task** | **Phase 6 M1 — implement C-14's resolution**: Pareto dominance in `analysis/ranking.py`, the comparison screen's dominance signal that Phase 4 withheld, and the documentation that still describes the strict reading. ✅ **C-5 and C-14 were settled 2026-08-05 by project-owner decision** and C-9 was found not to block the suite, so nothing gates the acceptance tests any more. Still to land: the **instance generator** (a stated PPM §10 deliverable that does not exist), the **timed FR-2 walkthrough**, and the three unmet acceptance criteria |
 | **Branch** | `main` — ahead of `origin/main` by unpushed local commits. **No count is recorded here**, deliberately: `git rev-list --count origin/main..HEAD` |
 | **Latest commit** | **Not recorded here** — it is stale the moment anything is committed. `git log -1 --oneline`. The durable fact is the last *pushed* commit, in the row below |
 | **Repository status** | **No SHA and no commit count are recorded here. Derive them:** `git log -1 --oneline` · `git rev-parse --short HEAD` · `git rev-parse --short origin/main` · `git rev-list --count origin/main..HEAD` (0 means everything is pushed). Run `git fetch` first, or `origin/main` is only as fresh as your last one. ⚠️ **This row recorded a SHA and was wrong five times** — the fifth found on 2026-08-04, when it still named the Phase 4 audit commit and `origin/main` had moved two commits past it. Four of those five were *repaired by editing the value*, which is why there was a fifth: **a SHA cannot survive a push that does not touch this file, and a count cannot live in a file that commits change.** The values are therefore gone rather than corrected. The full record of each failure is in [`docs/history.md`](history.md) |
@@ -95,19 +96,28 @@ ever disagree, that file wins and this table is the bug. **Do not silently decid
 
 | # | Open question | Blocks | Owner |
 |---|---|---|---|
-| **C-5** | "At least three candidates" can fail when duplicates are removed | Phase 6 acceptance | Lead + supervisor |
-| **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | Phase 6 acceptance | Technical lead |
-| **C-14** | Dominance uses the strict reading ("improves on **every** criterion"); S10's zero weight makes ties common. **And the "dominated *top* candidate" signal both documents require is provably unreachable** — a dominated candidate cannot outscore its dominator, so it can never rank first. **Deferred 2026-08-01**: Phase 4 shipped **no** dominance signal rather than one that can never fire | FR-17's `✓`; Phase 6 acceptance; the wording of `scoring-and-explanation.md` | Technical lead **+ supervisor** |
+| **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification. ⚠️ **It does not block the Phase 6 acceptance suite** — neither the nine criteria nor `testing-strategy.md` §4's table names any of the four. Corrected 2026-08-05 | The `✓` of FR-6, FR-10, FR-18 | Technical lead |
 | **C-15** | The objective weights raw violation counts of incomparable scale, so "teacher-favouring" favours only S5, not S3. **Deferred by decision 2026-07-30** — recorded, objective unchanged. The comparison screen sidesteps it by showing measured sub-scores and making **no claim about what a profile favours** | FR-13's `✓` | Technical lead |
 
 **Resolved, do not reopen without new evidence:** C-1, C-2, C-3, C-6, C-7, C-8, C-11, C-13, **C-4,
-C-12, C-16** (2026-07-30). ADR-011 was amended rather than reversed: deterministic time bounds the
-*work*, `interleave_search` orders the *race*, and both are required — see C-16.
+C-12, C-16** (2026-07-30), **C-17, C-18** (2026-08-04), **C-5, C-14** (2026-08-05). ADR-011 was amended
+rather than reversed: deterministic time bounds the *work*, `interleave_search` orders the *race*, and
+both are required — see C-16.
 
-⚠️ **C-5 is still open, but the behaviour it worries about does not occur.** At production settings
-the portfolio returns **3 distinct candidates, 0 duplicates removed**, reproducibly. C-5 is a conflict
-in the specification's *wording* ("duplicates removed" vs "at least three candidates"), which a
-favourable measurement cannot settle — but the acceptance test would pass today.
+✅ **C-5 resolved 2026-08-05 — the wording was clarified, the implementation left alone.** Duplicate
+removal stays exactly as SRS Table 29 specifies; the acceptance criterion is tied to **the verified
+reference instance at production settings** (three distinct candidates), and the general contract the
+software makes on any instance is "at most three, duplicates removed". The test asserts **exactly
+three**, not "at least two" — the measurement is 3 distinct / 0 removed, and a weaker assertion would
+hide a regression rather than describe the product.
+
+✅ **C-14 resolved 2026-08-05 — Pareto, and the signal moves off the top candidate.** Two independent
+defects: the strict reading was silent exactly when a candidate was beaten on every *weighted*
+criterion and tied on the zero-weight S10, and the "dominated **top** candidate" clause describes a
+state the arithmetic forbids. ⚠️ **Switching to Pareto does not fix the second** — the unreachability
+holds under Pareto too, because `TIE_BREAK_ORDER` covers all seven criteria. So the reading changed
+*and* the signal moved to any candidate in the portfolio. `Recommendation.dominated_by` is still
+provably `None` and is still kept dead visibly.
 
 ---
 
@@ -461,20 +471,58 @@ Three findings worth carrying:
   the pre-C-13 room mix: **empty and not conclusive**, because CP-SAT cannot prove that infeasibility
   at all — the pre-analysis catches it in milliseconds instead. Neither may read as "no problem found".
 
-### Phase 6 — Tests, documentation, presentation · ⬜ 3 days
+### Phase 6 — Tests, documentation, presentation · 🟡 **under way** · 3 days
 
 **Purpose.** Acceptance requirement by requirement; the project is accepted that way.
 **Completion criteria.** The nine acceptance criteria in `docs/status.md` all ticked; documents complete.
-**Dependencies.** All previous phases. **C-5**, **C-9** and now **C-14** must be settled before the
-acceptance tests are written, or they will fail for reasons that are not defects. C-14 arrived here
-when Phase 4 deferred it, and it carries a documentation change too: `docs/scoring-and-explanation.md`
-still describes a dominance signal the arithmetic forbids, and **that wording needs the supervisor**.
+**Dependencies. All settled as of 2026-08-05 — nothing gates the acceptance tests.** **C-5** and
+**C-14** were resolved by project-owner decision (wording clarified and implementation kept; Pareto
+dominance with the signal moved off the top candidate). **C-9** was found not to block the suite at
+all: neither the nine criteria nor `testing-strategy.md` §4's table names FR-6, FR-10, FR-17 or FR-18,
+so the four requirements without a specification are also the four with no acceptance test to write.
+
+| # | Milestone | State |
+|---|---|---|
+| **M0** | **C-5 and C-14 recorded** in `open-questions.md` with their reasoning, before any code | ✅ **done 2026-08-05** |
+| **M1** | **C-14 implemented** — Pareto in `analysis/ranking.py`, the dominance signal Phase 4 withheld, the documentation that still describes the strict reading | ⬜ |
+| **M2** | **Acceptance harness + the six met criteria**, one file per FR, driven through the API so each proves *reachable* capability | ⬜ |
+| **M3** | **FR-8 + FR-12 acceptance tests** — an infeasible instance to `DIAGNOSED`. **Settles whether criterion 5 is met**, see below | ⬜ |
+| **M4** | **FR-9 acceptance test** — a half-day closed in configuration, no source file touched | ⬜ |
+| **M5** | **Instance generator** (`data/generator/`) | ⬜ |
+| **M6** | **Demonstration script + the FR-2 walkthrough protocol** | ⬜ |
+| **M7** | **Documentation, traceability, closing audit** | ⬜ |
+
+**Scope decisions taken by the project owner on 2026-08-05, before any code:**
+
+1. **The assistant and regeneration are deferred, and the deferral is written down.** FR-22, FR-23,
+   FR-24 and FR-25 stay `—`; `assistant/` stays scaffold-only. ADR-010 commits them to increment 1 and
+   PPM Table 8 budgets them into no phase — that is C-1, and Phase 6 is not where it is absorbed
+   silently. `testing-strategy.md` §4's four assistant rows are marked out of scope with the reason.
+   FR-23 additionally needs H10's dormant gap filled (item 9 of `status.md`'s "Next, in order").
+2. **The generator reproduces every documented figure, and `data/instance/` is not touched.**
+   Byte-exact reproduction is **not achievable** — 425 student names and 218 teacher assignments came
+   from a random stream that was never committed, so a "generator" emitting them exactly would be a
+   copy wearing a generator's name. ADR-008 and C-11 record what is and is not achieved.
+3. **The presentation deliverable is a reproducible demonstration script** in `docs/`, each step
+   stating its expected result so a failed demonstration is visible rather than improvised around.
+
 **Also lands here.** The **instance generator** (`data/generator/`), a stated PPM §10 deliverable that
-does not exist — item 9 of `docs/status.md`'s "Next, in order". It must reproduce *the* documented
+does not exist — item 10 of `docs/status.md`'s "Next, in order". It must reproduce *the* documented
 instance, not merely a valid one (ADR-008). And the **timed FR-2 walkthrough**: the availability grid
 is built, but "filled in under 5 minutes without training" is about a person and no automated check
 stands in for it.
-**Status.** Not started. **Six of nine** acceptance criteria are met — Phase 5 added the conflict report, a teacher's own data, and a published timetable's trace.
+
+**Status.** M0 done. **Six of nine** acceptance criteria are met — Phase 5 added **two**: a teacher's
+own data (M4) and a published timetable's trace (M5).
+
+⚠️ **Corrected 2026-08-05: this block said Phase 5 added three, naming "the conflict report" among
+them, and `status.md` said "three acceptance criteria moved".** Both were wrong and the arithmetic
+pins it: four were met at Phase 4's close, M4 and M5 moved one each, which is the six this same
+sentence reports. **Criterion 5 — "an instance without a solution produces a report naming the rules in
+conflict" — is unticked, and deliberately so.** M2 built the diagnosis and it answers `('H3',)` in
+1.9 s, but on the C-13 contiguity shape CP-SAT cannot prove the infeasibility at all and the report is
+honestly *inconclusive*, so the criterion **as literally worded** is not met for every infeasible
+instance. **M3 settles it** by writing the acceptance test that decides what "met" means here.
 
 ### Increment 2 — conditional on remaining time
 

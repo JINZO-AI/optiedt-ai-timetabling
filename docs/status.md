@@ -1,15 +1,15 @@
 # Status
 
-**Increment 1 of 2 · Phases 1–5 complete.** Phase 5 closed 2026-08-04: six milestones and a closing
-audit that found eight defects, none of which `run-checks.ps1` could catch.
-**C-4, C-12, C-16, C-17 and C-18 resolved; C-14 and C-15 deferred by decision. Four questions remain
-open, none blocking Phase 5.**
-**Last updated 2026-08-04.**
+**Increment 1 of 2 · Phases 1–5 complete · Phase 6 under way.** Phase 5 closed 2026-08-04: six
+milestones and a closing audit that found eight defects, none of which `run-checks.ps1` could catch.
+**C-4, C-12, C-16, C-17, C-18 and now C-5 and C-14 resolved; C-15 deferred by decision. Two questions
+remain open, neither blocking Phase 6's acceptance suite.**
+**Last updated 2026-08-05.**
 
 Keep this file current. A stale status file is worse than none, because the next session trusts it.
 
 > **Read [`docs/dashboard.md`](dashboard.md) first.** It carries the project state, the roadmap and the
-> brief for whichever phase is current — **Phase 5** — in one page. This file is the detail behind it:
+> brief for whichever phase is current — **Phase 6** — in one page. This file is the detail behind it:
 > blockers, measurements, phases, acceptance criteria. Session-by-session history is archived in
 > [`docs/history.md`](history.md).
 
@@ -19,23 +19,27 @@ Keep this file current. A stale status file is worse than none, because the next
 
 | | |
 |---|---|
-| **Current phase** | **Phase 6 — tests, documentation, presentation. Not started.** Phase 5 closed 2026-08-04: six milestones and a closing audit. Milestone table in [`docs/dashboard.md`](dashboard.md) |
-| **Last completed phase** | **Phase 5, closed 2026-08-04.** Six milestones: the five checks in-app (FR-12), the diagnosis run (FR-8), the run record in PostgreSQL (FR-19), authentication and rights (FR-11), publication with its trace, and the closing audit. **C-17 and C-18 resolved**, both recorded before the code. Three acceptance criteria moved from unmet to met. Before it, **Phase 4, closed 2026-08-01.** Six milestones: the API foundation, the run lifecycle and executor, and four screens — availability, generation, timetables, comparison. First frontend tests. C-12(a) resolved and C-14 deferred, both recorded before the code was written. Before it, Phase 3 (closed 2026-07-31) delivered the criteria, scorer, ranker, objective, translator, portfolio and the ITC-2007 validation |
-| **Next step** | **Phase 6.** ⚠️ **C-5, C-9 and C-14 must be settled before the acceptance tests are written**, or they fail for reasons that are not defects. Also here: the **instance generator** (owed, PPM §10), the **timed FR-2 walkthrough**, and the three unmet acceptance criteria |
+| **Current phase** | **Phase 6 — tests, documentation, presentation. UNDER WAY**, M0 of 8 done. Phase 5 closed 2026-08-04: six milestones and a closing audit. Milestone table in [`docs/dashboard.md`](dashboard.md) |
+| **Last completed phase** | **Phase 5, closed 2026-08-04.** Six milestones: the five checks in-app (FR-12), the diagnosis run (FR-8), the run record in PostgreSQL (FR-19), authentication and rights (FR-11), publication with its trace, and the closing audit. **C-17 and C-18 resolved**, both recorded before the code. **Two** acceptance criteria moved from unmet to met — ⚠️ **this line said three until 2026-08-05 and was wrong**: four were met at Phase 4's close and the total is six, so M4's teacher scoping and M5's publication trace are the two. The conflict-report criterion is **not** among them; see the acceptance list at the foot of this file. Before it, **Phase 4, closed 2026-08-01.** Six milestones: the API foundation, the run lifecycle and executor, and four screens — availability, generation, timetables, comparison. First frontend tests. C-12(a) resolved and C-14 deferred, both recorded before the code was written. Before it, Phase 3 (closed 2026-07-31) delivered the criteria, scorer, ranker, objective, translator, portfolio and the ITC-2007 validation |
+| **Next step** | **Phase 6 M1 — implement C-14's resolution.** ✅ **C-5 and C-14 were settled 2026-08-05** by project-owner decision, and **C-9 does not block the suite** (corrected: neither the nine criteria nor `testing-strategy.md` §4 names FR-6, FR-10, FR-17 or FR-18). Also here: the **instance generator** (owed, PPM §10), the **timed FR-2 walkthrough**, and the three unmet acceptance criteria |
 | **Days used** | Phases 1–5 delivered, budgeted 3 + 5 + 3 + 4 + 2 = **17 of 20**. Phase 6 has the remaining 3 |
 | **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · ⚠️ **neither the latest commit nor a commit count is recorded here.** Derive them: `git log -1 --oneline` · `git rev-parse --short origin/main` · `git rev-list --count origin/main..HEAD` (0 means everything is pushed), after a `git fetch`. This line named a SHA and was wrong **five** times; four were repaired by editing the value, which is exactly why there was a fifth. See [`docs/dashboard.md`](dashboard.md)'s Repository-status row |
-| **Blocked on** | Nothing for Phase 5. **C-17 resolved 2026-08-04** on measurement — stage 3 withdraws rules and solves plainly instead of using assumption literals. **C-5**, **C-9** and **C-14** land in Phase 6 acceptance; **C-15** blocks FR-13's `✓` |
+| **Blocked on** | **Nothing.** **C-5 and C-14 resolved 2026-08-05** by project-owner decision, which is what gated the acceptance tests. **C-9** is open but blocks only the `✓` of FR-6, FR-10 and FR-18, not the suite. **C-15** still blocks FR-13's `✓` |
 
 ---
 
 ## Blockers, precisely
 
-*C-6, C-7, C-13, C-4, C-12, C-16, C-17 and C-18 are all resolved and recorded in `docs/open-questions.md`,
-which is the authority. What follows is only what is still open.*
+*C-6, C-7, C-13, C-4, C-12, C-16, C-17, C-18 and now **C-5 and C-14** are all resolved and recorded in
+`docs/open-questions.md`, which is the authority. What follows is only what is still open.*
 
-**Phase 5 is closed and nothing blocked it.** All four open questions land in Phase 6's acceptance
-work. C-14 was the one that landed inside Phase 4, **deferred rather than answered** on 2026-08-01:
-the comparison screen ships with no dominance signal at all.
+**Phase 5 is closed and nothing blocked it. Phase 6 opened by settling the two that would have.**
+C-5 and C-14 were decided by the project owner on 2026-08-05 and recorded before any code — C-5 by
+clarifying the specification's wording and leaving `services/portfolio.py` alone, C-14 by adopting the
+standard Pareto rule *and* moving the dominance signal off the top candidate, which are two independent
+fixes for two independent defects. C-14 was the one that landed inside Phase 4 and was **deferred
+rather than answered** on 2026-08-01: the comparison screen shipped with no dominance signal at all,
+and M1 is what builds it.
 
 ### C-4 and C-12 — resolved 2026-07-30
 
@@ -76,24 +80,37 @@ same instance is answered **`('H3',)`, minimal, in 1.9 s**. `docs/architecture.m
 and two of its three "imposed" properties changed — they were imposed by the assumption mechanism, not
 by CP-SAT. **Blocks nothing.**
 
-### Still open, blocking something later
+### C-5 and C-14 — resolved 2026-08-05 by project-owner decision
 
-**C-5 — "at least three candidates" can fail when duplicates are removed.** Blocks the FR-13
-acceptance test. The behaviour it worries about does not occur at production settings — three distinct
-candidates, zero duplicates removed — but a favourable measurement cannot settle a conflict in the
-specification's *wording*.
+**C-5 → clarify the wording, keep the implementation.** Duplicate removal stays exactly as SRS Table 29
+specifies. The acceptance criterion is tied to **the verified reference instance at production
+settings** — three *distinct* candidates — while the general contract the software makes on any
+instance is "at most three, duplicates removed". The test asserts **exactly three**, not "at least
+two": the measurement is 3 distinct / 0 removed, and a weaker assertion would hide a regression rather
+than describe the product. ⚠️ It is therefore an explicitly instance-specific criterion, and C-16
+records the same instance returning **one** candidate at a single worker — the failure mode is real and
+the test is what would catch it.
+
+**C-14 → the standard Pareto rule, and the signal moves off the top candidate.** Two independent
+defects, and the decisive fact is that they are independent: switching to Pareto does **not** make the
+"dominated top candidate" clause reachable, because `TIE_BREAK_ORDER` covers all seven criteria so a
+dominated candidate still cannot rank first. So the reading changed *and* the signal moved to any
+candidate in the portfolio. `Recommendation.dominated_by` remains provably `None` and is kept dead
+visibly.
+
+### Still open, blocking something later
 
 **C-15 — the objective weights raw counts of incomparable scale.** Deferred by decision 2026-07-30;
 blocks FR-13's `✓` because the profiles do not differentiate for the documented reason.
 
-**C-14 — dominance uses the strict reading, and the "dominated top candidate" signal cannot fire.**
-**Deferred 2026-08-01.** Phase 4's comparison screen ships **no dominance signal**, because building one
-under the current reading would have shipped an indicator that is provably always empty — worse than
-absent, since a control that never fires teaches the user it means "no problem found". Now blocks
-FR-17's `✓`, Phase 6 acceptance, and the rewording of `docs/scoring-and-explanation.md`, which still
-describes the unreachable state. **That wording is a delivered commitment, so it needs the supervisor.**
-
-**C-9 — four requirements have no detailed specification.** Blocks Phase 6 acceptance tests.
+**C-9 — four requirements have no detailed specification.** ⚠️ **It does not block the Phase 6
+acceptance suite**, and the claim that it did was corrected on 2026-08-05 by checking it rather than
+repeating it: neither the nine acceptance criteria below nor `testing-strategy.md` §4's table names
+FR-6, FR-10, FR-17 or FR-18. The four requirements without a specification are also the four with no
+acceptance test to write. What it blocks is the `✓` of FR-6, FR-10 and FR-18 — a requirement cannot be
+verified against a criterion nobody wrote. FR-17's criterion now comes from C-14's reworded
+`scoring-and-explanation.md` §Dominance, which is this project's own design document rather than the
+SRS row that is still missing.
 
 
 ---
@@ -316,10 +333,10 @@ Track these as they are met; the project is accepted requirement by requirement.
 - [x] **No hard-constraint violation on the reference instance** — met 2026-07-30. Every one of H1–H12
       re-derived from the raw CSVs and checked against the returned placements, independently of
       CP-SAT's own status (`tests/integration/test_h1_h12.py`)
-- [x] **At least three candidates, each with its overall score and sub-scores** — met 2026-07-30. Three distinct candidates at production settings, 0 duplicates removed, each with all seven sub-scores (C-16). ⚠️ Still subject to **C-5**, which is about the *wording* of the acceptance test, not the behaviour
+- [x] **Three distinct candidates on the reference instance at production settings, each with its overall score and sub-scores** — met 2026-07-30. Three distinct candidates, 0 duplicates removed, each with all seven sub-scores (C-16). **C-5 resolved 2026-08-05**: the criterion is stated against the verified reference instance, while the general contract the software makes on any instance is "at most three, duplicates removed" (SRS Table 29, unchanged). ⚠️ The wording above changed with that resolution — it read "At least three candidates" and that form promised something the software cannot guarantee on an instance nobody has measured
 - [x] **The sum of displayed contributions equals the score difference, to display precision** — met 2026-08-01, Phase 4 M5. The computation was verified 2026-07-30 (three real candidates, agreeing to 9 decimal places, plus a hypothesis property test); what was missing was *displayed*, and rounding happens in the component. `frontend/src/features/comparison/ContributionsTable.test.tsx` renders the table and reads the figures back out of the DOM. ⚠️ It caught a real defect: rounding each term independently does **not** preserve the sum — 2.7567 and −3.6663 show as 2.757 and −3.666, totalling −0.909 against a true difference of −0.910. Fixed with largest-remainder rounding, so each displayed term stays within one unit of the last place of its true value and the column adds up exactly
 - [x] **Two runs with the same data, weights and seed produce the same candidates in the same order** — met 2026-07-30 at production settings, via `interleave_search` (C-16, ADR-011 amended). Verified on identical ids, order, placements, scores and sub-scores; guarded by `tests/integration/test_reproducibility.py`
-- [ ] An instance without a solution produces a report naming the rules in conflict
+- [ ] An instance without a solution produces a report naming the rules in conflict — **built and measured, deliberately unticked.** Phase 5 M2's diagnosis answers `('H3',)`, minimal, in 1.9 s on the area case, but on the C-13 contiguity shape CP-SAT cannot prove the infeasibility at all and the report is honestly *inconclusive*, so the criterion **as literally worded** does not hold for every infeasible instance. ⚠️ Two lines in these documents claimed otherwise until 2026-08-05, saying Phase 5 moved three criteria and naming the conflict report among them; the arithmetic pins six as the total and two as Phase 5's contribution. **Phase 6 M3 settles this** by writing the acceptance test that decides what "met" means here — and it must not be written as though stage 3 always produces codes
 - [x] **A teacher account obtains only its own availability and timetable** — met 2026-08-04, Phase 5 M4. Verified against the real API with accounts from the seed command: signed in as `t001`, own grid **200**, another teacher's **403**, `POST /runs` **403**; as `responsable`, both grids **200**; anonymous, **401** everywhere but `/health` and `/auth/token`. Which teacher the caller is comes from the TOKEN, which is the line Phase 4 explicitly left. `tests/integration/test_rbac.py` pins it against real tokens rather than an overridden dependency
 - [ ] Closing a half-day in configuration removes those slots from every timetable, **with no code change**
 - [ ] The availability grid is filled in under 5 minutes without training — **built** 2026-08-01 (Phase 4 M6): two states, click or drag to toggle, whole week on one screen, closed slots not offered, generated declarations shown as generated. ⚠️ **Unticked on purpose.** The criterion is about a *person*, and no automated check can stand in for it: it needs a timed walkthrough with a teacher who has not seen the screen before. Run it and record the time here
