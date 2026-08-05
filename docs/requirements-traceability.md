@@ -7,6 +7,19 @@ built?" without reading code.
 
 Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 
+**Phase 6 M2 added the acceptance suite** — `backend/tests/acceptance/`, 42 tests over **FR-3, FR-5,
+FR-11, FR-13, FR-15, FR-17 and FR-19**, each driven through the HTTP API because a requirement is `✓`
+only once a user can *reach* it. ⚠️ **A passing acceptance test is necessary, not sufficient**: FR-13
+still waits on **C-15**, FR-11 on account management and a `secret_key` that is not published in this
+repository, and FR-2 on a timed walkthrough no automated check replaces. The suite is what makes those
+remaining reasons the *only* ones.
+
+⚠️ **No Status was promoted in M2, deliberately.** Several rows now have every stated blocking reason
+discharged and would qualify for `✓`. Promoting them file by file, mid-phase, is exactly how this table
+acquires a count nobody can reproduce — and this document already carries three warnings against
+promoting a status because a phase closed. **The whole table is reviewed against evidence in one pass
+at M7**, with the closing audit, and the promotions happen there or not at all.
+
 **Where the project actually is: 16 of 25 requirements are under way, none is finished.**
 *(FR-2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19 — count them in the table rather than trusting this line.)*
 
@@ -129,23 +142,23 @@ violation counts of very different magnitudes. Recorded as a live risk in
 |---|---|---|---|---|---|
 | **FR-1** | Load and manage department data | Necessary | `api`, `db`, `services` | `acceptance/test_fr01` | — |
 | **FR-2** | Teacher declares availability on a weekly grid | Necessary | `api`, `db`; `features/availability` ✓ | `unit/test_availability_api` ✓, `acceptance/test_fr02` ⚠️ timed walkthrough | **WIP** |
-| **FR-3** | Generate a timetable respecting H1–H12 | Necessary | `solver` | `integration/test_h1_h12` ✓ | **WIP** |
+| **FR-3** | Generate a timetable respecting H1–H12 | Necessary | `solver` | `integration/test_h1_h12` ✓, `acceptance/test_fr03` ✓ | **WIP** |
 | **FR-4** | Improve quality criteria within a time limit | Necessary | `solver` — objective | `integration` | **WIP** |
-| **FR-5** | Produce several candidates, each scored out of 100 | Necessary | `analysis` — scoring | `acceptance/test_fr05` | **WIP** |
+| **FR-5** | Produce several candidates, each scored out of 100 | Necessary | `analysis` — scoring | `acceptance/test_fr05` ✓ | **WIP** |
 | **FR-6** | Order candidates by score | Necessary | `analysis` — ranking | `property` ✓ | **WIP** |
 | **FR-7** | Display the timetable by teacher, group and room | Necessary | `features/timetable` | `integration` | **WIP** |
 | **FR-8** | Report the rules in conflict when no timetable exists | Necessary | `preanalysis` ✓, `solver` — `diagnose()` ✓; `features/conflicts` ✓ | `unit/test_diagnosis` ✓, `integration/test_api_runs` ✓, `frontend ConflictReport.test` ✓, `acceptance/test_fr08` | **WIP** |
 | **FR-9** | Configure the calendar: holidays, closed slots, shortened day | Necessary | `db`, `features/admin` | `acceptance/test_fr09` | — |
 | **FR-10** | Print or export a timetable view | Expected | `features/timetable` | `integration` | — |
-| **FR-11** | Authenticate users and restrict access by role | Necessary | `core/security` ✓; `services/users` ✓; `api/deps` + `routers/auth` ✓; `features/auth` ✓ | `integration/test_rbac` ✓, `unit/test_seed` ✓, `acceptance/test_fr11` | **WIP** |
+| **FR-11** | Authenticate users and restrict access by role | Necessary | `core/security` ✓; `services/users` ✓; `api/deps` + `routers/auth` ✓; `features/auth` ✓ | `integration/test_rbac` ✓, `unit/test_seed` ✓, `acceptance/test_fr11` ✓ | **WIP** |
 | **FR-12** | Verify data before solving; report structural risks | Necessary | `preanalysis` ✓; `api` — `RunOut.preAnalysis`; `features/generation` ✓ | `unit/test_preanalysis` ✓, `integration/test_preanalysis_matches_verifier` ✓, `frontend PreAnalysisReport.test` ✓, `acceptance/test_fr12` | **WIP** |
-| **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs; `solver` | `unit/test_portfolio` ✓, `acceptance/test_fr13` ⚠️ | **WIP** |
+| **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs; `solver` | `unit/test_portfolio` ✓, `acceptance/test_fr13` ✓ ⚠️ | **WIP** |
 | **FR-14** | Compare two candidates criterion by criterion | Necessary | `features/comparison` | `integration` | **WIP** |
-| **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition; `features/comparison` | `property` ✓, `frontend ContributionsTable.test` ✓, `acceptance/test_fr15` | **WIP** |
+| **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition; `features/comparison` | `property` ✓, `frontend ContributionsTable.test` ✓, `acceptance/test_fr15` ✓ | **WIP** |
 | **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking | `unit/test_recommendation` ✓ | **WIP** |
-| **FR-17** | Signal a candidate that another dominates, wherever it appears in the portfolio ⚠️ *statement corrected, C-14* | Expected | `analysis` — dominance ✓; `features/comparison` ✓ | `property` ✓, `unit/test_recommendation` ✓, `frontend DominanceNotice.test` ✓, `acceptance/test_fr17` | **WIP** |
+| **FR-17** | Signal a candidate that another dominates, wherever it appears in the portfolio ⚠️ *statement corrected, C-14* | Expected | `analysis` — dominance ✓; `features/comparison` ✓ | `property` ✓, `unit/test_recommendation` ✓, `frontend DominanceNotice.test` ✓, `acceptance/test_fr17` ✓ | **WIP** |
 | **FR-18** | Display occupancy of each classroom and laboratory | Expected | `features/timetable` | `integration` | **WIP** |
-| **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db` ✓ — models, migrations, repositories; `services/stores` ✓; `services/publications` ✓; `features/publication` ✓ | `integration/test_store_contract` ✓, `integration/test_publication` ✓, `frontend TraceTable.test` ✓, `acceptance/test_fr19` | **WIP** |
+| **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db` ✓ — models, migrations, repositories; `services/stores` ✓; `services/publications` ✓; `features/publication` ✓ | `integration/test_store_contract` ✓, `integration/test_publication` ✓, `frontend TraceTable.test` ✓, `acceptance/test_fr19` ✓ | **WIP** |
 | **FR-22** | Explain a candidate's quality from computed figures | Necessary | `assistant` | `acceptance/test_fr22` | — |
 | **FR-23** | Regenerate from an accepted recommendation, preserving H1–H12 | Necessary | `recommendations` | `acceptance/test_fr23` | — |
 | **FR-24** | Answer a question in ordinary language about a run | Necessary | `assistant` | `acceptance/test_fr24` | — |

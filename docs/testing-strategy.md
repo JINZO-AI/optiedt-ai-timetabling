@@ -174,25 +174,54 @@ reasons the analysis layer is isolated in the first place. Tests live in `backen
 Each requirement is verified against **the acceptance criterion written at the same time as the
 requirement itself**. Tests live in `backend/tests/acceptance/`, one per criterion, named for its FR.
 
-| FR | Test | Expected result |
-|---|---|---|
-| FR-2 | Fill in the availability grid | Recorded in under 5 minutes |
-| FR-3 | Generate on the reference instance | No hard-constraint violation |
-| FR-5 | Read a candidate | Overall score and sub-scores displayed |
-| FR-8 | Generate on a deliberately infeasible instance | Report naming the rules in conflict by code |
-| FR-9 | Close a half-day in configuration | Those slots disappear from every timetable, **with no code change** |
-| FR-11 | Connect with a teacher account | Access limited to own data |
-| FR-12 | Verify an instance with insufficient rooms | The resource concerned and quantity missing are named |
-| FR-13 | Run on the reference instance | Three distinct candidates ⚠️ *see C-5* |
-| FR-15 | Compare two candidates | Sum of contributions equals the score difference |
-| FR-19 | Repeat a run with the same seed and weights | Identical candidates in the same order |
-| FR-23 | Accept a `weight_delta` recommendation | New run created; new candidate satisfies H1–H12; linked to the recommendation |
-| FR-24 | Ask a question whose answer is not in the context | The assistant says it cannot answer, and **invents no figure** |
-| FR-22, FR-25 | Switch the language service off in configuration | Explanations and reports fall back to computed form; **every other function unaffected** |
+| FR | Test | Expected result | State |
+|---|---|---|---|
+| FR-2 | Fill in the availability grid | Recorded in under 5 minutes | ⚠️ **not automatable** — a person, Phase 6 M6 |
+| FR-3 | Generate on the reference instance | No hard-constraint violation | ✅ `test_fr03`, `solver` |
+| FR-5 | Read a candidate | Overall score and sub-scores displayed | ✅ `test_fr05` |
+| FR-8 | Generate on a deliberately infeasible instance | Report naming the rules in conflict by code | ⬜ Phase 6 M3 |
+| FR-9 | Close a half-day in configuration | Those slots disappear from every timetable, **with no code change** | ⬜ Phase 6 M4 |
+| FR-11 | Connect with a teacher account | Access limited to own data | ✅ `test_fr11`, real tokens |
+| FR-12 | Verify an instance with insufficient rooms | The resource concerned and quantity missing are named | ⬜ Phase 6 M3 |
+| FR-13 | Run on the reference instance | **Three distinct candidates on the reference instance at production settings** (C-5, resolved 2026-08-05) | ✅ `test_fr13`, `solver` |
+| FR-15 | Compare two candidates | Sum of contributions equals the score difference | ✅ `test_fr15` |
+| **FR-17** | Read a run's dominance verdicts | A candidate another matches everywhere and beats somewhere is signalled, **wherever it sits in the portfolio** (C-14) | ✅ `test_fr17` |
+| FR-19 | Repeat a run with the same seed and weights | Identical candidates in the same order · **and** every published timetable traces back to its run, seed and weights | ✅ `test_fr19`, `solver` |
+| FR-23 | Accept a `weight_delta` recommendation | New run created; new candidate satisfies H1–H12; linked to the recommendation | ⛔ **out of scope for Phase 6** |
+| FR-24 | Ask a question whose answer is not in the context | The assistant says it cannot answer, and **invents no figure** | ⛔ **out of scope for Phase 6** |
+| FR-22, FR-25 | Switch the language service off in configuration | Explanations and reports fall back to computed form; **every other function unaffected** | ⛔ **out of scope for Phase 6** |
 
-⚠️ **FR-13's test currently conflicts with the specification.** "Three distinct candidates" can fail
-while the system behaves correctly, if two profiles converge and duplicates are removed. Resolve **C-5**
-before writing it.
+⛔ **The four assistant and regeneration rows are out of Phase 6's scope by decision of the project
+owner, 2026-08-05, and the deferral is written down rather than absorbed.** ADR-010 commits FR-22,
+FR-23 and FR-24 to increment 1; PPM Table 8 budgets them into no phase, which is C-1's ~2.5 unbudgeted
+days. `assistant/` is still scaffold-only, so these tests cannot be written against anything, and FR-23
+additionally needs H10's dormant gap filled. **Do not read their absence as an oversight, and do not
+read Phase 6's completion as covering them.**
+
+✅ **FR-13's test no longer conflicts with the specification.** It did: "three distinct candidates" can
+fail while the system behaves correctly, if two profiles converge and duplicates are removed. **C-5 was
+resolved on 2026-08-05** by tying the criterion to the verified reference instance at production
+settings and leaving `services/portfolio.py` alone. The test asserts **exactly three**, not "at least
+two" — the measurement is 3 distinct / 0 removed, and a weaker assertion would hide a regression.
+
+⚠️ **FR-6, FR-10, FR-17 and FR-18 have no acceptance criterion in the specification** (C-9), which is
+why only FR-17 appears above: C-14's resolution reworded `docs/scoring-and-explanation.md` §Dominance,
+and that wording is a criterion a test can be written against. **C-9 remains open for the other three.**
+
+### How the suite is built · Phase 6 M2
+
+`backend/tests/acceptance/`, one file per requirement, each opening with the criterion it verifies
+**quoted**, so a reader checks the test against the promise rather than against the code.
+
+- **Everything is driven through the HTTP API.** A requirement is `✓` only once a user can *reach* it,
+  so a test calling `services/` or `analysis/` directly would assert the arithmetic and skip the claim.
+- **Two engines, chosen per criterion.** Criteria about the ENGINE take real CP-SAT at production
+  settings and are marked `solver`; criteria about the APPLICATION take a fake solver, because the
+  engine is not what they are about and a 150-second solve would make the suite too slow to run.
+- **One portfolio is shared** by FR-3, FR-13 and FR-19's first run — three questions about one run.
+  FR-19 solves a second, because "repeat a run" is not a question one run can answer.
+
+Run it with `scripts/run-acceptance.ps1`; `-FastOnly` skips the solver-marked half.
 
 ---
 
@@ -232,7 +261,7 @@ share the fast suite's constraints:**
 |---|---|---|
 | `solver` | Invokes CP-SAT on the real instance; can legitimately take minutes | Excluded from `run-checks.ps1`; `uv run pytest -m solver` |
 | `database` | Needs a live PostgreSQL | Its own `run-checks.ps1` step. **Fails if no database was reached** — a forgotten `docker compose up -d` is actionable. **Skips** if Docker is absent. ⚠️ This said "fails if Docker is up but the container is not", and until Phase 6 M1 that was a description of an intention: the step checked the *daemon*, so a stopped container let all 38 tests skip under a green tick. It now requires the run to report tests that **passed** |
-| `acceptance` | One test per FR criterion | Phase 6 |
+| `acceptance` | One test per FR criterion | `scripts/run-acceptance.ps1`. **Its 25 solver-free tests also run in `run-checks.ps1`** — a criterion that needs no engine has no reason to wait for one. The 17 that solve for real carry `solver` as well |
 
 ⚠️ **Every test runs against in-memory stores unless it asks for a database.** `tests/conftest.py`
 forces `OPTIEDT_PERSISTENCE=memory`, and that is not tidiness: when the default became `database`,

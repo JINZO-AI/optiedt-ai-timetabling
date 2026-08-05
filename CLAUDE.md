@@ -287,6 +287,7 @@ From the root:
 |---|---|
 | PostgreSQL | `docker compose up -d` |
 | **Everything CI runs** | `scripts/run-checks.ps1` |
+| **The acceptance suite** | `scripts/run-acceptance.ps1` — one test per requirement, against its criterion. `-FastOnly` skips the solver-marked half, which takes ~7½ min on two real portfolios |
 | **Verify the instance** | `scripts/verify-instance.ps1` |
 | **Validate on ITC-2007** | `scripts/validate-itc2007.ps1` — 21 published instances, tens of minutes |
 | Reference archives status | `scripts/check-reference-data.ps1` |
