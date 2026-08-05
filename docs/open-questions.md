@@ -871,7 +871,7 @@ had.
 The documentation's factual claims are therefore **verified, not merely asserted** — which is the
 condition the whole "generated data is acceptable if verified" argument rests on (ADR-008).
 
-**What remains of C-11:** the *generator* is still a stated deliverable (PPM §10) and does not exist.
+**What remained of C-11 is now delivered.** ✅ **The generator landed 2026-08-05** (Phase 6 M5) — `data/generator/generate_instance.py`, passing `verify_instance.py` on every documented figure, and its output solves 218/218 in 5.1 s. ⚠️ It reproduces the documented **figures**, not the committed **rows**, and refuses to overwrite `data/instance/`; the reasoning is in `docs/status.md` item 10. The superseded text read: "the *generator* is still a stated deliverable (PPM §10) and does not exist."
 That is a documentation and reproducibility task, **not a blocker** — the instance it would produce is
 already here and checked. Re-run the checks any time with `scripts/verify-instance.ps1`.
 

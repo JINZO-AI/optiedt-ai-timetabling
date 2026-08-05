@@ -10,18 +10,32 @@ Standalone by design: no dependency on the backend, no third-party package. The
 checker that guards that contract must not depend on either side of it.
 
     python data/verification/verify_instance.py
+    python data/verification/verify_instance.py --instance some/other/directory
+
+`--instance` exists so the **generator** (`data/generator/generate_instance.py`,
+PPM §10) can be held to the same contract as the committed files: it writes
+elsewhere and is checked here. Without it the generator could only be verified
+by overwriting the instance every measurement in `docs/` was taken against.
 
 Exits 0 if every check passes, 1 otherwise.
 """
 
 from __future__ import annotations
 
+import argparse
 import collections
 import csv
 import pathlib
 import sys
 
-INSTANCE = pathlib.Path(__file__).resolve().parents[1] / "instance"
+_parser = argparse.ArgumentParser(description="Verify an instance against its documentation.")
+_parser.add_argument(
+    "--instance",
+    type=pathlib.Path,
+    default=pathlib.Path(__file__).resolve().parents[1] / "instance",
+    help="directory holding the 13 CSVs (default: data/instance)",
+)
+INSTANCE = _parser.parse_args().instance
 
 failures: list[str] = []
 notes: list[str] = []

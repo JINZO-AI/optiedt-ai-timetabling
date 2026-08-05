@@ -28,7 +28,7 @@ need fixing, neither should be ignored.
 This matters beyond tidiness: ADR-008 accepts generated data **on condition that it is verified**. The
 condition is now met by measurement rather than by assertion.
 
-The *generator* itself remains a stated deliverable (PPM §10) and does not exist. That is a
+✅ **The generator was delivered on 2026-08-05** (Phase 6 M5): `data/generator/generate_instance.py`, standard library only, importing nothing from `backend/` because these 13 files are the contract between the two. Its output passes `verify_instance.py` on every documented figure and **solves — 218/218 in 5.1 s**, because a passing verifier is necessary and not sufficient (C-13). ⚠️ It reproduces the documented **figures**, not the committed **rows**: the student and teacher names came from a random stream nobody committed, and it refuses to overwrite `data/instance/` because doing so would invalidate every measurement in `docs/` without one of them failing. The superseded sentence read: "The *generator* itself remains a stated deliverable (PPM §10) and does not exist." That is a
 reproducibility task, not a blocker — **and it is scheduled**: item 9 of `docs/status.md`'s "Next, in
 order", latest sensible point Phase 6. It must reproduce *the* documented instance, not merely a valid
 one (ADR-008), because every measured figure in these documents is measured against that one.

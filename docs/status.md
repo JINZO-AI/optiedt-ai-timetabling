@@ -19,9 +19,9 @@ Keep this file current. A stale status file is worse than none, because the next
 
 | | |
 |---|---|
-| **Current phase** | **Phase 6 — tests, documentation, presentation. UNDER WAY**, M0-M4 of 8 done. **Eight of nine acceptance criteria met** — only the timed FR-2 walkthrough remains, and it needs a person. Phase 5 closed 2026-08-04: six milestones and a closing audit. Milestone table in [`docs/dashboard.md`](dashboard.md) |
+| **Current phase** | **Phase 6 — tests, documentation, presentation. UNDER WAY**, M0-M5 of 8 done. **Eight of nine acceptance criteria met** — only the timed FR-2 walkthrough remains, and it needs a person. Phase 5 closed 2026-08-04: six milestones and a closing audit. Milestone table in [`docs/dashboard.md`](dashboard.md) |
 | **Last completed phase** | **Phase 5, closed 2026-08-04.** Six milestones: the five checks in-app (FR-12), the diagnosis run (FR-8), the run record in PostgreSQL (FR-19), authentication and rights (FR-11), publication with its trace, and the closing audit. **C-17 and C-18 resolved**, both recorded before the code. **Two** acceptance criteria moved from unmet to met — ⚠️ **this line said three until 2026-08-05 and was wrong**: four were met at Phase 4's close and the total is six, so M4's teacher scoping and M5's publication trace are the two. The conflict-report criterion is **not** among them; see the acceptance list at the foot of this file. Before it, **Phase 4, closed 2026-08-01.** Six milestones: the API foundation, the run lifecycle and executor, and four screens — availability, generation, timetables, comparison. First frontend tests. C-12(a) resolved and C-14 deferred, both recorded before the code was written. Before it, Phase 3 (closed 2026-07-31) delivered the criteria, scorer, ranker, objective, translator, portfolio and the ITC-2007 validation |
-| **Next step** | **Phase 6 M5 — the instance generator** (`data/generator/`, owed since PPM §10), then M6 the demonstration script and the timed FR-2 walkthrough, then M7 documentation and the closing audit. ✅ **Criterion 5 was decided 2026-08-05** — ticked with the limit written into the criterion itself, because the phase's stated purpose (a report rather than a timeout) is satisfied on both shapes even though rule codes are only produced on one |
+| **Next step** | **Phase 6 M6 — the demonstration script and the timed FR-2 walkthrough**, then M7 documentation and the closing audit. ✅ **M5 delivered the instance generator** (`data/generator/generate_instance.py`), owed since PPM §10. ✅ **Criterion 5 was decided 2026-08-05** — ticked with the limit written into the criterion itself, because the phase's stated purpose (a report rather than a timeout) is satisfied on both shapes even though rule codes are only produced on one |
 | **Days used** | Phases 1–5 delivered, budgeted 3 + 5 + 3 + 4 + 2 = **17 of 20**. Phase 6 has the remaining 3 |
 | **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · ⚠️ **neither the latest commit nor a commit count is recorded here.** Derive them: `git log -1 --oneline` · `git rev-parse --short origin/main` · `git rev-list --count origin/main..HEAD` (0 means everything is pushed), after a `git fetch`. This line named a SHA and was wrong **five** times; four were repaired by editing the value, which is exactly why there was a fifth. See [`docs/dashboard.md`](dashboard.md)'s Repository-status row |
 | **Blocked on** | **Nothing.** **C-5 and C-14 resolved 2026-08-05** by project-owner decision, which is what gated the acceptance tests. **C-9** is open but blocks only the `✓` of FR-6, FR-10 and FR-18, not the suite. **C-15** still blocks FR-13's `✓` |
@@ -170,15 +170,33 @@ SRS row that is still missing.
    `recommendations/translator.py` already reads a `lock_session`'s target slot/room out of the
    candidate correctly (`LockedPlacement`); what is missing is downstream — `SolverInput` needs a way to
    carry that target, and `build_variables` needs to honour it.
-10. **Write the instance generator** (`data/generator/`), a stated deliverable of PPM §10 that does not
-   exist. The 13 files in `data/instance/` were produced without it, so the application is unaffected
-   and nothing is blocked — but the deliverable is owed, and it must **reproduce *the* documented
-   instance, not merely a valid one** (ADR-008), because every figure in these documents is measured
-   against that specific instance. It imports nothing from `backend/`: the 13 files are the contract
-   between generator and application (`docs/data-and-instance.md`).
+10. ~~**Write the instance generator** (`data/generator/`), a stated deliverable of PPM §10.~~
+   **Done 2026-08-05**, Phase 6 M5. `data/generator/generate_instance.py` — standard library only,
+   importing nothing from `backend/`, because the 13 CSVs *are* the contract between generator and
+   application and neither side may depend on the other.
+
+   **Its output passes `data/verification/verify_instance.py` on every figure**, including the two
+   derived ones that are not simple counts: **heaviest load 12 periods (18 h)** and **smallest margin
+   11 free slots**. Both occupancy bounds land exactly — Lab_Info 90.9 % of two-period windows against
+   71.4 % of periods. The verifier gained an `--instance` flag so the generator can be held to the same
+   contract as the committed files without overwriting them.
+
+   ⚠️ **And the generated instance SOLVES: 218 of 218 sessions placed in 5.1 s.**
+   `verify_instance.py` passing is *necessary and not sufficient* — that is the whole of C-13 — so
+   solvability was measured rather than assumed.
+
+   ⚠️ **It reproduces the documented FIGURES, not the committed rows, and that is a deliberate limit
+   rather than an approximation.** `data/instance/` carries 425 student names, 44 teacher names and one
+   particular teacher-to-session assignment drawn from a random stream nobody committed. That stream is
+   not recoverable, so a generator emitting those exact rows would be a copy wearing a generator's name.
+   What ADR-008 actually binds is that the documents state the instance's content and its five
+   verification results **as facts** — and those are what survive. The generator **refuses to write into
+   `data/instance/`**, because replacing it would invalidate every measurement in `docs/` — scores,
+   timings, the S5 range, the occupancy figures on screen — without one of them failing.
+
    ⚠️ **Added to this list 2026-07-31.** It had been recorded in three places — `data-and-instance.md`,
    ADR-008, and C-11's body — and scheduled in none, which is how a deliverable inside a section headed
-   *RESOLVED* goes missing. Latest sensible point is Phase 6, with the documentation.
+   *RESOLVED* goes missing.
 
 Persistence can wait until Phase 5: the solver reads the CSVs through the loader, and PostgreSQL is
 only needed once runs, candidates and publication have to survive a restart.
@@ -265,8 +283,9 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 
 | Measurement | Value | Taken on | Notes |
 |---|---|---|---|
+| **Instance generator** | **13 files, every documented figure, and the result SOLVES** | 2026-08-05 | Phase 6 M5. `data/generator/generate_instance.py` output passes `verify_instance.py` on all 25 checks including the two derived ones - heaviest load 12 periods (18 h), smallest margin 11 free slots - and both occupancy bounds land exactly (Lab_Info 90.9 % of two-period windows, 71.4 % of periods). ⚠️ **Solvability measured, not assumed: 218/218 placed in 5.1 s** at a deterministic budget of 30. A passing verifier is necessary and not sufficient - C-13 - so the check that matters most is the one no arithmetic can make |
 | **Acceptance suite** | **64 tests, 10 requirements, all passing** | 2026-08-05 | Phase 6 M2-M4. FR-3, FR-5, FR-8, FR-9, FR-11, FR-12, FR-13, FR-15, FR-17, FR-19, driven through the HTTP API. 33 need no solver and run in `run-checks.ps1`; the 26 solver-marked ones run in about **8 min** on **two** production portfolios (seed 42, deterministic budget 90), shared across FR-3, FR-13 and FR-19's first run. ⚠️ **A budget of 9 does not work and is not a smaller version of 90**: the portfolio divides the total between three profiles, each solve carries the objective, and 3 per profile returns `UNKNOWN` — the run lands in `FAILED` rather than presenting a non-answer. The 2.8–3.3 s row below is a *feasibility* solve with every weight at zero |
-| **Toolchain** | **all green** | 2026-08-05 | **10/10** layer contracts kept · ruff · format · mypy strict on **71** source files · **354 backend tests** (263 fast + 53 solver-marked + 38 database-marked) · instance verified · frontend `tsc` clean · **32 frontend tests** (`vitest`). `run-checks.ps1` has **nine** steps: the database step FAILS **when no database was reached**, and SKIPS when Docker is absent. ⚠️ **The failing half was broken until Phase 6 M1** — it tested the Docker daemon, not the outcome, so a stopped container let all 38 tests skip and the step print `[ok]`. Found by reading the step's output rather than its tick; fixed to require tests that actually passed, and the guard verified to fire by stopping the container. Phase 5 M1 added 32 backend and 5 frontend; M2 added 13 backend and 6 frontend; M3 added 30 backend. Ninth contract (`api ⇸ solver`) added in Phase 4 M1 and verified to fire; `pytest` exit 5 no longer tolerated |
+| **Toolchain** | **all green** | 2026-08-05 | **10/10** layer contracts kept · ruff · format · mypy strict on **71** source files · **380 backend tests** (289 fast + 53 solver-marked + 38 database-marked) · instance verified · frontend `tsc` clean · **32 frontend tests** (`vitest`). `run-checks.ps1` has **nine** steps: the database step FAILS **when no database was reached**, and SKIPS when Docker is absent. ⚠️ **The failing half was broken until Phase 6 M1** — it tested the Docker daemon, not the outcome, so a stopped container let all 38 tests skip and the step print `[ok]`. Found by reading the step's output rather than its tick; fixed to require tests that actually passed, and the guard verified to fire by stopping the container. Phase 5 M1 added 32 backend and 5 frontend; M2 added 13 backend and 6 frontend; M3 added 30 backend. Ninth contract (`api ⇸ solver`) added in Phase 4 M1 and verified to fire; `pytest` exit 5 no longer tolerated |
 | **FR-12 in the application** | **the five checks reproduce `verify-instance` exactly** | 2026-08-03 | Phase 5 M1. Rendered on the generation screen during a real run: Amphi 32/56 = 57.1 % · Lab_Info 160/224 = 71.4 % **and 80/88 two-period windows = 90.9 %** · Lab_Sciences 48/84 = 57.1 % and 24/33 = 72.7 % · Salle 82/196 = 41.8 %; heaviest load 12 periods (18 h); smallest margin 11 free slots. Two independent implementations agreeing is what makes the figures trustworthy rather than merely self-consistent |
 | **The report survives a failed run** | **verified** | 2026-08-03 | Budget 3 makes CP-SAT return `UNKNOWN` and the run lands in `FAILED` — and the pre-analysis report is still displayed. That is the C-13 case: when the solver cannot prove an infeasibility, the report is the only thing that says whether the instance is structurally sound |
 | **Python** | **3.14.2** | 2026-07-29 | Resolved by uv 0.12.0 |
