@@ -512,14 +512,20 @@ instance, not merely a valid one (ADR-008). And the **timed FR-2 walkthrough**: 
 is built, but "filled in under 5 minutes without training" is about a person and no automated check
 stands in for it.
 
-**Status.** M0–M4 done. **Seven of nine** acceptance criteria are met — **M4 ticked the half-day
-closure**, the first new tick since Phase 5. Before it, six: Phase 5 added **two**, a teacher's own data
+**Status.** M0-M4 done. **Eight of nine** acceptance criteria are met - M4 ticked the half-day closure and criterion 5 was ticked with its limit stated. Before it, six: Phase 5 added **two**, a teacher's own data
 (M4) and a published timetable's trace (M5). M2 ticked none; it turned the six from *measured once by
-hand* into *checked by the suite*, which is what Phase 6 owes them. **M3 measured criterion 5 and the
-answer needs a decision** — see below.
+hand* into *checked by the suite*, which is what Phase 6 owes them. **M3 measured criterion 5 and it
+was decided on the measurement** — see below.
 
-**The two that remain** are criterion 5 (a decision, not work) and the timed FR-2 walkthrough, which
-needs a person and is M6's.
+**The one that remains** is the timed FR-2 walkthrough, which needs a person and is M6's.
+
+✅ **Criterion 5 was decided on 2026-08-05 and REWORDED rather than merely ticked.** Measured on both
+shapes it holds on one and not the other, so a tick against the original wording would have claimed
+something the product does not do. It now reads: *"an instance without a solution produces a report
+naming the rules in conflict where CP-SAT can prove the infeasibility, and a pre-analysis report naming
+the resource and the quantity missing where it cannot."* What is satisfied on **both** shapes is the
+phase's stated purpose — **a report rather than a timeout** — and the limit is measured, tested and
+documented rather than hidden. Same treatment as C-5: the wording moved, the implementation did not.
 
 #### M3 — what landed, 2026-08-05, and the question it settles
 
@@ -531,8 +537,8 @@ to end through the API. Measured rather than assumed:
 | **Area** — 4 of 8 computer laboratories, 160 periods against 112 | fails, names `Lab_Info` **short by 48 periods / 36 windows** | `INFEASIBLE` | **`DIAGNOSED`, `('H3',)`, minimal, conclusive** |
 | **Contiguity** — the pre-C-13 mix | fails, names `Lab_Info` **short by 14 windows**, `Lab_Sciences` by 2 | `UNKNOWN` → raises → **`FAILED`** | never reached |
 
-⚠️ **So criterion 5 — "an instance without a solution produces a report naming the rules in conflict" —
-is met on infeasibilities CP-SAT can prove, and not met in general.** On the contiguity shape the user
+⚠️ **So criterion 5 - "an instance without a solution produces a report naming the rules in conflict" -
+is met on infeasibilities CP-SAT can prove, and not met in general as originally worded.** On the contiguity shape the user
 gets no rule codes at all. What they do get is a `FAILED` run carrying *"neither a solution nor a proof
 of infeasibility within the time given"* and a pre-analysis report naming the resource and the
 shortfall — which is **not a timeout**, and is the phase's stated purpose, but is not the criterion's
