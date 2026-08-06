@@ -115,6 +115,38 @@ def test_switched_off_it_returns_the_computed_form_with_every_figure():
     assert "Temps mort étudiant" in answer.text
 
 
+def test_a_raw_value_reads_the_same_here_as_on_the_comparison_screen():
+    """⚠️ Found by looking at the running application, not by a test.
+
+    S6's raw value printed as `1.9183673469387754` while the comparison table
+    two panels above showed `1.92` for the same figure. Neither was wrong and
+    the page still looked like two parts of one application disagreeing about
+    a number.
+    """
+    facts = _facts(
+        candidates=(
+            Candidate(
+                id="c1",
+                run="r1",
+                profile_name="balanced",
+                cost=1,
+                score=80.0,
+                placements=(),
+                sub_scores=(
+                    SubScore(criterion="S6", raw_value=1.9183673469387754, normalised=0.848),
+                    SubScore(criterion="S2", raw_value=4.0, normalised=0.994),
+                ),
+            ),
+        )
+    )
+
+    text = DefaultAssistant().explain_candidate(facts, "c1").text
+
+    assert "S6 : 1.92 " in text
+    assert "1.9183673469387754" not in text
+    assert ") : 4 " in text, "an integer raw value must stay whole, not become 4.00"
+
+
 def test_switched_off_it_says_why_rather_than_failing_silently():
     answer = DefaultAssistant().explain_candidate(_facts(), "c1")
     assert answer.fallback_reason is not None

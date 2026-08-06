@@ -38,6 +38,22 @@ def _label(facts: RunFacts, code: str) -> str:
     return f"{code} ({name})" if name else code
 
 
+def _raw(value: float) -> str:
+    """A measured value as the rest of the interface renders it.
+
+    ⚠️ Found by looking at the running application rather than by a test: S6's
+    raw value printed as `1.9183673469387754` here while the comparison table
+    two panels above showed `1.92` for the same figure. Nothing was wrong with
+    either, and the page still looked like two parts of one application
+    disagreeing about a number.
+
+    Matches `ComparisonScreen`'s rule exactly - integers whole, everything else
+    to two decimals - because the same figure must read the same way wherever
+    it appears.
+    """
+    return str(int(value)) if float(value).is_integer() else f"{value:.2f}"
+
+
 def explain_candidate(facts: RunFacts, candidate_id: CandidateId) -> str:
     """The sub-scores, in the order the analysis layer reported them."""
     candidate = _candidate(facts, candidate_id)
@@ -55,7 +71,7 @@ def explain_candidate(facts: RunFacts, candidate_id: CandidateId) -> str:
         weight = facts.weights.get(sub.criterion)
         weight_text = "" if weight is None else f", poids {weight}"
         lines.append(
-            f"  {_label(facts, sub.criterion)} : {sub.raw_value} "
+            f"  {_label(facts, sub.criterion)} : {_raw(sub.raw_value)} "
             f"→ {sub.normalised:.{SCORE_DIGITS}f}{weight_text}"
         )
     lines.append("")

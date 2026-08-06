@@ -423,6 +423,24 @@ export interface RunOverrides {
   excludedRooms: [string, string][]
 }
 
+/**
+ * Text from the language service — FR-22, FR-24, FR-25.
+ *
+ * ⚠️ **`generated` must be shown, not merely carried.** A reader has to be able
+ * to tell a sentence a language model wrote from one the application computed.
+ * The computed form is the honest one, so a screen that hid the distinction
+ * would mislead in the direction that flatters the model.
+ *
+ * `fallbackReason` is null on a generated answer. Otherwise it says why: the
+ * service is off, unreachable, timed out, or — the one worth reading — the
+ * answer contained a figure absent from the context and was discarded.
+ */
+export interface AssistantAnswer {
+  text: string
+  generated: boolean
+  fallbackReason: string | null
+}
+
 /** A run without its placements, for a list. */
 export interface RunSummary {
   id: string

@@ -9,6 +9,7 @@ import {
   useRun,
   useRuns,
 } from '@/api/queries'
+import { AssistantPanel } from '@/features/assistant/AssistantPanel'
 import { ContributionsTable } from '@/features/comparison/ContributionsTable'
 import { DominanceNotice } from '@/features/comparison/DominanceNotice'
 import { RegenerationPanel } from '@/features/comparison/RegenerationPanel'
@@ -175,6 +176,15 @@ export function ComparisonScreen() {
                 compared={[a.id, b.id]}
               />
             )}
+          </section>
+
+          <section className="panel">
+            <h2>Assistant</h2>
+            {/* ⚠️ Rendered whether or not a language service is configured.
+                Hiding it when the service is off would make a working
+                application look incomplete: the panel then shows the computed
+                form, which is a complete answer (invariant 5). */}
+            <AssistantPanel runId={selectedRunId as string} candidateId={a.id} />
           </section>
 
           {run.data && (

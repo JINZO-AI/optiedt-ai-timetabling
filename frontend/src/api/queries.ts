@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiGet, apiSend } from '@/api/client'
 import type {
+  AssistantAnswer,
   Availability,
   AvailabilityState,
   Decomposition,
@@ -102,6 +103,44 @@ export function useRegenerate(runId: string | null) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['runs'] })
     },
+  })
+}
+
+/**
+ * The language service — FR-22, FR-24, FR-25.
+ *
+ * ⚠️ **These never fail because the service is off.** The API answers 200 with
+ * the computed form and `generated: false`; off is the default configuration,
+ * not an error. A hook that treated it as one would put an error state on a
+ * screen that is working exactly as specified.
+ */
+export function useExplanation(runId: string | null, candidateId: string | null) {
+  return useQuery({
+    queryKey: ['assistant', 'explanation', runId, candidateId],
+    queryFn: () =>
+      apiGet<AssistantAnswer>(
+        `/assistant/runs/${runId as string}/candidates/${encodeURIComponent(candidateId as string)}/explanation`,
+      ),
+    enabled: runId !== null && candidateId !== null,
+  })
+}
+
+export function useRunReport(runId: string | null) {
+  return useQuery({
+    queryKey: ['assistant', 'report', runId],
+    queryFn: () => apiGet<AssistantAnswer>(`/assistant/runs/${runId as string}/report`),
+    enabled: runId !== null,
+  })
+}
+
+/** FR-24. A mutation rather than a query: asking is an act, and two identical
+ * questions are two askings rather than one cached answer. */
+export function useAskAssistant(runId: string | null) {
+  return useMutation({
+    mutationFn: (question: string) =>
+      apiSend<AssistantAnswer>('POST', `/assistant/runs/${runId as string}/question`, {
+        question,
+      }),
   })
 }
 

@@ -136,6 +136,32 @@ h3 {
   color: var(--ink-soft);
 }
 
+/* ── The language service — FR-22, FR-24, FR-25 ──────────────────────────
+   The origin of a sentence is shown BEFORE it, and the two origins do not look
+   alike. A reader who reaches the end of a paragraph before learning a model
+   wrote it has already read it as fact. */
+.assistant__origin {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  border-left: 3px solid var(--line);
+  padding-left: 0.6rem;
+  margin: 0.6rem 0 0.4rem;
+}
+
+.assistant__origin--generated {
+  border-left-color: var(--accent, #b4884d);
+}
+
+.assistant__answer {
+  font: inherit;
+  white-space: pre-wrap;
+  margin: 0 0 0.8rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface-soft, rgba(0, 0, 0, 0.03));
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+
 /* Lines a control up with the labelled fields beside it, WITHOUT being a
    <label>: a label carrying only whitespace and a `for` attribute becomes the
    control's accessible name, so a screen reader announces an unnamed button.

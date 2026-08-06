@@ -188,7 +188,7 @@ requirement itself**. Tests live in `backend/tests/acceptance/`, one per criteri
 | **FR-17** | Read a run's dominance verdicts | A candidate another matches everywhere and beats somewhere is signalled, **wherever it sits in the portfolio** (C-14) | ✅ `test_fr17` |
 | FR-19 | Repeat a run with the same seed and weights | Identical candidates in the same order · **and** every published timetable traces back to its run, seed and weights | ✅ `test_fr19`, `solver` |
 | FR-23 | Accept a `weight_delta` recommendation | New run created; new candidate satisfies H1–H12; linked to the recommendation | ✅ `test_fr23`, 14 tests — ten about the application, **four `solver`-marked** at production settings |
-| FR-24 | Ask a question whose answer is not in the context | The assistant says it cannot answer, and **invents no figure** | ⛔ **out of scope for Phase 6** |
+| FR-24 | Ask a question whose answer is not in the context | The assistant says it cannot answer, and **invents no figure** | ✅ `test_fr24`, 9 tests — **both** ways it can be met: a model that declines, and a model that does not and is stopped |
 | FR-22, FR-25 | Switch the language service off in configuration | Explanations and reports fall back to computed form; **every other function unaffected** | ✅ `test_fr22`, 9 tests — and the criterion needs **no provider, no key and no network**, because off is the default |
 
 ⚠️ **Written at Phase 6's close and now half superseded — kept because the reasoning is what Phase 7
