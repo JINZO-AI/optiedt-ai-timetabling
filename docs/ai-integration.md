@@ -242,3 +242,13 @@ those two sentences are errata, contradicted by eight statements across the othe
 verifier, panel and report are realistically ~2.5 days — about a 12% overrun. Tracked in
 `docs/status.md`. The release valve, already decided in advance: the assistant's **report** is the
 first thing cut under time pressure, with explanations and answers kept.
+
+✅ **Delivered 2026-08-06 by Phase 7**, approved as its own phase for exactly this work (**C-1**,
+closed after eight days open). **The release valve was not used** — the report shipped with the rest.
+
+⚠️ **The ~2.5-day estimate above never costed FR-23.** Read its own itemisation: adapter, context
+builder, verifier, panel, report — every line is assistant work, and regeneration appears in none of
+it, though ADR-010 commits FR-23 to increment 1 in the same breath. The overrun the project carried
+was understated, and it was understated because a figure was repeated across four documents rather
+than re-derived in any of them. **ADR-010 is unchanged** — it is a delivered commitment, and the
+correction belongs here and in `docs/status.md` rather than inside it.

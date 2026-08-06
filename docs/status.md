@@ -1,7 +1,8 @@
 # Status
 
-**Increment 1 of 2 · Phases 1–6 complete. ⚠️ Increment 1 is NOT complete — see the note below.** Phase 5 closed 2026-08-04: six
-milestones and a closing audit that found eight defects, none of which `run-checks.ps1` could catch.
+**Increment 1 of 2 · Phases 1–7 complete. ✅ INCREMENT 1 IS COMPLETE.** Phase 7 closed 2026-08-06: seven
+milestones and a closing audit that found six defects, none of which `run-checks.ps1` could catch —
+**four phases running**.
 **Eighteen open questions resolved (C-1 to C-21, no C-10); C-15 deferred by decision. Two remain open —
 C-9 and C-15 — and neither blocks Phase 7.** C-19, C-20 and C-21 were decided on 2026-08-06, before any
 Phase 7 code: how a locked session's target reaches the solver, where a regeneration assembles its run,
@@ -11,7 +12,7 @@ and whether a test may call a live language model.
 Keep this file current. A stale status file is worse than none, because the next session trusts it.
 
 > **Read [`docs/dashboard.md`](dashboard.md) first.** It carries the project state, the roadmap and the
-> brief for whichever phase is current — **Phase 6, now closed** — in one page. This file is the detail behind it:
+> brief for whichever phase is current — **Phase 7, now closed** — in one page. This file is the detail behind it:
 > blockers, measurements, phases, acceptance criteria. Session-by-session history is archived in
 > [`docs/history.md`](history.md).
 
@@ -21,12 +22,12 @@ Keep this file current. A stale status file is worse than none, because the next
 
 | | |
 |---|---|
-| **Current phase** | **Phase 6 — tests, documentation, presentation. COMPLETE 2026-08-06**, all eight milestones and a closing audit. **Eight of nine acceptance criteria met** — only the timed FR-2 walkthrough remains, and it needs a person. Phase 5 closed 2026-08-04: six milestones and a closing audit. Milestone table in [`docs/dashboard.md`](dashboard.md) |
-| **Last completed phase** | **Phase 5, closed 2026-08-04.** Six milestones: the five checks in-app (FR-12), the diagnosis run (FR-8), the run record in PostgreSQL (FR-19), authentication and rights (FR-11), publication with its trace, and the closing audit. **C-17 and C-18 resolved**, both recorded before the code. **Two** acceptance criteria moved from unmet to met — ⚠️ **this line said three until 2026-08-05 and was wrong**: four were met at Phase 4's close and the total is six, so M4's teacher scoping and M5's publication trace are the two. The conflict-report criterion is **not** among them; see the acceptance list at the foot of this file. Before it, **Phase 4, closed 2026-08-01.** Six milestones: the API foundation, the run lifecycle and executor, and four screens — availability, generation, timetables, comparison. First frontend tests. C-12(a) resolved and C-14 deferred, both recorded before the code was written. Before it, Phase 3 (closed 2026-07-31) delivered the criteria, scorer, ranker, objective, translator, portfolio and the ITC-2007 validation |
-| **Next step** | ⚠️ **A DECISION, not code. Phase 6 is complete and increment 1 is not.** FR-22, FR-24, FR-25 (the assistant) and FR-23 (regeneration) are committed to increment 1 by ADR-010 and allocated to no phase of the 20-day plan — that is **C-1**, recorded since 2026-07-29 and never scheduled. The remaining work needs a home: a Phase 7, increment 2, or a scope correction. **Not to be decided here** — see the Increment 1 completion report and docs/dashboard.md |
-| **Days used** | Phases 1–6 delivered, budgeted 3 + 5 + 3 + 4 + 2 + 3 = **20 of 20**. ⚠️ **The plan's days are exhausted and increment 1 is not complete** — the assistant and regeneration were never allocated any (C-1) |
+| **Current phase** | **Phase 7 — regeneration and the assistant. COMPLETE 2026-08-06**, all seven milestones and a closing audit. **Increment 1 is complete.** Eight of nine acceptance criteria met — only the timed FR-2 walkthrough remains, and it needs a person. Milestone table in [`docs/dashboard.md`](dashboard.md) |
+| **Last completed phase** | **Phase 6, closed 2026-08-06.** Eight milestones: the acceptance suite, FR-8/FR-12's tests, FR-9's, the instance generator, the demonstration script and the closing audit. **C-5 and C-14 resolved** by project-owner decision, both recorded before the code. Before it, **Phase 5, closed 2026-08-04.** Six milestones: the five checks in-app (FR-12), the diagnosis run (FR-8), the run record in PostgreSQL (FR-19), authentication and rights (FR-11), publication with its trace, and the closing audit. **C-17 and C-18 resolved**, both recorded before the code. **Two** acceptance criteria moved from unmet to met — ⚠️ **this line said three until 2026-08-05 and was wrong**: four were met at Phase 4's close and the total is six, so M4's teacher scoping and M5's publication trace are the two. The conflict-report criterion is **not** among them; see the acceptance list at the foot of this file. Before it, **Phase 4, closed 2026-08-01.** Six milestones: the API foundation, the run lifecycle and executor, and four screens — availability, generation, timetables, comparison. First frontend tests. C-12(a) resolved and C-14 deferred, both recorded before the code was written. Before it, Phase 3 (closed 2026-07-31) delivered the criteria, scorer, ranker, objective, translator, portfolio and the ITC-2007 validation |
+| **Next step** | ⚠️ **A DECISION, not code, and it is the project owner's.** Increment 1 is delivered and no phase is open. Three things are outstanding, none of them a defect: **(1)** the **timed FR-2 walkthrough**, which needs a teacher who has not seen the screen; **(2)** a **first live call to a language provider**, without which FR-24 cannot be called done (**C-21**); **(3)** whether to open **increment 2** — examinations (4 d) and weight adjustment (3 d), conditional on remaining time |
+| **Days used** | Phases 1–6 delivered against a budget of 3 + 5 + 3 + 4 + 2 + 3 = **20 of 20**, plus **Phase 7, which was budgeted none**. ⚠️ **That is C-1, and the ~2.5-day estimate it carried was itself understated** — ADR-010 itemises it as adapter + context builder + verifier + panel + report, all assistant work, with **regeneration costed nowhere**. Recorded rather than corrected: ADR-010 is a delivered commitment |
 | **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · ⚠️ **neither the latest commit nor a commit count is recorded here.** Derive them: `git log -1 --oneline` · `git rev-parse --short origin/main` · `git rev-list --count origin/main..HEAD` (0 means everything is pushed), after a `git fetch`. This line named a SHA and was wrong **five** times; four were repaired by editing the value, which is exactly why there was a fifth. See [`docs/dashboard.md`](dashboard.md)'s Repository-status row |
-| **Blocked on** | ⚠️ **One thing, and it is a DECISION rather than a dependency: where the assistant (FR-22, FR-24, FR-25) and regeneration (FR-23) go.** They are committed to increment 1 by ADR-010 and allocated to no phase — **C-1**, recorded 2026-07-29. The plan's 20 days are spent. Until the project owner decides, no further increment-1 work is startable. Separately, **C-9** blocks only the `✓` of FR-6, FR-10 and FR-18, and **C-15** blocks FR-13's `✓`; neither blocks anything else |
+| **Blocked on** | ✅ **Nothing, for the first time since 2026-07-29.** C-1 — *where the assistant and regeneration go* — was open for eight days and closed by Phase 7. What remains are two open questions blocking four requirement TICKS and nothing else: **C-9** blocks the `✓` of FR-6, FR-10 and FR-18, **C-15** blocks FR-13's. Separately, **FR-24 waits on a live provider call** (C-21) and **FR-2 on a timed walkthrough** — both are acts a person performs, not work a session can do |
 
 ---
 
@@ -233,7 +234,14 @@ would break those references and lose the reasoning that makes each correction c
 Persistence can wait until Phase 5: the solver reads the CSVs through the loader, and PostgreSQL is
 only needed once runs, candidates and publication have to survive a restart.
 
-## Phases — increment 1, 20 working days
+## Phases — increment 1: 20 budgeted working days, plus one unbudgeted phase
+
+⚠️ **This heading read `Phases — increment 1, 20 working days` until 2026-08-06, and it was half of a
+contradiction the repository carried for eight days.** It equated the plan's six phases with the
+increment; ADR-010 commits FR-22, FR-23 and FR-24 to increment 1 and the six phases name none of them.
+Both statements were here and they could not both be right (**C-1**). **The heading moved, and ADR-010
+did not** — it is a delivered commitment. Phase 7 is what makes the two consistent, and its days are
+marked unbudgeted because that is what they were.
 
 | Phase | Work | Days | Milestone |
 |---|---|---|---|
@@ -243,6 +251,7 @@ only needed once runs, candidates and publication have to survive a restart.
 | 4 | Availability grid, generation screen, comparison screen, views | 4 | Complete path from declaring availability to publication |
 | 5 | Pre-solve verification, diagnosis run, authentication, rights, run record | 2 | An infeasible instance produces a report naming the rules in conflict |
 | 6 | Tests, documentation, presentation | 3 | Application demonstrable, documents complete |
+| **7** | **Regeneration (FR-23) and the assistant (FR-22, FR-24, FR-25)** | **0 — unbudgeted (C-1)** | **Increment 1 complete: a recommendation regenerates through the same solver, and the assistant explains under a grounding check** |
 
 Phase 2 gets the largest share because it carries the most uncertainty.
 
@@ -255,6 +264,10 @@ that does not fit the project (see `docs/ai-integration.md`).
 ## Order of scope reduction, if the work runs late
 
 Decided in advance, so the decision is not taken under pressure:
+
+✅ **None of it was used.** Phase 7 delivered the report along with everything else, so step 1 — the
+first and only cut that increment 1 ever came close to — was never taken. The order stands unchanged
+for increment 2.
 
 1. The assistant's **report** is abandoned — explanations and answers kept.
 2. **Weight adjustment** is abandoned — catalogue weights kept.
@@ -273,7 +286,8 @@ its decomposition, and validation on the published instances.
 
 | Risk | Effect | Handling |
 |---|---|---|
-| **~2.5 unbudgeted assistant days** (C-1) | ≈12% overrun on 20 days | Confirmed, not contingent. Release valve is reduction step 1 |
+| ~~**~2.5 unbudgeted assistant days** (C-1)~~ | ~~≈12% overrun on 20 days~~ | **REALISED and CLOSED 2026-08-06.** Phase 7 was approved and delivered all four requirements; the release valve was never used. ⚠️ **The estimate was itself understated**: ADR-010 itemises it as adapter + context builder + verifier + panel + report — all assistant work, with **FR-23 costed nowhere** — so the true overrun was larger than the figure four documents repeated. Recorded rather than corrected inside ADR-010, which is a delivered commitment |
+| ⚠️ **No test can establish that a real provider works** (C-21) | FR-24 cannot be called done on the suite alone, and a green build could be mistaken for evidence about a language model | **Deliberate, not a gap.** A model's output is not fixed by a seed, so such a test would report the machine and the day. What is verified is the application's behaviour *around* a provider — the context it sends, the check it applies, what it displays when the check fails. **A first live call is a deployment step**, and `docs/demonstration.md` §4 carries the protocol and the table to record it in |
 | **91% laboratory occupancy** (of two-period windows) | A modelling regression looks like an infeasible instance — **and, as C-13 showed, an infeasible instance looks like a slow model** | Pre-analysis first, always, and read the *window* figure rather than the period figure. Re-check both whenever the instance changes |
 | **A pre-analysis check that is necessary but not sufficient** | Passes an infeasible instance, so the next failure is attributed to the model. Cost three sessions on C-13 | Both bounds now checked in `verify_instance.py`. Any new check must state whether it is sufficient, and FR-12 must port both |
 | **The cumulative reformulation and the warm-start were built for a problem that did not exist** | Two committed mechanisms (`cumulative_room_types`, `solver/warm_start.py`) are carried for a reason now known to be wrong. Both are correct and tested, neither is load-bearing: the model solves with the warm start off, and the greedy now reaches 218/218 in 0.04 s | **Still not removed.** The objective has now landed and confirmed a real cost: `cumulative_room_types` also means S6 (room efficiency) cannot be optimised for those room types at all, only scored after the fact — see below. **Whether the plain per-room encoding would now serve for every type remains untested** |
@@ -316,6 +330,7 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 | Measurement | Value | Taken on | Notes |
 |---|---|---|---|
 | **Instance generator** | **13 files, every documented figure, and the result SOLVES** | 2026-08-05 | Phase 6 M5. `data/generator/generate_instance.py` output passes `verify_instance.py` on all 25 checks including the two derived ones - heaviest load 12 periods (18 h), smallest margin 11 free slots - and both occupancy bounds land exactly (Lab_Info 90.9 % of two-period windows, 71.4 % of periods). ⚠️ **Solvability measured, not assumed: 218/218 placed in 5.1 s** at a deterministic budget of 30. A passing verifier is necessary and not sufficient - C-13 - so the check that matters most is the one no arithmetic can make |
+| **Acceptance suite, after Phase 7** | **106 tests, 14 requirements, all passing in 16 min 23 s** | 2026-08-06 | Phase 7 M2–M5 added FR-22, FR-23, FR-24 and FR-25 to the ten Phase 6 covered. **71 need no solver and run in `run-checks.ps1`**; the **35** that solve for real drive **four** production portfolios (seed 42, budget 90) — one shared by FR-3/FR-13/FR-19, a second for FR-19's repeat, and **two more for FR-23**, because "regenerate from this run" is a question one run cannot answer, exactly like "repeat this run". ⚠️ **The three assistant requirements add no solve at all**: their criteria are about the service being off, which is the default configuration |
 | **Acceptance suite** | **64 tests, 10 requirements, all passing** | 2026-08-05 | Phase 6 M2-M4. FR-3, FR-5, FR-8, FR-9, FR-11, FR-12, FR-13, FR-15, FR-17, FR-19, driven through the HTTP API. 33 need no solver and run in `run-checks.ps1`; the 26 solver-marked ones run in about **8 min** on **two** production portfolios (seed 42, deterministic budget 90), shared across FR-3, FR-13 and FR-19's first run. ⚠️ **A budget of 9 does not work and is not a smaller version of 90**: the portfolio divides the total between three profiles, each solve carries the objective, and 3 per profile returns `UNKNOWN` — the run lands in `FAILED` rather than presenting a non-answer. The 2.8–3.3 s row below is a *feasibility* solve with every weight at zero |
 | **A figure read two ways on one page** | **`1.9183673469387754` beside `1.92`** | 2026-08-06 | Phase 7 M4, found by opening the running application rather than by a test. The comparison table rendered S6's raw value as `1.92`; the assistant's computed form two panels below printed the full float. Neither was wrong and the page still looked like two parts of one application disagreeing about a number — the same failure mode as the contributions-rounding defect Phase 4 M5 found, and the same fix: **one rule for a figure, applied wherever it appears** |
 | **The grounding check had a hole, and a test found it** | **`4271` matched nothing at all** | 2026-08-06 | Phase 7 M3. The number pattern was `\d{1,3}(?:[ ]\d{3})*` — up to three digits, then optional space-grouped triples. On `4271` it matched `427`, the trailing word boundary failed on the `1`, every shorter attempt failed the same way, and every later start was refused by the leading boundary. **A verifier that cannot SEE a number cannot reject it**, so any ungrouped number above 999 passed as grounded — precisely the range an invented count of minutes, periods or sessions falls in. Found by `tests/acceptance/test_fr22.py`, which fabricated exactly such a figure; **not by review**, and the module had been read twice |

@@ -61,8 +61,15 @@ class Settings(BaseSettings):
     to log, not a normal exit path."""
 
     solver_workers: int = 0
-    """0 = all available. The diagnosis run overrides this to 1, which CP-SAT
-    imposes: solving under assumptions admits no parallelism."""
+    """0 = all available. The diagnosis run overrides this to 1.
+
+    ⚠️ **Not because CP-SAT imposes it.** This docstring said "solving under
+    assumptions admits no parallelism" until 2026-08-06, and that reason died
+    with the assumption mechanism (C-17, 2026-08-04). The reason now is
+    **reproducibility of the VERDICT**: `max_deterministic_time` is a per-worker
+    budget, so more workers do more total work and could flip an `UNKNOWN` to an
+    `INFEASIBLE` between machines. A conflict report naming different rules on
+    different machines would be worse than none."""
 
     solver_seed: int = 42
     """Recorded with every run. Reproducibility is an acceptance criterion."""

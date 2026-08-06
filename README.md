@@ -139,7 +139,7 @@ catalogued in `docs/open-questions.md` rather than resolved silently.
 
 ## Status
 
-**Increment 1 of 2 · Phases 1–5 complete, Phase 6 in progress.**
+**Increment 1 of 2 · COMPLETE. Phases 1–7 delivered.**
 
 The decision layer is built: all twelve hard constraints, a conflict-free timetable on the reference
 instance in about three seconds, every constraint re-verified from the raw data rather than trusted
@@ -150,19 +150,29 @@ The web interface reaches all of it — availability grid, generation, four time
 the conflict report and published timetables with their trace.
 
 Phase 5 added the five pre-solve checks inside the application, a diagnosis run that names the rules
-in conflict, the run record in PostgreSQL, authentication with rights, and publication. Phase 6 has
-added the acceptance suite — one test per requirement against its criterion — and the instance
-generator. **Eight of the nine acceptance criteria are met**; the ninth is a timed walkthrough with a
-teacher, which no automated check can replace ([`docs/demonstration.md`](docs/demonstration.md) §2).
+in conflict, the run record in PostgreSQL, authentication with rights, and publication. Phase 6 added
+the acceptance suite — one test per requirement against its criterion — the instance generator and the
+demonstration script. **Phase 7 closed increment 1**: an accepted recommendation now changes one
+solver input and launches a **new run** through the same engine, and the language service explains,
+answers and reports from figures the analysis layer computed, with every number it writes checked
+against the context it was given.
 
-⚠️ **Increment 1 is not complete when Phase 6 closes.** FR-22, FR-24 and FR-25 (the assistant) and
-FR-23 (regeneration from an accepted recommendation) are committed to increment 1 by ADR-010 and are
-allocated to no phase of the 20-day plan. That is **C-1**, recorded since 2026-07-29. See
-[`docs/dashboard.md`](docs/dashboard.md).
+**Eight of the nine acceptance criteria are met**; the ninth is a timed walkthrough with a teacher,
+which no automated check can replace ([`docs/demonstration.md`](docs/demonstration.md) §2).
+
+⚠️ **The language service is off by default, and everything works with it off** — only text
+disappears. **No test calls a live provider and none can**: a model's output is not fixed by a seed,
+so what the suite verifies is the application's behaviour *around* a provider, never that any
+particular one works. A first live call is a deployment step.
 
 ⚠️ **`scripts/run-checks.ps1` is run by a person, not by a pipeline.** There is no CI configuration in
-this repository. The ten `import-linter` contracts are real and do fire — but nothing runs them
+this repository. The eleven `import-linter` contracts are real and do fire — but nothing runs them
 automatically, so a violation is caught when someone runs the script, not when they push.
+
+⚠️ *This Status section was two phases stale when Phase 6's audit found it, was corrected, and then
+went stale again the moment Phase 6 closed — because the audit ran before the phase's own final state
+was written. Phase 7's audit found it a second time. **A closing audit cannot verify the sentence that
+records its own phase closing**; that line has to be written after.*
 
 ⚠️ **Not deployable as it stands.** `OPTIEDT_SECRET_KEY` defaults to a value published in this
 repository, so tokens signed with it can be forged; account management through the interface is not

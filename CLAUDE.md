@@ -63,12 +63,19 @@ is a gap in `docs/` — fix the gap, then continue.
 4. **Check the dashboard's "Next task" row before writing code.** It says explicitly when the next
    action is a *decision* rather than an implementation.
 
-> ⚠️ **As of 2026-08-06 the next action IS a decision, not code.** All six phases of the plan are
-> delivered, its 20 days are spent, and **increment 1 is still not complete**: the assistant (FR-22,
-> FR-24, FR-25) and regeneration (FR-23) are committed to increment 1 by ADR-010 and were allocated to
-> no phase — that is **C-1**, recorded 2026-07-29 and never scheduled. **Do not create a Phase 7, do
-> not modify ADR-010 or the roadmap, and do not start that work without the project owner's approval.**
-> The evidence and the recommendation are in `docs/dashboard.md`'s Phase 6 block.
+> ✅ **As of 2026-08-06, increment 1 is COMPLETE.** Phase 7 was approved by the project owner and
+> delivered the four requirements C-1 recorded and no phase carried: FR-23 (regeneration) and FR-22,
+> FR-24, FR-25 (the assistant). **C-1 is closed.**
+>
+> ⚠️ **The next action is again a decision, not code**, and it is the project owner's. Three things are
+> outstanding and **none of them is a defect**: the **timed FR-2 walkthrough** (needs a teacher who has
+> not seen the screen), a **first live call to a language provider** (without which FR-24 cannot be
+> called done — **C-21**), and whether to open **increment 2** (examinations 4 d, weight adjustment
+> 3 d, conditional on remaining time). Do not start increment 2 without approval.
+>
+> ⚠️ **Do not read a green suite as "the assistant was tested against a language model."** No test
+> calls a live provider and none can — a model's output is not fixed by a seed. What is verified is
+> the application's behaviour *around* a provider.
 
 **If the next step is blocked on an open question, say so and stop rather than deciding it** — that is
 the one failure mode this project cannot absorb quietly.

@@ -140,7 +140,7 @@ each has a one-sentence answer if asked.
 
 | Not shown | The honest answer |
 |---|---|
-| **The AI assistant** — explanations, questions, reports (FR-22, FR-24, FR-25) | Scaffold only: interfaces, no implementation. ADR-010 commits it to increment 1; the 20-day plan allocates it to no phase. That is **C-1**, recorded since 2026-07-29 and still unscheduled |
+| ~~**The AI assistant** — explanations, questions, reports (FR-22, FR-24, FR-25)~~ | ✅ **Built 2026-08-06, Phase 7 M3–M5**, and reachable from the comparison screen. ⚠️ **What is still not shown is a LIVE model**: the service is off by default and no test calls a provider (**C-21**), so what a demonstration shows is the **computed form** — complete figures, no prose. Say so plainly; see §4 |
 | ~~**Regeneration from an accepted recommendation** (FR-23)~~ | ✅ **Built 2026-08-06, Phase 7 M2.** Reachable from the comparison screen: choose one of the three catalogue actions, accept, and a **new run** is launched through the same solver. The candidate on screen is unchanged. H10's dormant gap — `lock_session`'s prerequisite — was filled by M1 (C-19) |
 | **Calendar administration screen** (FR-9) | Not built. ⚠️ **The acceptance criterion is met** — closing a half-day in *configuration* removes those slots from every timetable with no code change, and that is tested. What is absent is the screen |
 | **Data management** (FR-1) and **print/export** (FR-10) | Not built. Data arrives through the 13 CSVs and the loader |
@@ -149,10 +149,37 @@ each has a one-sentence answer if asked.
 
 ⚠️ **If asked "where is the AI?"**, the answer is in `docs/ai-integration.md` and it is worth giving in
 full rather than deflecting: **constraint programming is the AI here**, in the symbolic sense — CP-SAT
-places every session and guarantees the twelve hard rules by construction. The language model was
+places every session and guarantees the twelve hard rules by construction. The language model is
 deliberately confined to explaining figures it cannot change (ADR-006), because a model that scored or
-ranked would produce a number the department could not recompute or defend. What is missing is that
-explanatory layer, and it is missing for a scheduling reason, not a design one.
+ranked would produce a number the department could not recompute or defend. **That explanatory layer
+now exists** (Phase 7), and every number it writes is checked against the context it was given; an
+answer containing a figure nobody computed is discarded and the computed form shown instead.
+
+---
+
+## 4 · The one step this demonstration cannot perform: a live model call
+
+⚠️ **Not a defect, and not optional either.** `assistant_enabled` is False by default and **no test in
+this repository calls a live provider** — a model's output is not fixed by a seed, so such a test would
+report the machine and the day rather than the software (**C-21**). Everything the suite proves is
+about the application's behaviour *around* a provider.
+
+**So the first live call is a deployment step, and it is what FR-24 is waiting on.** Perform it once,
+deliberately, and record the result here:
+
+1. Set `OPTIEDT_ASSISTANT_ENABLED=true`, `OPTIEDT_ASSISTANT_BASE_URL`, `OPTIEDT_ASSISTANT_API_KEY` and
+   `OPTIEDT_ASSISTANT_MODEL` in `backend/.env` — which is gitignored. ⚠️ **The key must never be
+   committed.**
+2. Open a completed run's comparison screen and read the explanation.
+3. Record three things: whether the answer was **generated** or fell back, whether any answer was
+   **discarded** for an ungrounded figure, and whether the figures quoted match the screen.
+
+| Date | Provider and model | Generated? | Discarded any? | Figures matched? |
+|---|---|---|---|---|
+| *(not yet performed)* | | | | |
+
+⚠️ **Until this table has a row, do not describe the assistant as "working with a language model".**
+It works with the service off, which is verified; the other half is not.
 
 ---
 

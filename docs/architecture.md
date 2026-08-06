@@ -249,7 +249,7 @@ condition that would change the answer.
 | `optiedt.solver` | Variables, constraints, objective, diagnosis | `domain` |
 | `optiedt.analysis` | Criteria, scoring, ranking, decomposition, dominance | `domain` |
 | `optiedt.recommendations` | Catalogue, translation to solver input | `domain`, `analysis` |
-| `optiedt.assistant` | Adapter, context builder, verifier | `domain`, `analysis` |
+| `optiedt.assistant` | Adapter, context builder, verifier, computed forms | `domain`, `analysis` |
 | `optiedt.tasks` | Background run executor | `services` |
 | `optiedt.validation` | **Not product code.** The ITC-2007 benchmark harness | nothing in `optiedt` |
 
@@ -260,7 +260,15 @@ Five boundaries carry design weight rather than convenience:
 - **`recommendations` is not inside `analysis`.** Different permissions: analysis writes nothing;
   recommendations write exactly three fields. That difference is testable, so it gets a boundary.
 - **`assistant` is separate and flagged off-able.** Degraded mode is a requirement — switching it off
-  must remove text and nothing else.
+  must remove text and nothing else. ⚠️ **It is off by DEFAULT** (`assistant_enabled = False`), which
+  makes that requirement testable by the ordinary configuration: every test in the suite that is not
+  about the assistant already runs against an application with no language service.
+
+  ⚠️ **`ContextBuilder` takes facts, not a run id, and the reason is this boundary.** The scaffold
+  declared `build(kind, run_id)`, which cannot be implemented without looking a run up — which needs a
+  store, which is the database. The signature and invariant 4 could not both be honoured; the
+  signature moved. A caller assembles a `RunFacts` and passes values, and that type is the whole of
+  what may reach a model: data minimisation holds because there is no field that could carry a name.
 - **`domain` is pure.** It is imported by the solver, the analysis layer and the ORM alike; a framework
   import there would leak into all three.
 - **`validation` runs *against* the product, never inside it.** It models ITC-2007 — a different

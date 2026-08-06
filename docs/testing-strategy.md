@@ -269,7 +269,7 @@ share the fast suite's constraints:**
 |---|---|---|
 | `solver` | Invokes CP-SAT on the real instance; can legitimately take minutes | Excluded from `run-checks.ps1`; `uv run pytest -m solver` |
 | `database` | Needs a live PostgreSQL | Its own `run-checks.ps1` step. **Fails if no database was reached** — a forgotten `docker compose up -d` is actionable. **Skips** if Docker is absent. ⚠️ This said "fails if Docker is up but the container is not", and until Phase 6 M1 that was a description of an intention: the step checked the *daemon*, so a stopped container let all 38 tests skip under a green tick. It now requires the run to report tests that **passed** |
-| `acceptance` | One test per FR criterion | `scripts/run-acceptance.ps1`. **Its 25 solver-free tests also run in `run-checks.ps1`** — a criterion that needs no engine has no reason to wait for one. The 17 that solve for real carry `solver` as well |
+| `acceptance` | One test per FR criterion | `scripts/run-acceptance.ps1`. **Its 71 solver-free tests also run in `run-checks.ps1`** — a criterion that needs no engine has no reason to wait for one. The **35** that solve for real carry `solver` as well. ⚠️ **Derive these rather than trusting them**: `uv run pytest tests/acceptance --collect-only -q` and the same with `-m solver`. The figures here read 25 and 17 until 2026-08-06 and were two phases out of date |
 
 ⚠️ **Every test runs against in-memory stores unless it asks for a database.** `tests/conftest.py`
 forces `OPTIEDT_PERSISTENCE=memory`, and that is not tidiness: when the default became `database`,
