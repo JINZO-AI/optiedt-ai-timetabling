@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Iterator
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
@@ -33,7 +34,14 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session, sessionmaker
 
 from optiedt.core.config import Settings
-from optiedt.domain.entities import Candidate, DiagnosisResult, Placement, SubScore
+from optiedt.domain.entities import (
+    Candidate,
+    DiagnosisResult,
+    Placement,
+    RunOrigin,
+    RunOverrides,
+    SubScore,
+)
 from optiedt.domain.enums import AvailabilityState, DeclarationSource, RunState
 from optiedt.preanalysis.checks import CheckResult
 from optiedt.services.availability import InMemoryAvailabilityStore, build_declaration
@@ -108,6 +116,18 @@ def session_factory() -> Iterator[sessionmaker[Session]]:
         )
 
     engine = get_engine(url)
+    # ⚠️ DROP then create, not create_all alone. `create_all` creates a table
+    # that is MISSING and leaves an existing one exactly as it found it - it is
+    # not a migration. So the first time a column was added to a model (FR-23's
+    # origin/overrides, 2026-08-06) every database test failed with "column
+    # runs.origin_run_id does not exist" against a test database that had been
+    # correct the day before. Recreating from the models each session means
+    # this suite always runs against the schema the code expects.
+    #
+    # What that does NOT check is that the MIGRATIONS produce the same schema -
+    # `test_migrations_match_the_models` is what covers that, and it is a
+    # separate question from this one.
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     yield sessionmaker(bind=engine, expire_on_commit=False, future=True)
 
@@ -196,6 +216,55 @@ def test_created_at_survives_with_its_timezone(run_store: RunStore) -> None:
     assert read is not None
     assert read.run.created_at.tzinfo is not None
     assert abs((read.run.created_at - record.run.created_at).total_seconds()) < 1
+
+
+def test_an_ordinary_run_has_no_origin_and_empty_overrides(run_store: RunStore) -> None:
+    """The default both stores must agree on.
+
+    `origin is None` has to keep meaning "launched from the generation screen".
+    A store that returned an empty `RunOrigin` instead would make every run
+    look regenerated from nowhere.
+    """
+    run_store.create(new_run_record("r1", REQUEST, WEIGHTS))
+
+    read = run_store.get("r1")
+    assert read is not None
+    assert read.origin is None
+    assert read.overrides.is_empty()
+
+
+def test_a_regenerated_run_keeps_its_origin_and_overrides(run_store: RunStore) -> None:
+    """FR-23's provenance survives a restart, like FR-19's trace.
+
+    ⚠️ The overrides round-trip through JSON in the SQL store and through
+    nothing at all in memory, which is exactly the shape of divergence this
+    suite caught on its first run. A `frozenset[Placement]` that came back as
+    a set of lists would be unusable at the next solve and would not fail here
+    unless something compared it.
+    """
+    record = replace(
+        new_run_record("r1", REQUEST, WEIGHTS),
+        origin=RunOrigin(
+            run="r0",
+            candidate="r0-cand-1",
+            action_kind="lock_session",
+            action_detail="session S0001 locked to its current slot and room",
+        ),
+        overrides=RunOverrides(
+            locked_placements=frozenset({Placement("S0001", 7, "2"), Placement("S0002", 3, "4")}),
+            excluded_slots=frozenset({("S0003", 11)}),
+            excluded_rooms=frozenset({("S0004", "9")}),
+        ),
+    )
+    run_store.create(record)
+
+    read = run_store.get("r1")
+    assert read is not None
+    assert read.origin == record.origin
+    assert read.overrides == record.overrides
+    # The elements are the domain types, not lists that merely compare equal.
+    assert all(isinstance(p, Placement) for p in read.overrides.locked_placements)
+    assert all(isinstance(t, int) for _, t in read.overrides.excluded_slots)
 
 
 def test_an_unknown_run_is_none_and_a_duplicate_is_refused(run_store: RunStore) -> None:

@@ -391,6 +391,36 @@ export interface Run {
   deterministicTimeUsed: number
   wallClockSeconds: number
   error: string | null
+  /** Where a regenerated run came from — FR-23. `null` on a run launched from
+   * the generation screen, which is most of them. */
+  origin: RunOrigin | null
+  /** The locks and exclusions this run solved under, composed along the
+   * regeneration chain. All three arrays empty on an ordinary run. */
+  overrides: RunOverrides
+}
+
+/**
+ * Where a regenerated run came from — FR-23.
+ *
+ * ⚠️ `actionDetail` is prose for a reader. Do NOT parse it back into an action:
+ * the catalogue is closed (ADR-007) and an action is built from typed fields or
+ * not at all.
+ */
+export interface RunOrigin {
+  run: string
+  candidate: string
+  actionKind: RecommendationActionKind
+  actionDetail: string
+}
+
+/** The three catalogue actions. Closed — a fourth is a change to ADR-007. */
+export type RecommendationActionKind = 'weight_delta' | 'lock_session' | 'exclude_slot'
+
+/** The locks and exclusions one run solved under. Sorted by the API. */
+export interface RunOverrides {
+  lockedPlacements: Placement[]
+  excludedSlots: [string, number][]
+  excludedRooms: [string, string][]
 }
 
 /** A run without its placements, for a list. */

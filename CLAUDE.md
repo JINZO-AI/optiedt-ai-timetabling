@@ -202,12 +202,16 @@ code-review comment.
    `slot.is_open = 0` and H9 does the rest; a shortened-day window shifts *displayed* hours only.
    Adding a CP-SAT constraint for Ramadan or a closed Saturday is a bug (ADR-003).
 
-**Invariants 1 and 3 fail the build.** `backend/.importlinter` carries **ten** contracts and forbids
-`analysis → solver`, `analysis → db`, `assistant → db`, `api → solver`, `api → db`, and any product
+**Invariants 1 and 3 fail the build.** `backend/.importlinter` carries **eleven** contracts and forbids
+`analysis → solver`, `analysis → db`, `assistant → db`, `assistant → solver`, `recommendations → solver`,
+`api → solver`, `api → db`, and any product
 package importing `optiedt.validation`; the recommendation catalogue is a union type so a fourth variant is a
 type error. Every contract is verified to fire before being relied on. **Do not weaken either to make a
 change compile.** The ninth (`api ⇸ solver`, Phase 4) earned that within one commit: it broke twice on
-new code and both times the fix was to move the import, never to relax the rule.
+new code and both times the fix was to move the import, never to relax the rule. The eleventh
+(`recommendations ⇸ solver`, Phase 7 M2) keeps FR-23's guarantee honest: a translator that could build
+and run a `SolverInput` itself would turn "a new run through the same engine" into a private solve with
+no run id, no seed and no trace.
 
 Invariant 1 earned its keep on 2026-07-31 in a way worth knowing: OR-Tools was found to report an
 objective value that did not match the solution it returned. Nothing broke, because `analysis` cannot

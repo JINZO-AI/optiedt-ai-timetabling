@@ -46,6 +46,8 @@ from optiedt.domain.entities import (
     Publication,
     Run,
     RunId,
+    RunOrigin,
+    RunOverrides,
     SubScore,
     TeacherId,
     User,
@@ -93,7 +95,55 @@ def _to_record(row: RunRow) -> RunRecord:
         deterministic_time_used=row.deterministic_time_used,
         wall_clock_seconds=row.wall_clock_seconds,
         error=row.error,
+        origin=(
+            RunOrigin(
+                run=row.origin_run_id,
+                candidate=row.origin_candidate_id or "",
+                action_kind=row.origin_action_kind or "",
+                action_detail=row.origin_action_detail or "",
+            )
+            if row.origin_run_id is not None
+            else None
+        ),
+        overrides=_to_overrides(row.overrides or {}),
     )
+
+
+def _to_overrides(stored: dict[str, list[list[str | int]]]) -> RunOverrides:
+    """JSON back into the domain type.
+
+    Tuples come back from JSON as lists, so every element is rebuilt rather
+    than cast. A frozenset of lists would not even be constructible, which is
+    the kind of error worth having the type system catch here rather than at
+    the next solve.
+    """
+    return RunOverrides(
+        locked_placements=frozenset(
+            Placement(session=str(p[0]), slot=int(p[1]), room=str(p[2]))
+            for p in stored.get("locked_placements", [])
+        ),
+        excluded_slots=frozenset((str(p[0]), int(p[1])) for p in stored.get("excluded_slots", [])),
+        excluded_rooms=frozenset((str(p[0]), str(p[1])) for p in stored.get("excluded_rooms", [])),
+    )
+
+
+def _from_overrides(overrides: RunOverrides) -> dict[str, list[list[str | int]]]:
+    """The domain type into JSON, sorted.
+
+    Sorted because a frozenset has no order and PostgreSQL stores what it is
+    given: an unsorted dump would make two identical override sets serialise
+    differently, so a stored run would not compare equal to itself across a
+    rewrite. That is exactly the kind of drift
+    `tests/integration/test_store_contract.py` exists to catch.
+    """
+    return {
+        "locked_placements": [
+            [p.session, p.slot, p.room]
+            for p in sorted(overrides.locked_placements, key=lambda p: (p.session, p.slot, p.room))
+        ],
+        "excluded_slots": [[s, t] for s, t in sorted(overrides.excluded_slots)],
+        "excluded_rooms": [[s, r] for s, r in sorted(overrides.excluded_rooms)],
+    }
 
 
 def _to_candidate(row: CandidateRow) -> Candidate:
@@ -137,6 +187,11 @@ class SqlRunStore:
                 deterministic_time_used=record.deterministic_time_used,
                 wall_clock_seconds=record.wall_clock_seconds,
                 error=record.error,
+                origin_run_id=record.origin.run if record.origin else None,
+                origin_candidate_id=record.origin.candidate if record.origin else None,
+                origin_action_kind=record.origin.action_kind if record.origin else None,
+                origin_action_detail=record.origin.action_detail if record.origin else None,
+                overrides=_from_overrides(record.overrides),
             )
             row.weights = [
                 RunWeightRow(run_id=record.run.id, criterion=code, weight=weight)

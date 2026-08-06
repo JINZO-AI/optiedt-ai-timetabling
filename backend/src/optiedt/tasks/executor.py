@@ -30,7 +30,7 @@ from optiedt.domain.enums import RunState
 from optiedt.domain.instance import Instance
 from optiedt.preanalysis.checks import PreAnalysis
 from optiedt.preanalysis.verifications import DefaultPreAnalysis
-from optiedt.services.portfolio import PortfolioRequest, generate_portfolio
+from optiedt.services.portfolio import PortfolioRequest, generate_portfolio, profiles_from
 from optiedt.services.runs import TERMINAL_STATES, RunRecord, RunStore
 from optiedt.solver.engine import CpSatSolver
 from optiedt.solver.interfaces import Solver, SolverInput
@@ -140,7 +140,17 @@ class RunExecutor:
                 run=record.run.id,
                 seed=record.run.seed,
                 deterministic_budget=record.run.deterministic_budget,
+                # The profiles are derived from THIS run's weight vector, not
+                # from the catalogue. For an ordinary run the two are the same
+                # thing. For a run regenerated from an accepted weight_delta
+                # (FR-23) they are not, and deriving from the catalogue would
+                # let the delta change the scoring while leaving the search
+                # exactly where it was - a recommendation about nothing.
+                profiles=profiles_from(dict(record.weights)),
                 scoring_weights=dict(record.weights),
+                locked_placements=record.overrides.locked_placements,
+                excluded_slots=record.overrides.excluded_slots,
+                excluded_rooms=record.overrides.excluded_rooms,
                 candidate_id_prefix=f"{record.run.id}-cand",
             ),
             self._solver_factory(),

@@ -136,6 +136,17 @@ h3 {
   color: var(--ink-soft);
 }
 
+/* Lines a control up with the labelled fields beside it, WITHOUT being a
+   <label>: a label carrying only whitespace and a `for` attribute becomes the
+   control's accessible name, so a screen reader announces an unnamed button.
+   Same height as `.field label` so the row stays aligned. */
+.field__label-spacer {
+  display: block;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  height: 1.2em;
+}
+
 .field input {
   font: inherit;
   font-variant-numeric: tabular-nums;

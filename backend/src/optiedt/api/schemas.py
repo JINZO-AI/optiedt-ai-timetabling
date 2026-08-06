@@ -44,6 +44,8 @@ from optiedt.domain.entities import (
     Programme,
     Promotion,
     Room,
+    RunOrigin,
+    RunOverrides,
     Session,
     Slot,
     SubScore,
@@ -522,6 +524,71 @@ class DiagnosisOut(ApiModel):
         )
 
 
+class RunOriginOut(ApiModel):
+    """Where a regenerated run came from (FR-23).
+
+    ⚠️ `actionDetail` is prose for a reader. It is **never** parsed back into
+    an action - the catalogue is closed and an action is built from its typed
+    fields or not at all (ADR-007).
+    """
+
+    run: str
+    candidate: str
+    action_kind: str
+    action_detail: str
+
+    @classmethod
+    def of(cls, origin: RunOrigin) -> RunOriginOut:
+        return cls(
+            run=origin.run,
+            candidate=origin.candidate,
+            action_kind=origin.action_kind,
+            action_detail=origin.action_detail,
+        )
+
+
+class RunOverridesOut(ApiModel):
+    """The locks and exclusions one run solved under.
+
+    Sorted, because the domain type holds frozensets and a wire format that
+    reorders between two reads of the same run is one a client cannot diff.
+    """
+
+    locked_placements: list[PlacementOut]
+    excluded_slots: list[tuple[str, int]]
+    excluded_rooms: list[tuple[str, str]]
+
+    @classmethod
+    def of(cls, overrides: RunOverrides) -> RunOverridesOut:
+        return cls(
+            locked_placements=[
+                PlacementOut.of(p)
+                for p in sorted(
+                    overrides.locked_placements, key=lambda p: (p.session, p.slot, p.room)
+                )
+            ],
+            excluded_slots=sorted(overrides.excluded_slots),
+            excluded_rooms=sorted(overrides.excluded_rooms),
+        )
+
+
+class RegenerateIn(ApiModel):
+    """An accepted recommendation, as one of the three catalogue actions.
+
+    ⚠️ **`kind` is validated in `services/regeneration.py`, not by a Literal
+    here**, and that is deliberate: the refusal message is what tells a caller
+    the catalogue is closed and which three exist. A pydantic `Literal`
+    rejection would say "unexpected value" and name the field.
+    """
+
+    kind: str
+    criterion: str | None = None
+    new_weight: float | None = None
+    session: str | None = None
+    slot: int | None = None
+    room: str | None = None
+
+
 class RunOut(ApiModel):
     """One run and its candidates.
 
@@ -569,6 +636,14 @@ class RunOut(ApiModel):
     wall_clock_seconds: float
     error: str | None
 
+    origin: RunOriginOut | None
+    """Where a regenerated run came from (FR-23). `null` on a run launched
+    from the generation screen, which is most of them."""
+
+    overrides: RunOverridesOut
+    """The locks and exclusions this run solved under, composed along the
+    regeneration chain (C-20). All three lists empty on an ordinary run."""
+
     @classmethod
     def of(cls, record: RunRecord) -> RunOut:
         return cls(
@@ -586,6 +661,8 @@ class RunOut(ApiModel):
             deterministic_time_used=record.deterministic_time_used,
             wall_clock_seconds=record.wall_clock_seconds,
             error=record.error,
+            origin=(RunOriginOut.of(record.origin) if record.origin is not None else None),
+            overrides=RunOverridesOut.of(record.overrides),
         )
 
 

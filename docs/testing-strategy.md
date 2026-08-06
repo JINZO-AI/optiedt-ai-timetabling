@@ -187,17 +187,23 @@ requirement itself**. Tests live in `backend/tests/acceptance/`, one per criteri
 | FR-15 | Compare two candidates | Sum of contributions equals the score difference | ✅ `test_fr15` |
 | **FR-17** | Read a run's dominance verdicts | A candidate another matches everywhere and beats somewhere is signalled, **wherever it sits in the portfolio** (C-14) | ✅ `test_fr17` |
 | FR-19 | Repeat a run with the same seed and weights | Identical candidates in the same order · **and** every published timetable traces back to its run, seed and weights | ✅ `test_fr19`, `solver` |
-| FR-23 | Accept a `weight_delta` recommendation | New run created; new candidate satisfies H1–H12; linked to the recommendation | ⛔ **out of scope for Phase 6** |
+| FR-23 | Accept a `weight_delta` recommendation | New run created; new candidate satisfies H1–H12; linked to the recommendation | ✅ `test_fr23`, 14 tests — ten about the application, **four `solver`-marked** at production settings |
 | FR-24 | Ask a question whose answer is not in the context | The assistant says it cannot answer, and **invents no figure** | ⛔ **out of scope for Phase 6** |
 | FR-22, FR-25 | Switch the language service off in configuration | Explanations and reports fall back to computed form; **every other function unaffected** | ⛔ **out of scope for Phase 6** |
 
-⛔ **The four assistant and regeneration rows were out of Phase 6's scope by decision of the project
-owner, 2026-08-05, and Phase 6 is now closed — so they are simply NOT DELIVERED, and no phase remains
-in which they were going to be.** ADR-010 commits FR-22,
-FR-23 and FR-24 to increment 1; PPM Table 8 budgets them into no phase, which is C-1's ~2.5 unbudgeted
-days. `assistant/` is still scaffold-only, so these tests cannot be written against anything, and FR-23
-additionally needs H10's dormant gap filled. ⚠️ *That last clause stopped being true on 2026-08-06:
-Phase 7 M1 made H10 execute (C-19). The rest of the paragraph still describes Phase 6's close.* **Do not read their absence as an oversight, and do not
+⚠️ **Written at Phase 6's close and now half superseded — kept because the reasoning is what Phase 7
+answers.** It read: *"The four assistant and regeneration rows were out of Phase 6's scope by decision
+of the project owner, 2026-08-05, and Phase 6 is now closed — so they are simply NOT DELIVERED, and no
+phase remains in which they were going to be."* ADR-010 commits FR-22, FR-23 and FR-24 to increment 1;
+PPM Table 8 budgets them into no phase, which is C-1's ~2.5 unbudgeted days.
+
+✅ **Phase 7 was approved on 2026-08-06 and is where they land.** **FR-23 is delivered** — M1 filled
+H10's dormant gap (C-19) and M2 built the regeneration. The three assistant rows are M3–M5.
+
+⚠️ **A figure worth carrying: the ~2.5-day estimate never costed FR-23.** ADR-010 itemises it as
+*adapter + context builder + verifier ≈ 1.5 d, panel ≈ 0.5, report ≈ 0.5* — every line of that is
+assistant work, and regeneration appears in none of it. The overrun the project carried for eight days
+was understated, and it was understated because a figure was repeated rather than re-derived. **Do not read their absence as an oversight, and do not
 read Phase 6's completion as covering them** — Phase 6 closed on 2026-08-06 with these four still unbuilt, which is why increment 1 did not close with it (**C-1**).
 
 ✅ **FR-13's test no longer conflicts with the specification.** It did: "three distinct candidates" can

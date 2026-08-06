@@ -84,6 +84,20 @@ solver is *asked to do*, never what a solver call is *allowed to return*.
 The marginal engineering cost is small: the portfolio mechanism already loops over several inputs to
 produce several candidates, and a recommendation simply adds one more input to that loop.
 
+✅ **Built in Phase 7 M2 (FR-23), 2026-08-06.** `services/regeneration.py` assembles the new run;
+`POST /runs/{id}/candidates/{id}/regenerate` returns **202 and a new run id**, exactly like `POST
+/runs`, because that is what it is. Three things were decided before the code and are worth carrying:
+
+- **Overrides compose.** A regenerated run carries its origin's locks and exclusions **plus** the new
+  one (C-20). Without that, accepting a second recommendation would silently discard the first, and a
+  user would watch a lock they set disappear with nothing on screen to explain it.
+- **A `weight_delta` steers the search, not only the scoring.** The regenerated run's three profiles
+  are derived from its own adjusted weight vector rather than from the catalogue. Deriving from the
+  catalogue would re-score an unchanged timetable — a recommendation about nothing.
+- **A lock RESTRICTS; it never grants.** H10 intersects the pruning H4/H5/H6/H8/H9 already did, so an
+  accepted recommendation cannot place a session on a closed slot or in a room too small for its
+  group. `build_variables` raises naming the rule that refused.
+
 ### The catalogue is closed on purpose
 
 A recommendation that cannot be expressed as one of the three actions is **not offered**, rather than

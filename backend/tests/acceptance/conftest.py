@@ -123,6 +123,29 @@ class Application:
         assert response.status_code == 200, response.text
         return dict(response.json())
 
+    def regenerate(self, run_id: str, candidate_id: str, **action: object) -> dict[str, object]:
+        """Accept a recommendation: 202 → wait → `GET /runs/{new_id}` (FR-23).
+
+        Deliberately the same shape as `launch`, because that is what the
+        endpoint is: accepting a recommendation launches a NEW run through the
+        same engine, and a helper that made it look like an edit would hide the
+        thing the requirement is about.
+        """
+        created = self.client.post(
+            f"/api/runs/{run_id}/candidates/{candidate_id}/regenerate", json=action
+        )
+        assert created.status_code == 202, created.text
+        new_run_id = created.json()["runId"]
+        self.futures[-1].result(timeout=900)
+        response = self.client.get(f"/api/runs/{new_run_id}")
+        assert response.status_code == 200, response.text
+        return dict(response.json())
+
+    def read(self, run_id: str) -> dict[str, object]:
+        response = self.client.get(f"/api/runs/{run_id}")
+        assert response.status_code == 200, response.text
+        return dict(response.json())
+
 
 @contextmanager
 def wire_application(

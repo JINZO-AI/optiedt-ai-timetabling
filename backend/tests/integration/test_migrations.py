@@ -1,0 +1,131 @@
+"""The migrations must produce the schema the models declare.
+
+⚠️ **This exists because a migration and a model can disagree silently, and
+FR-23's landed on the first try.** `alembic revision --autogenerate` emitted
+`runs.overrides` as NOT NULL with **no server default**, which cannot be
+applied to a table that already holds runs. Caught by reading the generated
+file - but the general case is not something reading catches reliably, because
+the two artefacts are edited at different times by different people and neither
+one fails when they drift.
+
+Nothing else in the suite covers it. `tests/integration/test_store_contract.py`
+builds its schema with `Base.metadata.create_all`, straight from the models, so
+it would pass against migrations that were wrong or missing entirely - it
+answers "do both stores satisfy one contract", which is a different question.
+
+The check: upgrade a scratch database from zero to head, then ask alembic to
+autogenerate against the models. **Any** difference is a failure - a column the
+migrations never added, a type that drifted, an index that exists in one and
+not the other.
+"""
+
+from __future__ import annotations
+
+import os
+from collections.abc import Iterator
+
+import pytest
+import sqlalchemy
+from alembic import command
+from alembic.autogenerate import compare_metadata
+from alembic.config import Config
+from alembic.migration import MigrationContext
+from sqlalchemy import text
+
+from optiedt.core.config import Settings
+from optiedt.db import models  # noqa: F401 - registers the tables on Base.metadata
+from optiedt.db.base import Base
+
+pytestmark = pytest.mark.database
+
+# A database of its own, so the upgrade path is exercised from ZERO. Running it
+# against optiedt_test would only ever prove that an already-migrated database
+# is already migrated.
+MIGRATION_DATABASE = "optiedt_migration_check"
+
+REPOSITORY_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def _url() -> str:
+    base = Settings().database_url
+    return base.rsplit("/", 1)[0] + "/" + MIGRATION_DATABASE
+
+
+@pytest.fixture(scope="module")
+def migrated_engine() -> Iterator[sqlalchemy.Engine]:
+    url = _url()
+    admin_url = url.rsplit("/", 1)[0] + "/postgres"
+    try:
+        admin = sqlalchemy.create_engine(
+            admin_url, isolation_level="AUTOCOMMIT", connect_args={"connect_timeout": 3}
+        )
+        with admin.connect() as conn:
+            # Dropped and recreated, so every run starts from nothing and the
+            # whole chain of migrations is applied rather than the last one.
+            conn.execute(text(f'drop database if exists "{MIGRATION_DATABASE}" with (force)'))
+            conn.execute(text(f'create database "{MIGRATION_DATABASE}"'))
+        admin.dispose()
+    except (sqlalchemy.exc.OperationalError, sqlalchemy.exc.DBAPIError) as exc:  # pragma: no cover
+        pytest.skip(f"PostgreSQL is not reachable at {admin_url}: {exc}")
+
+    config = Config(os.path.join(REPOSITORY_ROOT, "alembic.ini"))
+    config.set_main_option("script_location", os.path.join(REPOSITORY_ROOT, "migrations"))
+
+    # ⚠️ Setting `sqlalchemy.url` on the Config would NOT work. `migrations/env.py`
+    # overrides it from `Settings().database_url` on purpose - two sources for one
+    # connection string is how a migration lands on a different database than the
+    # API talks to. Respecting that means overriding the ENVIRONMENT, which is the
+    # documented way to point this project at another database. Doing it any other
+    # way here would have run the migrations against the real `optiedt` database
+    # and proved nothing.
+    previous = os.environ.get("OPTIEDT_DATABASE_URL")
+    os.environ["OPTIEDT_DATABASE_URL"] = url
+    try:
+        command.upgrade(config, "head")
+    finally:
+        if previous is None:
+            del os.environ["OPTIEDT_DATABASE_URL"]
+        else:
+            os.environ["OPTIEDT_DATABASE_URL"] = previous
+
+    engine = sqlalchemy.create_engine(url)
+    yield engine
+    engine.dispose()
+
+
+def test_migrations_match_the_models(migrated_engine: sqlalchemy.Engine) -> None:
+    """Zero to head, then autogenerate must find nothing to do."""
+    with migrated_engine.connect() as connection:
+        context = MigrationContext.configure(
+            connection, opts={"compare_type": True, "target_metadata": Base.metadata}
+        )
+        differences = compare_metadata(context, Base.metadata)
+
+    assert differences == [], (
+        "the migrations and the models disagree. Each entry below is something "
+        "`alembic upgrade head` did NOT produce but the models declare (or the "
+        "reverse). Fix it with `uv run alembic revision --autogenerate` and read "
+        "the generated file before committing it - autogenerate is a draft, not "
+        f"an answer.\n\n{differences}"
+    )
+
+
+def test_a_run_row_accepts_no_overrides(migrated_engine: sqlalchemy.Engine) -> None:
+    """The server default the autogenerated migration did not have.
+
+    `overrides` is NOT NULL, and every run created before FR-23 legitimately
+    has none. Without a default, this insert - and the migration itself against
+    a populated table - fails.
+    """
+    with migrated_engine.connect() as connection, connection.begin():
+        connection.execute(
+            text(
+                "insert into runs (id, created_at, seed, deterministic_budget, state, "
+                "model_version, duplicates_removed, deterministic_time_used, "
+                "wall_clock_seconds) values ('probe', now(), 42, 90.0, 'PENDING', "
+                "'weekly.h1-h12.s2-s10', '[]', 0.0, 0.0)"
+            )
+        )
+        stored = connection.execute(text("select overrides from runs where id = 'probe'")).scalar()
+
+    assert stored == {}

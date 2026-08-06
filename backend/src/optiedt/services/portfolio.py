@@ -157,27 +157,36 @@ def catalogue_weights(instance: Instance) -> dict[ConstraintCode, float]:
     return {c.code: c.default_weight for c in instance.constraints if c.kind is ConstraintKind.SOFT}
 
 
-def default_profiles(instance: Instance) -> tuple[WeightProfile, ...]:
-    """The three profiles of docs/constraint-model.md.
+def profiles_from(base: dict[ConstraintCode, float]) -> tuple[WeightProfile, ...]:
+    """The three profiles of docs/constraint-model.md, over a supplied base.
 
-    balanced = catalogue values · student-favouring raises S2 · teacher-
+    balanced = the base as given · student-favouring raises S2 · teacher-
     favouring raises S3 and S5. Returned in a fixed order so a run is
     reproducible (ADR-011); a set or a dict comprehension over an unordered
     source would not be.
+
+    The base is the catalogue for an ordinary run. It is the run's ADJUSTED
+    weight vector for a run regenerated from an accepted `weight_delta`
+    (FR-23), so the delta steers the SEARCH and not only the scoring - a
+    recommendation that changed the score of an unchanged timetable would be
+    a recommendation about nothing.
     """
-    catalogue = catalogue_weights(instance)
 
     def raising(*codes: ConstraintCode) -> dict[ConstraintCode, float]:
         return {
-            code: (weight * EMPHASIS if code in codes else weight)
-            for code, weight in catalogue.items()
+            code: (weight * EMPHASIS if code in codes else weight) for code, weight in base.items()
         }
 
     return (
-        WeightProfile(name="balanced", weights=dict(catalogue)),
+        WeightProfile(name="balanced", weights=dict(base)),
         WeightProfile(name="student-favouring", weights=raising("S2")),
         WeightProfile(name="teacher-favouring", weights=raising("S3", "S5")),
     )
+
+
+def default_profiles(instance: Instance) -> tuple[WeightProfile, ...]:
+    """The three profiles over the catalogue's own default weights."""
+    return profiles_from(catalogue_weights(instance))
 
 
 def placement_signature(placements: tuple[Placement, ...]) -> tuple[tuple[str, int, str], ...]:

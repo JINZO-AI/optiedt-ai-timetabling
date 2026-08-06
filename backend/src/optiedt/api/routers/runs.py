@@ -25,8 +25,15 @@ from optiedt.api.deps import (
     RunStoreDep,
     SettingsDep,
 )
-from optiedt.api.schemas import RunCreatedOut, RunCreateIn, RunOut, RunSummaryOut
+from optiedt.api.schemas import (
+    RegenerateIn,
+    RunCreatedOut,
+    RunCreateIn,
+    RunOut,
+    RunSummaryOut,
+)
 from optiedt.services.portfolio import catalogue_weights
+from optiedt.services.regeneration import RegenerationError, action_from_wire, regenerate
 from optiedt.services.runs import RunRecord, RunRequest, new_run_record
 
 router = APIRouter(tags=["runs"])
@@ -72,6 +79,60 @@ def create_run(
         # run - see services/runs.py, RunRecord.weights.
         weights=catalogue_weights(instance),
     )
+    store.create(record)
+    executor.submit(record.run.id)
+    return RunCreatedOut(run_id=record.run.id)
+
+
+@router.post(
+    "/runs/{run_id}/candidates/{candidate_id}/regenerate",
+    response_model=RunCreatedOut,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Accept a recommendation; launches a NEW run through the same solver",
+)
+def regenerate_run(
+    store: RunStoreDep,
+    executor: ExecutorDep,
+    _user: PersonInChargeDep,
+    run_id: str,
+    candidate_id: str,
+    payload: RegenerateIn,
+) -> RunCreatedOut:
+    """FR-23. Accepting a recommendation changes **one solver input** and
+    launches a new run; it never edits a timetable (ADR-007, invariant 3).
+
+    ⚠️ Returns **202 and a new run id**, exactly like `POST /runs`, because
+    that is what it is: the regenerated candidate is scored and ordered like
+    any other, and H1-H12 hold in it for the same reason they held in the one
+    the recommendation was proposed against. Nothing about the origin run is
+    written to - invariant 6.
+
+    Person in charge only, for the same reason `POST /runs` is: this consumes
+    the engine for minutes.
+    """
+    origin = _require_run(store, run_id)
+    try:
+        action = action_from_wire(
+            kind=payload.kind,
+            criterion=payload.criterion,
+            new_weight=payload.new_weight,
+            session=payload.session,
+            slot=payload.slot,
+            room=payload.room,
+        )
+        record = regenerate(
+            origin=origin,
+            candidate_id=candidate_id,
+            action=action,
+            new_run_id=uuid.uuid4().hex[:12],
+        )
+    except RegenerationError as exc:
+        # 422: the request is well-formed JSON naming a state the system
+        # refuses, not a malformed body (400) and not a missing run (404).
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
+
     store.create(record)
     executor.submit(record.run.id)
     return RunCreatedOut(run_id=record.run.id)

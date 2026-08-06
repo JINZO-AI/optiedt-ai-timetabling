@@ -268,6 +268,54 @@ class Placement:
 
 
 @dataclass(frozen=True, slots=True)
+class RunOrigin:
+    """Where a regenerated run came from (FR-23).
+
+    Present only on a run produced by accepting a recommendation. A run
+    launched from the generation screen carries None.
+
+    ``action_kind`` and ``action_detail`` are plain strings rather than a
+    ``RecommendationAction``: the domain layer is pure and may not import
+    ``optiedt.recommendations`` (``.importlinter``, ``domain-is-pure``). What
+    the trace needs is which run, which candidate, and what was accepted -
+    all three survive as data.
+    """
+
+    run: RunId
+    candidate: CandidateId
+    action_kind: str
+    """One of the three catalogue kinds - "weight_delta", "lock_session",
+    "exclude_slot". A fourth would be a type error in the catalogue itself
+    (ADR-007); this field only records which one was taken."""
+
+    action_detail: str
+    """Human-readable, for the trace. Never parsed back into an action."""
+
+
+@dataclass(frozen=True, slots=True)
+class RunOverrides:
+    """The locks and exclusions in force for one run.
+
+    ⚠️ **These COMPOSE across a chain of accepted recommendations** (C-20): a
+    regenerated run carries its origin's overrides plus the new one. Without
+    that, accepting a second recommendation would silently discard the first
+    and a user would watch a lock they set disappear with nothing on screen to
+    explain it.
+
+    A ``weight_delta`` is NOT here. It replaces one entry of the run's own
+    recorded weight vector, which already has a home in ``RunRecord.weights``
+    - a second copy would be free to drift from the first.
+    """
+
+    locked_placements: frozenset[Placement] = frozenset()
+    excluded_slots: frozenset[tuple[SessionId, SlotIndex]] = frozenset()
+    excluded_rooms: frozenset[tuple[SessionId, RoomId]] = frozenset()
+
+    def is_empty(self) -> bool:
+        return not (self.locked_placements or self.excluded_slots or self.excluded_rooms)
+
+
+@dataclass(frozen=True, slots=True)
 class SubScore:
     """One criterion's value for one candidate.
 

@@ -17,9 +17,16 @@ remaining reasons the *only* ones.
 ✅ **The whole table was reviewed against evidence in one pass at M7**, as M2 promised — not row by row
 as work landed, which is how a table acquires a count nobody can reproduce.
 
-**Where the project actually is: 4 of 25 requirements are finished, 13 are under way, 8 are not
-started.** *(✓ FR-5, 12, 15, 19 · WIP FR-2, 3, 4, 6, 7, 8, 9, 11, 13, 14, 16, 17, 18 · — FR-1, 10, 20,
-21, 22, 23, 24, 25 — count them in the table rather than trusting this line.)*
+**Where the project actually is: 5 of 25 requirements are finished, 13 are under way, 7 are not
+started.** *(✓ FR-5, 12, 15, 19, 23 · WIP FR-2, 3, 4, 6, 7, 8, 9, 11, 13, 14, 16, 17, 18 · — FR-1, 10,
+20, 21, 22, 24, 25 — count them in the table rather than trusting this line.)*
+
+✅ **FR-23 was promoted at Phase 7 M2, 2026-08-06**, and it is the first requirement to reach `✓` with
+no outstanding reason of any kind. It is reachable from the comparison screen, has an acceptance test
+against `testing-strategy.md` §4's criterion, and both of the things that had blocked it are closed:
+H10's dormant gap (C-19, M1) and the missing `RunOverride` → `SolverInput` assembly (C-20, M2).
+⚠️ Its `recommendations` package had **zero test coverage** until M2 — the Phase 6 audit's finding —
+so `unit/test_recommendations.py` is the first test that has ever imported it.
 
 ⚠️ *This line said "12 under way, 9 not started" when the M7 audit commit was made, contradicting its
 own list of thirteen in the same sentence. It was written before FR-9 moved from `—` to `WIP` and not
@@ -205,7 +212,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-18** | Display occupancy of each classroom and laboratory | Expected | `features/timetable` | `integration` | **WIP** |
 | **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db` ✓ — models, migrations, repositories; `services/stores` ✓; `services/publications` ✓; `features/publication` ✓ | `integration/test_store_contract` ✓, `integration/test_publication` ✓, `frontend TraceTable.test` ✓, `acceptance/test_fr19` ✓ | **✓** |
 | **FR-22** | Explain a candidate's quality from computed figures | Necessary | `assistant` | `acceptance/test_fr22` | — |
-| **FR-23** | Regenerate from an accepted recommendation, preserving H1–H12 | Necessary | `recommendations` | `acceptance/test_fr23` | — |
+| **FR-23** | Regenerate from an accepted recommendation, preserving H1–H12 | Necessary | `recommendations` ✓; `services/regeneration` ✓; `api/routers/runs` ✓; `features/comparison/RegenerationPanel` ✓ | `unit/test_recommendations` ✓, `unit/test_regeneration` ✓, `frontend RegenerationPanel.test` ✓, `acceptance/test_fr23` ✓ | **✓** |
 | **FR-24** | Answer a question in ordinary language about a run | Necessary | `assistant` | `acceptance/test_fr24` | — |
 | **FR-25** | Produce a readable report on a run | Expected | `assistant` | `acceptance/test_fr25` | — |
 

@@ -60,6 +60,30 @@ source_modules =
 forbidden_modules =
     optiedt.solver
 
+# ── Invariant 3 ────────────────────────────────────────────────────
+# "A recommendation is one of exactly three actions - weight_delta,
+#  lock_session, exclude_slot. Accepting one launches a NEW RUN through
+#  the same solver with one input changed, never an edit." (SRS §7.5,
+#  ADR-007)
+#
+# docs/architecture.md's module map gives `recommendations` `domain` and
+# `analysis`, and the diagram is explicit that this package "writes a
+# weight, a lock, an exclusion - never a placement".
+#
+# What this contract catches is the shortcut: a translator that imported
+# the solver could build and run a SolverInput itself, and the "new run
+# through the same engine" would become a private solve nobody records,
+# with no run id, no seed and no trace. FR-23's whole guarantee is that
+# a regenerated candidate goes through the SAME path as any other, so
+# the assembly belongs in `services` (C-20) and this keeps it there.
+[importlinter:contract:recommendations-cannot-reach-the-solver]
+name = Recommendations must not import the solver
+type = forbidden
+source_modules =
+    optiedt.recommendations
+forbidden_modules =
+    optiedt.solver
+
 # ── Stage 1 independence ───────────────────────────────────────────
 # The pre-analysis exists to answer "is this instance solvable?"
 # WITHOUT a solver. At 91% laboratory occupancy (of two-period windows)

@@ -5,11 +5,13 @@ import {
   useDominance,
   useInstance,
   useRecommendation,
+  useRegenerate,
   useRun,
   useRuns,
 } from '@/api/queries'
 import { ContributionsTable } from '@/features/comparison/ContributionsTable'
 import { DominanceNotice } from '@/features/comparison/DominanceNotice'
+import { RegenerationPanel } from '@/features/comparison/RegenerationPanel'
 import type { Candidate, ConstraintDefinition } from '@/types/domain'
 
 /**
@@ -65,6 +67,8 @@ export function ComparisonScreen() {
 
   const comparison = useComparison(selectedRunId, a?.id ?? null, b?.id ?? null)
   const dominance = useDominance(selectedRunId)
+  const regenerate = useRegenerate(selectedRunId)
+  const [launched, setLaunched] = useState<string | null>(null)
 
   const catalogue = useMemo(
     () =>
@@ -172,6 +176,30 @@ export function ComparisonScreen() {
               />
             )}
           </section>
+
+          {run.data && (
+            <section className="panel">
+              <h2>Régénérer à partir du candidat A</h2>
+              <RegenerationPanel
+                run={run.data}
+                candidate={a}
+                catalogue={catalogue}
+                pending={regenerate.isPending}
+                error={regenerate.error === null ? null : String(regenerate.error)}
+                launched={launched}
+                onAccept={(action) => {
+                  regenerate.mutate(
+                    { candidateId: a.id, action },
+                    // The new run is announced by ID rather than switched to.
+                    // Replacing what is on screen would read as this candidate
+                    // having changed, which is the one thing regeneration must
+                    // never look like.
+                    { onSuccess: (created) => setLaunched(created.runId) },
+                  )
+                }}
+              />
+            </section>
+          )}
         </>
       )}
     </>

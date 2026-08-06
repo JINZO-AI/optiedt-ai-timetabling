@@ -76,18 +76,24 @@ boundary does.
 
 ### Enforcement
 
-`backend/.importlinter` turns **ten** of these into build failures:
+`backend/.importlinter` turns **eleven** of these into build failures:
 
 - `optiedt.analysis` ⇸ `optiedt.solver` — invariant 1
 - `optiedt.analysis` ⇸ `optiedt.db`
 - `optiedt.assistant` ⇸ `optiedt.db` — invariant 4
 - `optiedt.assistant` ⇸ `optiedt.solver`
+- `optiedt.recommendations` ⇸ `optiedt.solver` — invariant 3, added Phase 7 M2 and verified to fire
 - `optiedt.preanalysis` ⇸ `optiedt.solver` — stage 1 independence
 - `optiedt.domain` ⇸ every other package, and ⇸ `fastapi`, `sqlalchemy`, `ortools` — purity
 - `optiedt.instance` ⇸ the decision and application layers — the loader is a leaf
 - every product package ⇸ `optiedt.validation` — the benchmark harness is not product code
 - `optiedt.api` ⇸ `optiedt.solver` — added Phase 4, verified to fire before being relied on
 - `optiedt.api` ⇸ `optiedt.db` — added Phase 5 M3, likewise verified by injecting a violation
+
+⚠️ The `recommendations ⇸ solver` contract is what keeps FR-23's guarantee honest. A translator that
+could build and run a `SolverInput` itself would turn "a new run through the same engine" into a
+private solve nobody records — no run id, no seed, no trace — while every test still passed. The
+assembly belongs in `services/regeneration.py` (C-20), and this is what keeps it there.
 
 ⚠️ The ninth names the **solver only, not the analysis layer**. The comparison endpoint has to type its
 response against `analysis.interfaces` (`Decomposition`, `Contribution`, `DominanceVerdict`), which are

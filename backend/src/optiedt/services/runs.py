@@ -26,15 +26,24 @@ sufficient to explain the conflict, at one worker with no objective.
 inconclusive (CP-SAT could not prove the infeasibility) or conclusive with an
 empty set (no relaxable rule explains it). `DiagnosisResult.detail` says which.
 
-Storage is in memory: a restart loses every run. That is Phase 4's documented
-position (`docs/status.md`) - the run record proper is Phase 5, FR-19. The
-Protocol below is the seam.
+**A run may be REGENERATED from an accepted recommendation** (FR-23, Phase 7
+M2). It gets a new id, a new record, and `origin`/`overrides` saying what it
+came from and what it solved under - never an edit to the run it came from
+(invariant 6). `services/regeneration.py` assembles it.
+
+⚠️ The `RunStore` Protocol below is the seam that let Phase 5 M3 substitute a
+database-backed implementation **without changing a router**. Both
+implementations are held to one contract by
+`tests/integration/test_store_contract.py`, which caught a real divergence on
+its first run. `persistence` is configuration, never detection: a store that
+fell back to memory when the database was unreachable would lose every run
+while looking healthy.
 """
 
 from __future__ import annotations
 
 import threading
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from typing import Protocol
 
@@ -46,6 +55,8 @@ from optiedt.domain.entities import (
     DiagnosisResult,
     Run,
     RunId,
+    RunOrigin,
+    RunOverrides,
 )
 from optiedt.domain.enums import RunState
 from optiedt.preanalysis.checks import CheckResult
@@ -126,6 +137,19 @@ class RunRecord:
     deterministic_time_used: float = 0.0
     wall_clock_seconds: float = 0.0
     error: str | None = None
+
+    origin: RunOrigin | None = None
+    """Set only on a run produced by accepting a recommendation (FR-23).
+
+    ⚠️ **This is provenance, not a parent pointer to follow.** Invariant 6
+    holds because the origin run and its candidates are never touched: a
+    regenerated timetable is a NEW candidate under a NEW run, and this field
+    is how a reader gets from the new one back to what produced it.
+    """
+
+    overrides: RunOverrides = field(default_factory=RunOverrides)
+    """The locks and exclusions this run solved under. Composed from the
+    origin run's, plus whatever the accepted recommendation added (C-20)."""
 
     @property
     def state(self) -> RunState:

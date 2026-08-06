@@ -64,6 +64,28 @@ class RunRow(Base):
     wall_clock_seconds: Mapped[float] = mapped_column(Float, default=0.0)
     error: Mapped[str | None] = mapped_column(String(2048), nullable=True)
 
+    origin_run_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    origin_candidate_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    origin_action_kind: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    origin_action_detail: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    """Provenance of a run regenerated from an accepted recommendation (FR-23).
+
+    All four are NULL for a run launched from the generation screen.
+    ``origin_run_id`` is deliberately NOT a foreign key: it is provenance, and
+    a run must not become undeletable because a later one cites it. A dangling
+    origin reads as "the run it came from is gone", which is honest; a
+    cascade would silently delete the regenerated run along with its origin,
+    destroying a record invariant 6 exists to keep.
+    """
+
+    overrides: Mapped[dict[str, list[list[str | int]]]] = mapped_column(JSON, default=dict)
+    """The locks and exclusions this run solved under, composed along the
+    regeneration chain (C-20).
+
+    JSON rather than three tables, following ``duplicates_removed``: this is
+    one short list per run, read whole and never queried into. Normalising it
+    would add three join tables to answer a question nobody asks."""
+
     weights: Mapped[list[RunWeightRow]] = relationship(
         cascade="all, delete-orphan", lazy="selectin"
     )

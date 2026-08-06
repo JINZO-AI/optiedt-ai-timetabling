@@ -79,6 +79,39 @@ export function useCreateRun() {
   })
 }
 
+/**
+ * Accept a recommendation — FR-23.
+ *
+ * ⚠️ This launches a **new run**, exactly like `useCreateRun`, and returns a new
+ * run id. It is not an edit and there is no endpoint that edits a timetable
+ * (invariant 3). The caller navigates to the new run and watches it the same
+ * way it watches any other.
+ *
+ * The three action shapes are the closed catalogue (ADR-007). A fourth is a
+ * type error here, which is the point of the union.
+ */
+export function useRegenerate(runId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (variables: { candidateId: string; action: RegenerateRequest }) =>
+      apiSend<{ runId: string }>(
+        'POST',
+        `/runs/${runId as string}/candidates/${encodeURIComponent(variables.candidateId)}/regenerate`,
+        variables.action,
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['runs'] })
+    },
+  })
+}
+
+/** The wire form of the three catalogue actions. Closed — see ADR-007. */
+export type RegenerateRequest =
+  | { kind: 'weight_delta'; criterion: string; newWeight: number }
+  | { kind: 'lock_session'; session: string }
+  | { kind: 'exclude_slot'; session: string; slot: number }
+  | { kind: 'exclude_slot'; session: string; room: string }
+
 export function useComparison(runId: string | null, a: string | null, b: string | null) {
   return useQuery({
     queryKey: ['comparison', runId, a, b],
