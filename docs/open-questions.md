@@ -26,10 +26,11 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
 **C-17, C-18** (2026-08-04) · **C-5, C-14** (2026-08-05, project-owner decision) ·
+**C-19, C-20, C-21** (2026-08-06, project-owner decision, before any Phase 7 code) ·
 **C-8, C-11** · **C-4, C-12** · **C-16** (2026-07-30, implemented). The sections below keep their full reasoning;
 headings say which is which.
 
-**Fifteen resolved plus two open is seventeen, and the codes run C-1 to C-18 — there is no C-10, and that
+**Eighteen resolved plus two open is twenty, and the codes run C-1 to C-21 — there is no C-10, and that
 is not a lost question.** The number was never assigned. Recorded here for the same reason the retired
 soft-criterion codes S1/S8/S9 are recorded in the errata: a gap in a sequence invites someone to go
 looking for what fell through it.
@@ -151,7 +152,7 @@ otherwise if the institution expects an approval step in the application.
 
 ---
 
-## RAISED AFTER THE FIRST READING — four still open, seven since resolved
+## RAISED AFTER THE FIRST READING — two still open, fourteen since resolved
 
 *Kept in discovery order rather than re-sorted, so cross-references from other documents and from
 commit messages still land on the right section. **Every heading states its own status** — trust the
@@ -1060,6 +1061,129 @@ ADR-011; `tests/integration/test_reproducibility.py` pins the ratio so the misre
 That the erroneous figure survived *twice* — once inside a wrong diagnosis, then again as the one piece
 of it judged sound enough to keep — is the part worth remembering. Salvaging a measurement from a
 refuted analysis is exactly when it is least likely to be re-derived.
+
+---
+
+### C-19 — How a locked session's target reaches the solver · **RESOLVED 2026-08-06 → `SolverInput` carries `Placement`s**
+
+H10 is registered and **dormant**: `solver/variables.py` refuses to build if `SolverInput.locked_sessions`
+is non-empty, because that field is a `frozenset[SessionId]` and a session id does not say *where* the
+session is locked. `recommendations/translator.py` already reads the target correctly out of the
+candidate (`LockedPlacement(session, slot, room)`); what is missing is a way to carry it downstream.
+Recorded as item 9 of `docs/status.md`'s "Next, in order", and it is FR-23's prerequisite: `lock_session`
+is one of the three catalogue actions, so regeneration cannot be built while one third of the catalogue
+cannot reach the solver.
+
+**Decision: replace `locked_sessions: frozenset[SessionId]` with `locked_placements: frozenset[Placement]`.**
+
+**Why `Placement` rather than a new type.** A lock *is* a placement the solver must reproduce.
+`domain.entities.Placement` is already `(session, slot, room)`, already `frozen=True, slots=True` and
+therefore hashable, and already lives in `domain`, which `solver` may import. A new
+`LockedSession(session, slot, room)` would be `Placement` under a second name, and two names for one
+shape is how a mapping layer starts.
+
+**Why replace rather than add a field.** `locked_sessions` has never been usable — every code path that
+receives it non-empty raises. Keeping it beside a usable field means a caller can still pick the one
+that cannot work, and the failure would arrive at solve time. Replacing it turns that mistake into a
+type error at the call site.
+
+**Why `recommendations.LockedPlacement` is not reused directly.** `solver` may not import
+`recommendations` (`docs/architecture.md`'s module map gives the solver `domain` only). The two types
+stay separate and `services/` maps one onto the other — that mapping is the layer boundary doing its
+job, not duplication to remove. The same reasoning already produced two implementations of the seven
+soft criteria (C-4).
+
+**What it costs, stated plainly.** `SolverInput` is a **Phase 2 contract** and this changes it. Three
+call sites move (`services/portfolio.py`, `solver/variables.py`, `solver/constraints/domain_pruned.py`),
+and every one of them is on the path every ordinary run takes — so the change is verified by the whole
+existing solver suite rather than only by new tests. H10 stops being dormant, which removes one of the
+two reasons `docs/requirements-traceability.md` gives for FR-3 not being `✓`.
+
+**Blocked:** nothing. FR-23's prerequisite is unblocked. **Resolved by:** project owner, 2026-08-06.
+
+### C-20 — Where a regeneration assembles its run, and what links it to the original · **RESOLVED 2026-08-06 → `services/regeneration.py`, and the new run records its origin**
+
+`recommendations/translator.py` returns a `RunOverride` — plain domain data — rather than a
+`SolverInput`, and its module docstring records why: the `translate(action, run, candidate)` signature
+receives a `Run` (no instance, no profile weights) and a `Candidate` (a profile *name*, not its weights),
+so **no layer below `services` has the context a `SolverInput` needs.** That gap is recorded as a live
+risk in `docs/status.md` and was left for "a later layer (`services/`, Phase 4–5)" that was never
+written. FR-23 is where it comes due.
+
+**Decision, in five clauses.**
+
+**(i) The assembly lives in `services/regeneration.py`.** `services` is the only layer permitted to hold
+both the run store and the solver — `services/portfolio.py` is the precedent and the module the
+architecture document names for exactly this. Nothing in `recommendations/` changes.
+
+**(ii) The instance is the one the application serves.** `Run` carries no instance reference, so a
+regeneration reloads the single instance this deployment has. ⚠️ **This is correct only while there is
+one instance, and that is a limit rather than an assumption**: the day a second exists, `Run` must gain
+the reference and this clause must be reopened. Recorded here rather than discovered later.
+
+**(iii) The new run records `origin_run` and the recommendation that produced it.** `RecommendationRecord`
+already carries `resulting_candidate`; it is set once the regenerated run produces one. **Invariant 6 is
+untouched** — nothing about the origin run or its candidates is edited, and the regenerated timetable is
+a new candidate under a new run, which is what invariant 6 requires rather than something it merely
+permits.
+
+**(iv) Overrides compose.** A regenerated run carries the origin run's overrides *plus* the new one.
+Without this, accepting a second recommendation silently discards the first, and a user who locked a
+session would watch that lock disappear with nothing on screen to explain it. Cost, stated: the overrides
+become part of the run record, so `RunRecord` gains a field and **both** store implementations plus
+`tests/integration/test_store_contract.py` must carry it — that suite exists precisely because two
+implementations of one contract drift.
+
+**(v) A `weight_delta` replaces one entry of the run's own recorded vector, not of the catalogue.**
+`RunRecord.weights` already records the weights in force and its docstring already states why one vector
+must price every candidate. Reading the delta against the catalogue instead would silently discard any
+earlier delta, which is clause (iv) again in a different disguise.
+
+**Blocked:** nothing. **Resolved by:** project owner, 2026-08-06.
+
+### C-21 — Whether any test may call a live language model · **RESOLVED 2026-08-06 → no, at any marker**
+
+The assistant is an adapter around an external API. Nothing in the repository says whether the test
+suite is ever allowed to reach one, and the answer governs how FR-22, FR-24 and FR-25 are verified.
+
+**Decision: no test calls a live provider — not one, at any marker.** The adapter is exercised through a
+scripted fake.
+
+**Why.** Four reasons, and the first is the project's own standing rule: a language model's output is
+**not fixed by a seed**, so such a test reports the machine and the day rather than the software — the
+same objection ADR-011 makes to a wall-clock bound, and this project already treats an irreproducible
+test as worse than none. It would need a secret, and `assistant_api_key` must never be committed
+(`secret_key`'s published default is the standing lesson). It would fail with no network. And it would
+cost money on every `run-checks.ps1`, which a person runs by hand, several times a phase.
+
+**What replaces it, and why it is the better test.** The thing under test is the grounding check, and
+that check is pure: `numbers(answer) ⊆ numbers(context)`. A fake adapter can be made to return a
+**fabricated** figure on demand; a real model can only be *hoped* to fabricate one on the day the suite
+runs. The failure mode the requirement exists to catch is therefore reachable by the fake and not
+reliably reachable by the real thing.
+
+⚠️ **What this does NOT establish, stated plainly:** that any particular provider works. It establishes
+the application's behaviour *around* a provider — the context it sends, the check it applies, and what
+it displays when the check fails. **Do not read a green suite as "the assistant was tested against a
+language model."** A first live call is a deployment step, and it belongs in `docs/demonstration.md`,
+not in `pytest`.
+
+**One property worth naming, because it is a gift rather than a compromise.** `assistant_enabled`
+defaults to **False**, so **degraded mode is the default configuration.** Invariant 5 — everything works
+with the assistant switched off — is therefore exercised by every one of the suite's existing tests
+rather than by one special test, and the FR-22/FR-25 acceptance criterion needs no provider, no key and
+no network to verify.
+
+**Blocked:** nothing. **Resolved by:** project owner, 2026-08-06.
+
+### Recorded, not decided — FR-25 is Phase 7's release valve
+
+Not a new question. `PPM §8.3` and `docs/status.md`'s "Order of scope reduction" already fix the first
+cut: **the assistant's *report* is abandoned, explanations and answers kept.** ADR-010 makes the same
+point from the other side, FR-25 being *Expected* where FR-22/23/24 are *Necessary*.
+
+Written here so that if Phase 7 runs late the reduction is applied as the decision it already is, rather
+than re-argued under pressure — which is the whole reason the order was decided in advance.
 
 ---
 

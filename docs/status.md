@@ -2,8 +2,10 @@
 
 **Increment 1 of 2 · Phases 1–6 complete. ⚠️ Increment 1 is NOT complete — see the note below.** Phase 5 closed 2026-08-04: six
 milestones and a closing audit that found eight defects, none of which `run-checks.ps1` could catch.
-**Fifteen open questions resolved (C-1 to C-18, no C-10); C-15 deferred by decision. Two remain open —
-C-9 and C-15 — and neither blocks any work that is currently startable.**
+**Eighteen open questions resolved (C-1 to C-21, no C-10); C-15 deferred by decision. Two remain open —
+C-9 and C-15 — and neither blocks Phase 7.** C-19, C-20 and C-21 were decided on 2026-08-06, before any
+Phase 7 code: how a locked session's target reaches the solver, where a regeneration assembles its run,
+and whether a test may call a live language model.
 **Last updated 2026-08-06.**
 
 Keep this file current. A stale status file is worse than none, because the next session trusts it.

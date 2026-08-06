@@ -114,9 +114,18 @@ ever disagree, that file wins and this table is the bug. **Do not silently decid
 | **C-15** | The objective weights raw violation counts of incomparable scale, so "teacher-favouring" favours only S5, not S3. **Deferred by decision 2026-07-30** — recorded, objective unchanged. The comparison screen sidesteps it by showing measured sub-scores and making **no claim about what a profile favours** | FR-13's `✓` | Technical lead |
 
 **Resolved, do not reopen without new evidence:** C-1, C-2, C-3, C-6, C-7, C-8, C-11, C-13, **C-4,
-C-12, C-16** (2026-07-30), **C-17, C-18** (2026-08-04), **C-5, C-14** (2026-08-05). ADR-011 was amended
+C-12, C-16** (2026-07-30), **C-17, C-18** (2026-08-04), **C-5, C-14** (2026-08-05), **C-19, C-20,
+C-21** (2026-08-06). ADR-011 was amended
 rather than reversed: deterministic time bounds the *work*, `interleave_search` orders the *race*, and
 both are required — see C-16.
+
+✅ **C-19, C-20 and C-21 resolved 2026-08-06 by project-owner decision, before any Phase 7 code.**
+C-19: `SolverInput` carries `frozenset[Placement]` instead of `frozenset[SessionId]`, so H10 stops being
+dormant — a **Phase 2 contract change**, taken deliberately. C-20: regeneration assembles in
+`services/regeneration.py`; the new run records its origin and its overrides, and overrides **compose**
+so a second accepted recommendation does not silently discard the first. C-21: **no test calls a live
+language model**, at any marker — a model's output is not fixed by a seed, and the grounding check is
+better tested by a fake that fabricates a figure on demand than by a real one that may not.
 
 ✅ **C-5 resolved 2026-08-05 — the wording was clarified, the implementation left alone.** Duplicate
 removal stays exactly as SRS Table 29 specifies; the acceptance criterion is tied to **the verified
