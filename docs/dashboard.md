@@ -5,6 +5,26 @@ other document is detail you fetch only when you need it.
 
 **Last updated 2026-08-06. Phase 7 is COMPLETE — all seven milestones and a closing audit.**
 
+> ### Is this page still true? Check before trusting it
+>
+> This is the **only** place the project's current state is recorded, so a stale line here misleads
+> every session that follows. Three commands settle it in under a minute:
+>
+> ```
+> git log -1 --date=short --format='%ad %s'     # newer than the date above?
+> git log --oneline <that date>..HEAD           # what landed since
+> scripts/run-checks.ps1                        # is the repository actually green
+> ```
+>
+> **If the last commit is newer than this page's date, believe the commits and repair this page first.**
+> That is not a formality: the "Overall progress" row below described a phase that had already finished
+> and **survived two closing audits**, and `README.md`'s Status section went stale in two successive
+> phases — once *because the audit that fixed it ran before the phase it was recording had closed.*
+>
+> ⚠️ **A closing audit cannot verify the sentence announcing its own phase closing.** Whoever closes a
+> phase writes that line *after* the audit, and nothing checks it. It is the single most likely line on
+> this page to be wrong.
+
 ✅ **INCREMENT 1 IS COMPLETE.** Phase 7 was approved by the project owner on 2026-08-06 and delivered
 the four requirements that had no home: **FR-23** (regeneration) and **FR-22, FR-24, FR-25** (the
 assistant). **C-1 is closed** — recorded 2026-07-29, scheduled 2026-08-06, delivered the same day.

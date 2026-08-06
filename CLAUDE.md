@@ -28,9 +28,11 @@ a bug in the documentation to fix before continuing.
 and it contains superseded conclusions kept on purpose. Open it only to check what was already tried
 before repeating an experiment, or to understand why a past decision was taken.
 
-There is no `PROJECT_STATUS.md` and no `TODO.md`: `docs/dashboard.md` covers the first and
-`docs/status.md`'s "Next, in order" covers the second. Adding either would duplicate a file that is
-already authoritative, and duplicated status is how a project acquires two answers to one question.
+⚠️ **Do not add a `PROJECT_STATE.md`, `PROJECT_STATUS.md` or `TODO.md`.** Their jobs are already taken:
+`docs/dashboard.md` is the state page and `docs/status.md`'s "Next, in order" is the task list. A
+fourth name for the same content does not make the project easier to resume — it makes it impossible
+to tell which of two files is lying when they disagree. **If the dashboard is hard to resume from, fix
+the dashboard.**
 
 Then, on demand:
 
@@ -45,15 +47,17 @@ Then, on demand:
 | Tests | `docs/testing-strategy.md` |
 | "Is FR-N built?" | `docs/requirements-traceability.md` |
 | "Why was X chosen?" | `docs/decisions/` (ADRs) |
+| **Showing the system to someone** — and the two acts only a person can perform: the timed FR-2 walkthrough (§2) and the **first live language-provider call** (§4) | `docs/demonstration.md` |
 
 **Never** open `docs/specifications/*.pdf` to answer a question. If the answer is not in `docs/`, that
 is a gap in `docs/` — fix the gap, then continue.
 
 ### Startup workflow — do this, in this order
 
-1. **Read `docs/dashboard.md`.** Its "At a glance" table is the whole state: current phase, milestone
-   reached, current goal, next task. It is written for a cold session and is usually the only file you
-   need.
+1. **Read `docs/dashboard.md`. This step is not optional** — it is the *only* place the project's
+   current state exists, deliberately. Its "At a glance" table gives the current phase, the milestone
+   reached, the current goal and the next task. A session that skips it is working blind, because this
+   file will not tell you what has been built.
 2. **Derive the repository facts rather than reading them** — no document records a SHA or a commit
    count, deliberately, because neither can survive a push that does not touch the file recording it:
    `git fetch` · `git log -1 --oneline` · `git rev-list --count origin/main..HEAD`.
@@ -63,22 +67,24 @@ is a gap in `docs/` — fix the gap, then continue.
 4. **Check the dashboard's "Next task" row before writing code.** It says explicitly when the next
    action is a *decision* rather than an implementation.
 
-> ✅ **As of 2026-08-06, increment 1 is COMPLETE.** Phase 7 was approved by the project owner and
-> delivered the four requirements C-1 recorded and no phase carried: FR-23 (regeneration) and FR-22,
-> FR-24, FR-25 (the assistant). **C-1 is closed.**
+> ⚠️ **No project state is recorded in this file — it lives in `docs/dashboard.md`'s "At a glance".**
+> This file carries what is *permanently* true; the dashboard carries what is true *today*. Two places
+> recording state is how a project acquires two answers to one question, and this repository has been
+> bitten by exactly that: `README.md`'s Status section went stale in two successive phases, and the
+> dashboard's own "Overall progress" row survived two closing audits while describing a phase that had
+> already finished. **If you find state here, it is a bug — move it to the dashboard.**
 >
-> ⚠️ **The next action is again a decision, not code**, and it is the project owner's. Three things are
-> outstanding and **none of them is a defect**: the **timed FR-2 walkthrough** (needs a teacher who has
-> not seen the screen), a **first live call to a language provider** (without which FR-24 cannot be
-> called done — **C-21**), and whether to open **increment 2** (examinations 4 d, weight adjustment
-> 3 d, conditional on remaining time). Do not start increment 2 without approval.
+> **Four standing rules that outlive any phase:**
 >
-> ⚠️ **Do not read a green suite as "the assistant was tested against a language model."** No test
-> calls a live provider and none can — a model's output is not fixed by a seed. What is verified is
-> the application's behaviour *around* a provider.
-
-**If the next step is blocked on an open question, say so and stop rather than deciding it** — that is
-the one failure mode this project cannot absorb quietly.
+> 1. **Do not open a new phase or increment without the project owner's approval.** Where remaining
+>    work goes is their call, never a session's.
+> 2. **If the next step is blocked on an open question, say so and stop rather than deciding it** —
+>    the one failure mode this project cannot absorb quietly.
+> 3. **Do not read a green suite as "the assistant was tested against a language model."** No test
+>    calls a live provider and none can — a model's output is not fixed by a seed (**C-21**). What is
+>    verified is the application's behaviour *around* a provider.
+> 4. **A requirement is `✓` only once a user can reach it *and* it is tested end to end.** Do not
+>    promote a status because a phase closed.
 
 ---
 
@@ -124,7 +130,7 @@ React ──HTTPS/JSON/token──► FastAPI ──► PostgreSQL
 | `solver/` | Variables, constraints, objective, diagnosis | `domain` |
 | `analysis/` | Criteria, scoring, ranking, decomposition | `domain` |
 | `recommendations/` | Closed catalogue, translation to solver input | `domain`, `analysis` |
-| `assistant/` | Adapter, context builder, answer verifier | `domain`, `analysis` |
+| `assistant/` | Adapter, context builder, answer verifier, computed forms | `domain`, `analysis` |
 | `tasks/` | Background run executor | `services` |
 | `validation/` | **Not product code.** The ITC-2007 benchmark harness | nothing in `optiedt` |
 
@@ -140,30 +146,16 @@ project did not design. Both halves belong in the report (`docs/testing-strategy
 
 ### The generation pipeline — three stages
 
-Stages 1 and 2 always run. **Stage 3 runs only when stage 2 returns `INFEASIBLE`.**
+Stages 1 and 2 always run. **Stage 3 runs only when stage 2 returns `INFEASIBLE`.** The stages are
+specified in full in **`docs/architecture.md`**; what must be loaded at all times is the debugging rule
+they exist to serve:
 
-1. **Pre-analysis** — five arithmetic checks, no solver. Distinguishes *this instance genuinely has no
-   solution* from *the model has a bug*. The reference instance sits at **90.9% computer-laboratory
-   occupancy — of two-period *windows*, 8 spare in the whole week**, which is the figure that binds.
-   Counting periods instead gives a reassuring 71.4% and is **necessary but not sufficient**: a
-   two-period session needs two consecutive open periods inside one day, so a 5-period day leaves one
-   period per room structurally unusable. Reading the period figure alone is what let an infeasible
-   instance pass verification and cost three sessions (C-13). **Run this first when debugging, and
-   check that a solution exists before concluding the solver is slow.**
-2. **Optimisation** — one solve per weight profile, sequential, carries the objective, all workers,
-   bounded by `max_deterministic_time` (ADR-011).
-3. **Diagnosis** — **withdraw one rule at a time and solve plainly.** Establish that no timetable
-   exists, then remove each of H1/H3/H7/H12 in turn: if the model is still infeasible without it, that
-   rule was not needed. **A single worker** (reproducibility of the verdict, not a solver requirement),
-   **no objective** (imposed — it is a feasibility question), and **minimal only when every removal was
-   decided**; a removal the solver could not decide keeps its rule *for want of evidence*.
-   ⚠️ This replaced enforcement literals on measurement (**C-17**): a literal takes its constraint out
-   of presolve, and an infeasibility a plain solve proves in **0.0 s** returned `UNKNOWN` after 240 s.
-   Several minimal explanations can exist; one is reported, in catalogue order, so it is reproducible.
-
-### Run lifecycle — asynchronous by necessity
-
-Solving takes minutes; no HTTP request is held open for it.
+⚠️ **When a solve returns `UNKNOWN`, establish that a solution EXISTS before treating it as a
+performance problem.** Run pre-analysis first, always, and read the **two-period-window** occupancy
+(90.9 % on the reference instance, 8 spare in the whole week) rather than the period figure (a
+reassuring 71.4 %). The period bound is necessary and **not sufficient**; reading it alone let a
+genuinely infeasible instance pass verification and cost three sessions (**C-13**). An instant
+`INFEASIBLE` is evidence of a too-tight model — its *absence* is not evidence of a sound instance.
 
 ```
 POST /runs → 202 {run_id}   → background task → poll GET /runs/{id}
@@ -172,18 +164,18 @@ PENDING → PREANALYSIS → SOLVING → SCORING → COMPLETED
                               └→ FAILED
 ```
 
+Solving takes minutes; no HTTP request is ever held open for it (ADR-005).
+
 ### Scoring — why linearity is load-bearing
 
-```
-n_i(k)  = 1 − (v_i(k) − min_i) / (max_i − min_i)     1 = best
-score(k)= 100 × Σ(w_i × n_i(k))
-score(A) − score(B) = 100 × Σ(w_i × (n_i(A) − n_i(B)))
-```
+`score(A) − score(B)` decomposes **exactly** into per-criterion contributions, because the score is a
+weighted sum of normalised values. That identity *is* the explanation feature: what the user sees is
+the score calculation read term by term, not an approximation of it.
 
-That third line **is** the explanation feature: the contribution shown to the user is the score
-calculation read term by term, not an approximation of it. **Any change making the score non-linear
-destroys it** — a product term, a threshold or a max removes the reason the ranking is defensible.
-Bounds come from the *instance*, never from the candidates a run produced (ADR-009).
+⚠️ **Any change making the score non-linear destroys it** — a product term, a threshold or a `max`
+removes the reason the ranking is defensible before a department. Bounds come from the *instance*,
+never from the candidates a run produced (ADR-009). Formulas and the four required properties:
+**`docs/scoring-and-explanation.md`**.
 
 ---
 
@@ -249,14 +241,13 @@ resolved. What belongs here is the rule, not the list:
 > and never written down is how this project acquires a defect that surfaces three weeks later — and
 > C-13 is the proof: a plausible conclusion nobody tried to falsify cost three sessions of work.
 
-**Resolved, with the three operational facts worth carrying:** only H1, H3, H7 and H12 carry
-`carries_assumption_literal = True`, the four real CP-SAT postings (C-6). `y[s][t]` means *occupies*
-`t`, channelled from start indicators in `solver/occupancy.py` — **built on demand, not by every
-solve**, because it adds 10,048 variables and costs the feasibility solve about 2.5× (C-7); `engine.py`
-gates that build on `has_active_criteria`, so an all-zero-weight profile stays equivalent to a
-feasibility solve. And **C-4/C-12 are resolved**: all seven soft criteria have a `v_i` and bounds, and
-the objective's auxiliaries — the last open half of C-7 — are measured at **5,249** under the catalogue
-defaults (`docs/status.md`).
+**The resolved ones are NOT summarised here**, for the same reason the open ones are not: every code
+belongs to exactly one file, and a second copy is a second thing to update. `docs/open-questions.md`
+carries all twenty with their full reasoning; `docs/constraint-model.md` owns the modelling facts
+(C-6's four withdrawable rules, C-7's `y[s][t]` encoding), `docs/scoring-and-explanation.md` owns the
+scoring ones (C-5, C-14), and `docs/data-and-instance.md` owns C-13's two occupancy bounds.
+
+**One footgun does belong here, because it is a rule about writing code rather than a question:**
 
 ⚠️ **The same seven formulas are implemented twice, on purpose:** `analysis/criteria.py` over realised
 placements, `solver/objective.py` as CP-SAT expressions. The solver may not import the analysis layer
@@ -264,27 +255,6 @@ placements, `solver/objective.py` as CP-SAT expressions. The solver may not impo
 `tests/integration/test_objective_matches_analysis.py`. **Change one, change the other**, and mind the
 units: the two layers must agree on scale, not just on shape (S6's did not, and the solver silently
 priced it 28× too high until it was caught).
-
-**C-13 is resolved, and how it was resolved matters more than the answer.** For three sessions it was
-recorded as "room-assignment symmetry makes the correct model hard to solve", and three legitimate
-techniques were spent on it. The model was correct; the **instance had no solution**. Every laboratory
-session spans two periods, a two-period session must fit inside one day (H8), and a 5-period day gives
-a room only two such windows — so a room offered 11 a week against demand that needed more.
-Ten minutes of arithmetic on the CSVs found what days of solver time could not, because CP-SAT was
-being asked to prove an infeasibility its propagators cannot express. **When a solve returns `UNKNOWN`,
-establish that a solution exists before treating it as a performance problem** — an instant
-`INFEASIBLE` is evidence of a too-tight model, but its *absence* is not evidence of a sound instance.
-Full account in `docs/open-questions.md`.
-
-**C-5 and C-14 were resolved on 2026-08-05 by project-owner decision**, and both were resolved the same
-way — **the wording moved, the implementation did not**. C-5: duplicate removal stays as SRS Table 29
-specifies, and the criterion is tied to the reference instance at production settings. C-14: the
-standard Pareto rule, with the dominance signal moved off the top candidate, because the top-candidate
-case is arithmetically unreachable and an indicator that can never fire is worse than none.
-
-If your work touches an open question, **resolve it in `docs/open-questions.md` first**, then implement.
-An assumption made in code and never written down is how this project acquires a defect that surfaces
-three weeks later.
 
 ---
 
@@ -320,7 +290,7 @@ From the root:
 |---|---|
 | PostgreSQL | `docker compose up -d` |
 | **Everything CI would run** | `scripts/run-checks.ps1` — ⚠️ **there is no CI; a person runs this** |
-| **The acceptance suite** | `scripts/run-acceptance.ps1` — one test per requirement, against its criterion. `-FastOnly` skips the solver-marked half, which takes ~7½ min on two real portfolios |
+| **The acceptance suite** | `scripts/run-acceptance.ps1` — one test per requirement, against its criterion. `-FastOnly` skips the solver-marked half. ⚠️ The full sweep takes **16–22 min** and the spread is load, not variance — quote the range or none (`docs/status.md`) |
 | **Verify the instance** | `scripts/verify-instance.ps1` |
 | **Validate on ITC-2007** | `scripts/validate-itc2007.ps1` — 21 published instances, tens of minutes |
 | Reference archives status | `scripts/check-reference-data.ps1` |
