@@ -95,3 +95,53 @@ def test_a_generated_password_is_not_a_constant(monkeypatch: pytest.MonkeyPatch)
 
     assert first != second
     assert len(first) >= 16
+
+
+def test_the_password_reported_is_the_password_stored(monkeypatch: pytest.MonkeyPatch) -> None:
+    """⚠️ **The regression test for a defect that made the command useless.**
+
+    `_password()` returns a fresh `secrets.token_urlsafe(16)` whenever
+    OPTIEDT_SEED_PASSWORD is unset — the default path. `main()` called it to
+    decide what to PRINT and `seed()` called it again to decide what to STORE,
+    so on that path the two disagreed: every account was created with a
+    password nobody was ever shown. The command reported success, 47 accounts
+    existed, and not one could sign in.
+
+    It survived because **every test in this file pins the environment
+    variable**, which makes both calls agree, and `main()` is `# pragma: no
+    cover`. Two reasonable-looking decisions hid a total failure of the
+    command's only purpose. Found 2026-08-06 while writing the demonstration
+    script, whose first step is "seed the accounts and sign in".
+
+    This asserts the property that actually matters — the credential a caller
+    reports is the credential the store accepts — rather than re-testing that
+    `_password()` is random.
+    """
+    monkeypatch.delenv("OPTIEDT_SEED_PASSWORD", raising=False)
+    store = InMemoryUserStore()
+
+    created = seed(store, TEACHERS)
+
+    reported = created[0].password
+    assert store.authenticate(PERSON_IN_CHARGE, reported) is not None, (
+        "the password returned to the caller does not open the account it created"
+    )
+    # Every account shares one password, so every reported credential must work.
+    for entry in created:
+        assert entry.password == reported
+        assert store.authenticate(entry.username, entry.password) is not None
+
+
+def test_an_explicit_password_is_used_verbatim(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The caller may derive the credential once and pass it down.
+
+    That is what `main()` does now, and it is the fix for the defect above:
+    one derivation, one value printed, the same value stored.
+    """
+    monkeypatch.delenv("OPTIEDT_SEED_PASSWORD", raising=False)
+    store = InMemoryUserStore()
+
+    created = seed(store, TEACHERS, password="chosen-by-the-caller")
+
+    assert {c.password for c in created} == {"chosen-by-the-caller"}
+    assert store.authenticate(PERSON_IN_CHARGE, "chosen-by-the-caller") is not None

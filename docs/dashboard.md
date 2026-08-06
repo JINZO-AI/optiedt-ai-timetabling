@@ -489,7 +489,7 @@ so the four requirements without a specification are also the four with no accep
 | **M3** | **FR-8 + FR-12 acceptance tests** — an infeasible instance to `DIAGNOSED`. **Settles whether criterion 5 is met**, see below | ✅ **done 2026-08-05** — 17 tests, and the answer is *on one shape, not the other* |
 | **M4** | **FR-9 acceptance test** — a half-day closed in configuration, no source file touched | ✅ **done 2026-08-05** — **criterion 7 met**, and the closure lands at exactly 100.0 % of Lab_Info's windows |
 | **M5** | **Instance generator** (`data/generator/`) | ✅ **done 2026-08-05** — passes `verify_instance.py` on its own output, and the result solves |
-| **M6** | **Demonstration script + the FR-2 walkthrough protocol** | ⬜ |
+| **M6** | **Demonstration script + the FR-2 walkthrough protocol** | ✅ **done 2026-08-06** — `docs/demonstration.md`; found and fixed a defect that made the seed command useless |
 | **M7** | **Documentation, traceability, closing audit** | ⬜ |
 
 **Scope decisions taken by the project owner on 2026-08-05, before any code:**
@@ -505,6 +505,7 @@ so the four requirements without a specification are also the four with no accep
    copy wearing a generator's name. ADR-008 and C-11 record what is and is not achieved.
 3. **The presentation deliverable is a reproducible demonstration script** in `docs/`, each step
    stating its expected result so a failed demonstration is visible rather than improvised around.
+   ✅ Delivered in M6 as [`docs/demonstration.md`](demonstration.md).
 
 **Also lands here.** The **instance generator** (`data/generator/`), a stated PPM §10 deliverable that
 does not exist — item 10 of `docs/status.md`'s "Next, in order". It must reproduce *the* documented

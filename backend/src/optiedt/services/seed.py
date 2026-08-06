@@ -61,8 +61,29 @@ def _password() -> tuple[str, bool]:
     return secrets.token_urlsafe(16), True
 
 
-def seed(store: UserStore, teacher_ids: tuple[str, ...]) -> list[Created]:
-    """Create the accounts. Raises if any account already exists."""
+def seed(
+    store: UserStore,
+    teacher_ids: tuple[str, ...],
+    password: str | None = None,
+) -> list[Created]:
+    """Create the accounts. Raises if any account already exists.
+
+    ⚠️ ``password`` is a parameter because deriving it here AND in the caller
+    was a defect, not a redundancy. `_password()` returns a fresh
+    `secrets.token_urlsafe(16)` whenever OPTIEDT_SEED_PASSWORD is unset - the
+    default path - so `main()` printing its own call's result while this
+    function stored a different one meant **every account was created with a
+    password nobody was ever shown**. The command reported success, 47 accounts
+    existed, and not one could sign in.
+
+    Every test pinned OPTIEDT_SEED_PASSWORD, so both calls agreed and the
+    divergence was invisible; `main()` is `# pragma: no cover`, so nothing
+    exercised the path at all. Found 2026-08-06 while writing the demonstration
+    script, whose first step is "seed the accounts and sign in".
+
+    Passing None keeps the old behaviour for a caller that only wants accounts
+    and does not need to report the credential.
+    """
     if store.all():
         raise RuntimeError(
             "This installation already has accounts. The seed command creates the FIRST "
@@ -70,7 +91,8 @@ def seed(store: UserStore, teacher_ids: tuple[str, ...]) -> list[Created]:
             "something a convenience script should do by accident."
         )
 
-    password, generated = _password()
+    if password is None:
+        password, _generated = _password()
     created: list[Created] = []
 
     for username, role in (
@@ -104,7 +126,6 @@ def seed(store: UserStore, teacher_ids: tuple[str, ...]) -> list[Created]:
             )
         )
 
-    del generated  # reported by the caller, which owns the output
     return created
 
 
@@ -121,7 +142,10 @@ def main() -> int:  # pragma: no cover - the console entry point
 
     print(f"Seeding accounts into {settings.database_url.rsplit('@', 1)[-1]}")
     try:
-        created = seed(build_user_store(settings), _teacher_ids(settings))
+        # ⚠️ The password derived above is PASSED IN, not re-derived. Letting
+        # `seed()` call `_password()` again meant it stored a different token
+        # from the one printed here whenever OPTIEDT_SEED_PASSWORD was unset.
+        created = seed(build_user_store(settings), _teacher_ids(settings), password=password)
     except RuntimeError as exc:
         print(f"\nRefused: {exc}", file=sys.stderr)
         return 1
