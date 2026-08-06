@@ -176,7 +176,7 @@ requirement itself**. Tests live in `backend/tests/acceptance/`, one per criteri
 
 | FR | Test | Expected result | State |
 |---|---|---|---|
-| FR-2 | Fill in the availability grid | Recorded in under 5 minutes | ⚠️ **not automatable** — a person, Phase 6 M6 |
+| FR-2 | Fill in the availability grid | Recorded in under 5 minutes | ⚠️ **not automatable — OUTSTANDING.** The protocol and the table to record the result in are `docs/demonstration.md` §2; the walkthrough itself needs a teacher who has not seen the screen. **This is the ninth acceptance criterion and the only one unmet** |
 | FR-3 | Generate on the reference instance | No hard-constraint violation | ✅ `test_fr03`, `solver` |
 | FR-5 | Read a candidate | Overall score and sub-scores displayed | ✅ `test_fr05` |
 | FR-8 | Generate on a deliberately infeasible instance | Report naming the rules in conflict by code | ✅ `test_fr08`, `solver` — ⚠️ **both shapes**, and the criterion holds on only one |
@@ -191,12 +191,13 @@ requirement itself**. Tests live in `backend/tests/acceptance/`, one per criteri
 | FR-24 | Ask a question whose answer is not in the context | The assistant says it cannot answer, and **invents no figure** | ⛔ **out of scope for Phase 6** |
 | FR-22, FR-25 | Switch the language service off in configuration | Explanations and reports fall back to computed form; **every other function unaffected** | ⛔ **out of scope for Phase 6** |
 
-⛔ **The four assistant and regeneration rows are out of Phase 6's scope by decision of the project
-owner, 2026-08-05, and the deferral is written down rather than absorbed.** ADR-010 commits FR-22,
+⛔ **The four assistant and regeneration rows were out of Phase 6's scope by decision of the project
+owner, 2026-08-05, and Phase 6 is now closed — so they are simply NOT DELIVERED, and no phase remains
+in which they were going to be.** ADR-010 commits FR-22,
 FR-23 and FR-24 to increment 1; PPM Table 8 budgets them into no phase, which is C-1's ~2.5 unbudgeted
 days. `assistant/` is still scaffold-only, so these tests cannot be written against anything, and FR-23
 additionally needs H10's dormant gap filled. **Do not read their absence as an oversight, and do not
-read Phase 6's completion as covering them.**
+read Phase 6's completion as covering them** — Phase 6 closed on 2026-08-06 with these four still unbuilt, which is why increment 1 did not close with it (**C-1**).
 
 ✅ **FR-13's test no longer conflicts with the specification.** It did: "three distinct candidates" can
 fail while the system behaves correctly, if two profiles converge and duplicates are removed. **C-5 was

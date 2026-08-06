@@ -2,8 +2,8 @@
 
 **Increment 1 of 2 · Phases 1–6 complete. ⚠️ Increment 1 is NOT complete — see the note below.** Phase 5 closed 2026-08-04: six
 milestones and a closing audit that found eight defects, none of which `run-checks.ps1` could catch.
-**C-4, C-12, C-16, C-17, C-18 and now C-5 and C-14 resolved; C-15 deferred by decision. Two questions
-remain open, neither blocking Phase 6's acceptance suite.**
+**Fifteen open questions resolved (C-1 to C-18, no C-10); C-15 deferred by decision. Two remain open —
+C-9 and C-15 — and neither blocks any work that is currently startable.**
 **Last updated 2026-08-06.**
 
 Keep this file current. A stale status file is worse than none, because the next session trusts it.
@@ -24,7 +24,7 @@ Keep this file current. A stale status file is worse than none, because the next
 | **Next step** | ⚠️ **A DECISION, not code. Phase 6 is complete and increment 1 is not.** FR-22, FR-24, FR-25 (the assistant) and FR-23 (regeneration) are committed to increment 1 by ADR-010 and allocated to no phase of the 20-day plan — that is **C-1**, recorded since 2026-07-29 and never scheduled. The remaining work needs a home: a Phase 7, increment 2, or a scope correction. **Not to be decided here** — see the Increment 1 completion report and docs/dashboard.md |
 | **Days used** | Phases 1–6 delivered, budgeted 3 + 5 + 3 + 4 + 2 + 3 = **20 of 20**. ⚠️ **The plan's days are exhausted and increment 1 is not complete** — the assistant and regeneration were never allocated any (C-1) |
 | **Repo** | https://github.com/JINZO-AI/optiedt-ai-timetabling · `main` · ⚠️ **neither the latest commit nor a commit count is recorded here.** Derive them: `git log -1 --oneline` · `git rev-parse --short origin/main` · `git rev-list --count origin/main..HEAD` (0 means everything is pushed), after a `git fetch`. This line named a SHA and was wrong **five** times; four were repaired by editing the value, which is exactly why there was a fifth. See [`docs/dashboard.md`](dashboard.md)'s Repository-status row |
-| **Blocked on** | **Nothing.** **C-5 and C-14 resolved 2026-08-05** by project-owner decision, which is what gated the acceptance tests. **C-9** is open but blocks only the `✓` of FR-6, FR-10 and FR-18, not the suite. **C-15** still blocks FR-13's `✓` |
+| **Blocked on** | ⚠️ **One thing, and it is a DECISION rather than a dependency: where the assistant (FR-22, FR-24, FR-25) and regeneration (FR-23) go.** They are committed to increment 1 by ADR-010 and allocated to no phase — **C-1**, recorded 2026-07-29. The plan's 20 days are spent. Until the project owner decides, no further increment-1 work is startable. Separately, **C-9** blocks only the `✓` of FR-6, FR-10 and FR-18, and **C-15** blocks FR-13's `✓`; neither blocks anything else |
 
 ---
 
@@ -116,6 +116,18 @@ SRS row that is still missing.
 ---
 
 ## Next, in order
+
+⚠️ **Nine of the ten entries below are struck through and done. Exactly ONE is live — item 9, H10's
+dormant gap — and it is not startable on its own: it exists to serve FR-23, which has no home until
+the project owner decides where the assistant and regeneration go.**
+
+**The completed entries are kept rather than deleted**, and deliberately: several carry a correction
+that other documents cite by number. Item 3 records a blocker that was never real ("a plausible
+blocker nobody tried to falsify"), item 4 records the ~11× overshoot that turned out to be an
+aggregate misread, and item 10 records what the generator does and does not reproduce. Deleting them
+would break those references and lose the reasoning that makes each correction checkable.
+
+**So: read item 9, and read the others only if you are following a cross-reference to one.**
 
 1. ~~Loader~~ · ~~Model H1–H12, H12 bug fixed~~ · ~~Decide C-13~~ · ~~Decide C-7~~ — **all done**, see
    `docs/history.md`. Phase 2 is closed.

@@ -49,9 +49,29 @@ Then, on demand:
 **Never** open `docs/specifications/*.pdf` to answer a question. If the answer is not in `docs/`, that
 is a gap in `docs/` — fix the gap, then continue.
 
-Then pick up the current phase from the dashboard's brief. **If the next step is blocked on an open
-question, say so and stop rather than deciding it** — that is the one failure mode this project cannot
-absorb quietly.
+### Startup workflow — do this, in this order
+
+1. **Read `docs/dashboard.md`.** Its "At a glance" table is the whole state: current phase, milestone
+   reached, current goal, next task. It is written for a cold session and is usually the only file you
+   need.
+2. **Derive the repository facts rather than reading them** — no document records a SHA or a commit
+   count, deliberately, because neither can survive a push that does not touch the file recording it:
+   `git fetch` · `git log -1 --oneline` · `git rev-list --count origin/main..HEAD`.
+3. **Run `scripts/run-checks.ps1` before changing anything.** It is the ground truth for whether the
+   repository is green, and it takes about a minute. ⚠️ Start `docker compose up -d` first, or the
+   database step skips and FR-19's persistence is not covered.
+4. **Check the dashboard's "Next task" row before writing code.** It says explicitly when the next
+   action is a *decision* rather than an implementation.
+
+> ⚠️ **As of 2026-08-06 the next action IS a decision, not code.** All six phases of the plan are
+> delivered, its 20 days are spent, and **increment 1 is still not complete**: the assistant (FR-22,
+> FR-24, FR-25) and regeneration (FR-23) are committed to increment 1 by ADR-010 and were allocated to
+> no phase — that is **C-1**, recorded 2026-07-29 and never scheduled. **Do not create a Phase 7, do
+> not modify ADR-010 or the roadmap, and do not start that work without the project owner's approval.**
+> The evidence and the recommendation are in `docs/dashboard.md`'s Phase 6 block.
+
+**If the next step is blocked on an open question, say so and stop rather than deciding it** — that is
+the one failure mode this project cannot absorb quietly.
 
 ---
 
@@ -245,11 +265,13 @@ establish that a solution exists before treating it as a performance problem** �
 `INFEASIBLE` is evidence of a too-tight model, but its *absence* is not evidence of a sound instance.
 Full account in `docs/open-questions.md`.
 
-(**C-12 is resolved**, so the C-12 × C-5 interaction is no longer live: S5 measures a real,
-candidate-dependent quantity instead of zero. **C-5 itself is still open** and still blocks portfolio
-orchestration and the FR-13 acceptance test — the account is in `docs/open-questions.md`.)
+**C-5 and C-14 were resolved on 2026-08-05 by project-owner decision**, and both were resolved the same
+way — **the wording moved, the implementation did not**. C-5: duplicate removal stays as SRS Table 29
+specifies, and the criterion is tied to the reference instance at production settings. C-14: the
+standard Pareto rule, with the dominance signal moved off the top candidate, because the top-candidate
+case is arithmetically unreachable and an indicator that can never fire is worse than none.
 
-If your work touches one of these, **resolve it in `docs/open-questions.md` first**, then implement.
+If your work touches an open question, **resolve it in `docs/open-questions.md` first**, then implement.
 An assumption made in code and never written down is how this project acquires a defect that surfaces
 three weeks later.
 
@@ -303,10 +325,8 @@ runs on every `run-checks.ps1` and is what makes any other figure it prints chec
 **Any test that invokes the solver must fix the seed *and* use a deterministic budget.** A test bounded
 by wall clock passes on one machine and fails on another, and the failure looks like a solver bug.
 
-### Three traps that will waste your time
+### Traps that will waste your time
 
-- **`pytest` exits 5** while there are no tests. `run-checks.ps1` tolerates it; remove `5` from the
-  allowed list once the first test lands.
 - **`.gitignore` inherits GitHub's Python template**, which contains `instance/` (meaning Flask's
   instance folder) and matches at any depth. It silently swallowed `data/instance/` — the whole
   dataset. There is an explicit un-ignore for it, plus one for `/dataset/`. **Do not remove either**,
