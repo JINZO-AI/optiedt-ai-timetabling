@@ -43,8 +43,10 @@ Four layers, one deployable unit:
 | Decision | OR-Tools CP-SAT | Assigns a slot and a room to each session. **Nothing else may** |
 | Analysis | Python, no solver access | Sub-scores, ranking, exact decomposition, dominance |
 
-The separation between the last two is a requirement, not a description. It is enforced in CI by
-`import-linter`, so a violation fails the build rather than a review.
+The separation between the last two is a requirement, not a description. It is enforced by
+`import-linter` in `scripts/run-checks.ps1`, so a violation fails the check rather than a review.
+⚠️ **That check is run by a person — there is no CI in this repository.** The contracts are real and
+fire; nothing runs them automatically.
 
 The reference instance is 218 sessions across 51 groups, 44 teachers and 20 rooms, on a grid of 30
 slots of which 28 are open.
@@ -137,18 +139,30 @@ catalogued in `docs/open-questions.md` rather than resolved silently.
 
 ## Status
 
-**Increment 1 of 2 · Phases 1–4 complete, Phase 5 in progress (4 of 6 milestones).**
+**Increment 1 of 2 · Phases 1–5 complete, Phase 6 in progress.**
 
 The decision layer is built: all twelve hard constraints, a conflict-free timetable on the reference
 instance in about three seconds, every constraint re-verified from the raw data rather than trusted
 from the solver's own status. The analysis layer sits on top: seven quality criteria, an exact
-weighted score, ranking, the term-by-term decomposition, dominance, and a portfolio returning three
-distinct candidates reproducibly. The engine is validated on the 21 published ITC-2007 instances.
-The web interface reaches all of it — availability grid, generation, four timetable views, comparison.
+weighted score, ranking, the term-by-term decomposition, Pareto dominance, and a portfolio returning
+three distinct candidates reproducibly. The engine is validated on the 21 published ITC-2007 instances.
+The web interface reaches all of it — availability grid, generation, four timetable views, comparison,
+the conflict report and published timetables with their trace.
 
-Phase 5 has added the five pre-solve checks inside the application, a diagnosis run that names the
-rules in conflict, the run record in PostgreSQL, and authentication with rights. Publication and the
-closing audit remain.
+Phase 5 added the five pre-solve checks inside the application, a diagnosis run that names the rules
+in conflict, the run record in PostgreSQL, authentication with rights, and publication. Phase 6 has
+added the acceptance suite — one test per requirement against its criterion — and the instance
+generator. **Eight of the nine acceptance criteria are met**; the ninth is a timed walkthrough with a
+teacher, which no automated check can replace ([`docs/demonstration.md`](docs/demonstration.md) §2).
+
+⚠️ **Increment 1 is not complete when Phase 6 closes.** FR-22, FR-24 and FR-25 (the assistant) and
+FR-23 (regeneration from an accepted recommendation) are committed to increment 1 by ADR-010 and are
+allocated to no phase of the 20-day plan. That is **C-1**, recorded since 2026-07-29. See
+[`docs/dashboard.md`](docs/dashboard.md).
+
+⚠️ **`scripts/run-checks.ps1` is run by a person, not by a pipeline.** There is no CI configuration in
+this repository. The ten `import-linter` contracts are real and do fire — but nothing runs them
+automatically, so a violation is caught when someone runs the script, not when they push.
 
 ⚠️ **Not deployable as it stands.** `OPTIEDT_SECRET_KEY` defaults to a value published in this
 repository, so tokens signed with it can be forged; account management through the interface is not

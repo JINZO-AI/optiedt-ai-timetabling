@@ -24,8 +24,10 @@ generation runs as a background task in the same process.
 - The solving engine being written in Python, the server is written in Python too, so it calls the
   engine directly rather than exchanging data between two programs.
 
-**The separation of layers is preserved by module boundaries and by `import-linter` in CI, not by
-process boundaries.** This is the important point: the invariant that the analysis layer cannot reach
+**The separation of layers is preserved by module boundaries and by `import-linter`, not by process
+boundaries.** ⚠️ *Corrected 2026-08-06: this said `in CI`. There is no CI configuration in the
+repository — the contracts run in `scripts/run-checks.ps1`, which a person invokes. The argument
+below is unaffected, because it rests on the check being STATIC rather than on who triggers it.* This is the important point: the invariant that the analysis layer cannot reach
 the solver is enforced statically, at build time, which is *stronger* than a network boundary and costs
 nothing at runtime. A deployment split would have enforced the same rule more expensively and less
 reliably.

@@ -248,7 +248,7 @@ data/
   generator/      Produces the 13 files. Imports NOTHING from backend/    ← to be written
   instance/       The 13 CSVs + constraint_catalogue.csv                  ← to be generated
   reference/      ITC-2007 · XHSTT · Kaggle — present, gitignored         ✅ verified
-  verification/   The five checks and their expected results              ✅ written, runs in CI
+  verification/   The five checks and their expected results              ✅ written, runs in run-checks.ps1
 ```
 
 ⚠️ The last line read "← to be written" until 2026-08-03, by which time `verify_instance.py` had been
