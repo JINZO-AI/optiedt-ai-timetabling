@@ -17,9 +17,15 @@ remaining reasons the *only* ones.
 ✅ **The whole table was reviewed against evidence in one pass at M7**, as M2 promised — not row by row
 as work landed, which is how a table acquires a count nobody can reproduce.
 
-**Where the project actually is: 4 of 25 requirements are finished, 12 are under way, 9 are not
-started.** *(✓ FR-5, 12, 15, 19 · WIP FR-2, 3, 4, 6, 7, 8, 9, 11, 13, 14, 16, 17, 18 — count them in
-the table rather than trusting this line.)*
+**Where the project actually is: 4 of 25 requirements are finished, 13 are under way, 8 are not
+started.** *(✓ FR-5, 12, 15, 19 · WIP FR-2, 3, 4, 6, 7, 8, 9, 11, 13, 14, 16, 17, 18 · — FR-1, 10, 20,
+21, 22, 23, 24, 25 — count them in the table rather than trusting this line.)*
+
+⚠️ *This line said "12 under way, 9 not started" when the M7 audit commit was made, contradicting its
+own list of thirteen in the same sentence. It was written before FR-9 moved from `—` to `WIP` and not
+re-derived afterwards. Caught by counting the table on the next pass — the same shape as the defect
+Phase 4's audit introduced and caught, and the reason a clean pass has to be a **whole** pass rather
+than a spot check of what was just edited.*
 
 **The four promoted at M7, and the evidence for each.** Each is reachable through the interface, has an
 acceptance test against a criterion in `testing-strategy.md` §4, and has **no stated outstanding
