@@ -184,308 +184,62 @@ automatic.
 **Dependencies.** ✅ **C-4** and **C-12** resolved 2026-07-30 — see `docs/open-questions.md` for the
 formulas and reasoning. Phase 2 was otherwise a complete foundation.
 
-**Status.** Complete. See "Phase 3 — complete 2026-07-31" below for the module-by-module account, the
-two limitations carried forward (S6's cumulative-room-type gap, and regeneration's second half waiting
-on Phase 5's run record), and the ITC-2007 results. Persistence of runs and candidates was never Phase
-3 work — it is Phase 5's run record.
+**Status.** Complete. **Two limitations were carried forward and both are still true:**
 
-### Phase 4 — Web interface · ✅ **complete 2026-08-01**
+- **S6 is scored fully but optimised only partially.** `analysis/criteria.py` scores every room
+  correctly after the fact; `solver/objective.py` can only post a term for non-cumulative room types
+  (Salle). Closing it needs `solver/variables.py` changes.
+- **Regeneration is half-built.** The catalogue and the translation of all three actions exist;
+  turning an accepted recommendation into a new run does not. ⚠️ **And `recommendations/` has no tests
+  at all** — no test in the repository imports it.
+
+**H10 is registered but dormant**: `build_variables` refuses to run if any session is locked. Safe only
+because the reference instance has none, and it is FR-23's prerequisite.
+
+Persistence of runs and candidates was never Phase 3 work — it is Phase 5's run record.
+
+📄 **Full module-by-module account, the ITC-2007 figures and the authority table:
+[`docs/history.md`](history.md).**
+
+### Phase 4 — Web interface · ✅ **complete 2026-08-01** · 4 days
 
 **Purpose.** The complete path from a teacher declaring availability to a published timetable.
 
-**Completion criteria — three of four met, and the fourth is not automatable.**
-- Generation screen. ✅ **Met** (M3), verified against the real solver.
-- Side-by-side comparison with contributions. ✅ **Met** (M5) — and it ticked the acceptance criterion,
-  which needed *displayed* figures rather than computed ones.
-- Timetable views by teacher, group, room, lab. ✅ **Met** (M4); the "lab" view is FR-18's occupancy
-  report, whose totals match `verify-instance` exactly.
-- Availability grid filled in **under 5 minutes without training**. ⚠️ **Built (M6), not verified.**
-  The criterion is about a person and needs a timed walkthrough with a teacher who has not seen the
-  screen. **This is the one thing Phase 4 owes**, and it is carried to Phase 6 with the other
-  acceptance work.
+**Delivered.** Six milestones: the API foundation, the run lifecycle and executor, and four screens —
+availability, generation, timetables, comparison. First frontend tests. **C-12(a)** resolved (two-state
+grid) and **C-14** deferred, both recorded before the code was written.
 
-**Dependencies.** Phase 3's algorithms — score, ranking, decomposition, dominance, the recommendation
-rule and the portfolio — existed to build the screens on. Both open questions that landed here were
-decided: **C-12(a)** resolved (two states, because the schema has no third to record) and **C-14**
-deferred (no dominance signal shipped, rather than one that can never fire). Both were recorded in
-`docs/open-questions.md` with their reasons **before** the code was written.
+**Its closing audit found 17 defects, plus one the audit itself introduced and caught on the next
+pass** — which is why a clean pass has to be a *whole* pass. Not one was caught by `run-checks.ps1`.
 
-**Status. COMPLETE — 6 of 6 milestones, closing audit passed 2026-08-01.**
+⚠️ **One thing it owed and could not close:** the FR-2 acceptance criterion, *"filled in under 5
+minutes without training"*. It is about a person. **Still unmet** — protocol in
+[`docs/demonstration.md`](demonstration.md) §2.
 
-| # | Milestone | State |
-|---|---|---|
-| **M1** | API foundation — `GET /api/instance`, FR-2 availability read/write, wire format pinned | ✅ **done** |
-| **M2** | Run lifecycle — `services/runs.py`, `tasks/executor.py`, `POST /runs` → 202, polling, candidate/comparison/dominance/recommendation endpoints | ✅ **done** |
-| **M3** | Frontend shell + generation screen (FR-13, FR-5, FR-6) — **verified end to end against the real solver** | ✅ **done** |
-| **M4** | Timetable views (FR-7, FR-18) — by teacher, group, room, plus room occupancy | ✅ **done** |
-| **M5** | Comparison screen (FR-14, FR-15) — **ticks acceptance criterion 3**. ⚠️ Dominance signal deliberately NOT built, held for **C-14** | ✅ **done, minus the blocked part** |
-| **M6** | Availability grid (FR-2) — **two-state**, C-12(a) resolved 2026-08-01 | ✅ **done** |
+📄 **Full milestone-by-milestone account and the audit's defect table: [`docs/history.md`](history.md).**
 
-⚠️ **Scope note, stated rather than assumed.** Phase 4 is written as "the web interface", but no screen
-can exist without an API, and this block already anticipated it ("built alongside this phase's
-`services`/`db` work"). Phase 4 therefore delivers **the screens plus the minimum API to reach them,
-with the run store in memory**. Authentication and RBAC (FR-11), PostgreSQL and the diagnosis run stay
-in Phase 5. **The API has no authentication yet and must not be exposed beyond a development machine.**
+### Phase 5 — Pre-analysis in-app, diagnosis, auth, run record · ✅ **complete 2026-08-04** · 2 days
 
-#### The closing audit, 2026-08-01
+**Purpose.** An infeasible instance must produce a report naming the rules in conflict, not a timeout;
+every published timetable must trace back to its run, seed and weights.
 
-**Six passes; the sixth found nothing.** It found **17 defects**, plus one the audit introduced and
-caught on the next pass (a fix that duplicated a paragraph) — worth recording, because it is why a
-clean pass has to be a *whole* pass and not a spot check of what you just edited.
+**Delivered.** Six milestones: FR-12's five checks in-app with **both** bounds, FR-8's diagnosis run,
+FR-19's run record in PostgreSQL, FR-11's authentication and rights, publication with its trace, and
+the closing audit. **C-17** and **C-18** resolved, both recorded before the code.
 
-The useful part is the shape of them: **not one was caught by `run-checks.ps1`**, which was green
-before the audit started, green after every fix, and green throughout. A validation suite proves the
-code does what its tests say; it cannot notice that a document describes a different system.
+**The two findings worth carrying forward:**
 
-The Phase 3 close taught the method and this audit confirmed it: **compare documents against the
-repository, never against other documents.** Every defect below was found by checking a claim against
-`git`, a file count, a `grep`, or the running application — not by reading two documents side by side.
+- **C-17** — the documented diagnosis mechanism (enforcement literals as assumptions) was built,
+  tested, and then measured **unusable at reference scale**: a literal takes its constraint out of
+  presolve, so an infeasibility a plain solve proves in **0.0 s** returned `UNKNOWN` after 240 s. Stage
+  3 now withdraws one rule at a time and solves plainly — **`('H3',)`, minimal, in 1.9 s**.
+- **A tenth import contract, `api ⇸ db`**, verified to fire before being relied on. And the
+  store-contract suite found a real divergence on its first run: the *in-memory* store violated
+  invariant 6 while the SQL store refused.
 
-| Kind | Found |
-|---|---|
-| **Stale status** | Both `dashboard.md` and `status.md` still opened with "Phase 4 has not started", the phase block still read "IN PROGRESS — M1 of 6", and the health row still said 125 tests and 8/8 contracts. **The header of the handoff file is what a cold session reads first** — the same defect the Phase 3 close found, recurring |
-| **Wrong counts** | "ten steps" in `run-checks.ps1` (there are 8) · "11 of 25 requirements" (12) · "3 of 9 acceptance criteria" (4) · a 55 % progress bar (75 %) · a duplicated caption my own fix introduced |
-| **Claims contradicted by the code** | ADR-005 and `architecture.md` both list *"candidates visible as they are produced"* as a delivered benefit; `portfolio.py` returns the whole portfolio at the end, so the screen shows `SOLVING` for 105–150 s and everything arrives at once. ADR-005 also says run state "lives in the database" — it is in memory. `frontend/README.md` repeated the incremental claim and described four screens that do not exist |
-| **Comments contradicting each other** | `schemas.py` said `domain.ts` declares `preAnalysis`/`diagnosis` on its `Run`; `domain.ts` says it deliberately does not. Two files describing each other, both wrong |
-| **Over-claims** | "The frontend computes nothing" — falsifiable by one grep, and an over-claim invites the reader to conclude the rule is not meant seriously. It computes no *score* and decides no *ranking*; it does sort grid axes and round for display |
-| **Dead code** | `useCandidates` and `useDominance` (frontend hooks nothing called — the second because C-14 deferred the display) and `RunSummary` in `services/runs.py`. Removed; the *endpoints* stay, tested and deliberate |
+📄 **Full milestone-by-milestone account and the audit's eight defects: [`docs/history.md`](history.md).**
 
-**What the audit did not find:** any architecture violation (9/9 contracts kept throughout), any broken
-link, any unresolved TODO, and no defect in what the screens actually compute — the occupancy view still
-reconciles with `verify-instance` to the period.
-
-### Phase 5 — Pre-analysis in-app, diagnosis, auth, run record · ✅ **complete 2026-08-04**
-
-**Purpose.** An infeasible instance must produce a report naming the rules in conflict, not a
-timeout; every published timetable must trace back to its run, seed and weights.
-**Completion criteria.** FR-12 reports structural risks through the API; the diagnosis run returns a
-sufficient conflict set; a teacher account sees only its own data; runs are recorded.
-**Dependencies.** C-6 is already resolved (only H1, H3, H7, H12 carry an assumption literal, so the
-conflict report can name an actionable rule). **Phase 4 left the seams in place**: `RunStore` and
-`AvailabilityStore` are Protocols with in-memory implementations, so FR-19 substitutes database-backed
-ones without touching a router; `RunState` already carries `PREANALYSIS`, `DIAGNOSING` and `DIAGNOSED`.
-
-| # | Milestone | State |
-|---|---|---|
-| **M1** | **Pre-analysis in the application (FR-12)** — the five checks with both bounds, run in `PREANALYSIS`, recorded, displayed | ✅ **done 2026-08-03** |
-| **M2** | **Diagnosis run (FR-8)** — rule withdrawal over plain subset solves, `INFEASIBLE → DIAGNOSING → DIAGNOSED`, conflict report screen | ✅ **done 2026-08-04**, including **C-17 resolved** |
-| **M3** | **Run record (FR-19)** — `db/` models, `migrations/env.py`, first migration, SQL-backed stores behind the existing Protocols, against **real PostgreSQL** | ✅ **done 2026-08-04** |
-| **M4** | **Authentication and rights (FR-11)** — users, JWT, RBAC, teacher scoping, login screen, seed command | ✅ **done 2026-08-04** |
-| **M5** | **Publication + traceability** — closes *"every published timetable traces back to its run, seed and weights"* | ✅ **done 2026-08-04** |
-| **M6** | **Closing audit + documentation** | ✅ **done 2026-08-04**, eight defects found |
-
-**Three scope decisions taken before any code, on 2026-08-03.** All three were flagged rather than
-assumed, because none is settled by the specification:
-
-1. **Publication is IN Phase 5, as M5.** It appears in the phase's *purpose* sentence and in a written
-   acceptance criterion, but in none of the four completion criteria — and Phase 4's milestone wording
-   ("the complete path … to publication") already left it owed. Building it is the only way to tick
-   that criterion.
-2. ~~**Persistence tests run on SQLite.**~~ **REVERSED 2026-08-04 after re-verifying the environment.**
-   Docker is running and PostgreSQL 17 is reachable through `Settings.database_url`, so the store
-   tests run against the engine the project actually ships. `run-checks.ps1` **fails** when Docker is
-   up but the container is not — that is a forgotten `docker compose up -d`, and it is actionable —
-   and **skips** when Docker itself is absent, matching the existing `node_modules` precedent.
-3. **Accounts come from a seed command**, `python -m optiedt.db.seed`: one person in charge, one
-   administrator, one student and one account per instance teacher. No requirement describes
-   registration, and SRS Table 2 (authoritative per C-8) gives the administrator account management
-   without saying where the first administrator comes from. **To be recorded in
-   `docs/open-questions.md` with its reason before M4's code**, per this project's own rule.
-
-**FR-23 regeneration is explicitly out of scope.** M3's run record unblocks it, and H10's dormant gap
-with it (item 8 of `docs/status.md`'s "Next, in order"), but it is in no Phase 5 completion criterion.
-
-#### M1 — what landed, 2026-08-03
-
-`optiedt/preanalysis/verifications.py` implements the five checks; `tasks/executor.py` runs them
-against **the instance the run is about to solve** (declarations included, resolved once and handed to
-both stages); `RunOut.preAnalysis` returns them; `features/generation/PreAnalysisReport.tsx` displays
-them.
-
-Four things are worth carrying forward:
-
-- **Both bounds are ported**, and `tests/unit/test_preanalysis.py::test_the_original_room_mix_is_caught`
-  is the guard: it reconstructs the pre-C-13 room mix and requires the contiguity bound to name
-  computer laboratories short by **14** windows and science laboratories by **2** — on an instance the
-  period bound passes at a comfortable 95.2 %. **If that test ever passes trivially, the blind spot is
-  back inside the product.**
-- **The report shows figures, not five green ticks.** SLOT_COVERAGE passes on the reference instance
-  *and* says Lab_Info is the binding resource at 90.9 % of two-period windows against 71.4 % of
-  periods. A verdict-only report would reproduce exactly the reading error C-13 cost three sessions.
-  `PreAnalysisReport.test.tsx` asserts the figures are in the DOM, because no backend test can.
-- **The two implementations are compared numerically**, not trusted to agree:
-  `tests/integration/test_preanalysis_matches_verifier.py` re-derives every figure from the raw CSVs.
-  Same guard, same reasoning as `test_objective_matches_analysis.py`.
-- **An empty check list means the stage did not run**, never "verified, nothing wrong" — asserted on
-  both sides.
-
-⚠️ **One half of verification 5 is deliberately not ported.** `Instance` excludes `Student`
-(increment 2), so "425 students match the declared subgroup sizes" stays with `verify-instance.ps1`,
-and the in-application check says so in its own report rather than passing for the documented one.
-
-⚠️ **Verified rather than asserted, on a real run:** the report renders live during `SOLVING`, every
-figure matching `verify-instance` exactly, and **it is still displayed when the run lands in `FAILED`**
-(budget 3 → `UNKNOWN`). That is the C-13 case: when CP-SAT cannot prove an infeasibility, the
-pre-analysis report is the only thing that says whether the instance is structurally sound.
-
-⚠️ **Raised, not decided: the report's `detail` text is English inside a French interface.** This
-follows existing precedent — `RECOMMENDATION_RULE` ("highest score under the weights in force") has
-been displayed verbatim inside a French sentence on the comparison screen since Phase 3 — so M1
-matched the convention rather than inventing a localisation layer for one component. **The convention
-itself is worth a decision** before the report goes in front of the supervisor.
-
-#### The closing audit, 2026-08-04
-
-**Eight defects, and not one was caught by `run-checks.ps1`** — green before the audit, green after
-every fix, green throughout. A validation suite proves the code does what its tests say; it cannot
-notice that a document describes a different system. Same method as Phase 4: **compare documents
-against the repository, never against other documents.** Every defect below was found by checking a
-claim against a file count, a `grep`, `.importlinter`, or the running application.
-
-| Kind | Found |
-|---|---|
-| **Wrong counts** | The Validation row still said "eight steps", "9/9 contracts", "60 files", "194 fast tests" (nine, 10/10, 71, 227). The Tests row said "246 backend + 19 frontend" (287 + 24). The Phase 6 block said "four of nine acceptance criteria" (six) |
-| **Claims contradicted by the code** | The API row still said "Both stores are **in memory** … PostgreSQL is not needed until runs must survive a restart" — false since M3. `frontend/README.md` marked `features/conflicts/` as unbuilt when M2 built it, said "four directories carry a screen" when six do, and listed neither `auth/` nor `publication/` |
-| ⚠️ **A correction that itself went stale** | ADR-005 carries a correction dated 2026-08-01 saying run state "does not live in the database. It is in memory". M3 made that false four days later. **A note saying "this is not built yet" acquires an expiry date the moment someone builds it, and nothing fails when it passes.** ADR-005 now carries a second correction saying so |
-| **A milestone claim frozen in the past** | "Milestone reached" still described Phase 4's. Phase 5's own milestone was reached in M2, and M5 completed Phase 4's — publication was the part it could not build |
-| **Documentation that never learned about new work** | `docs/testing-strategy.md` described neither the `database` marker (declared in `pyproject.toml`) nor any of the seven test files M1–M5 added |
-
-**What the audit did not find:** any architecture violation (10/10 contracts kept throughout, and both
-new contracts were verified to fire before being relied on), any broken link, any `TODO` in source, any
-module path quoted in a document that does not exist, and no error in `open-questions.md`'s own
-bookkeeping — seventeen codes, C-1 to C-18 with no C-10, four open and thirteen resolved, all
-consistent.
-
-#### M5 — what landed, 2026-08-04
-
-`services/publications.py`, `api/routers/publications.py`, a `publications` table with migration
-`04462f0db630`, and a publications screen with the trace displayed in full. **The acceptance
-criterion is met.**
-
-- **The trace is ASSEMBLED, never stored beside the publication.** A publication names its candidate
-  and its run; the seed, the weight vector, the model version and the budget are read from the run
-  record on every request. Copying them would create a second answer to *"what produced this?"*, free
-  to drift from the first — and the criterion exists precisely so that question has one answer.
-- **The publication points at the candidate rather than copying the placements.** A candidate is
-  immutable (invariant 6), so pointing is both sufficient and safer: two records of one timetable can
-  disagree, and then nothing says which was published. The foreign key has **no cascade** — a
-  published timetable is a record of something the department did, and deleting a run that has one
-  now fails rather than erasing it.
-- **The trace is returned by LISTING, not only by publishing.** A criterion satisfied only in the
-  response to the act that created the record is not satisfied at all; nobody re-publishes a
-  timetable in order to read it.
-- ⚠️ **The whole weight vector is displayed, including the zero-weight S10.** A score is only
-  recomputable by hand from every weight, and `TraceTable.test.tsx` pins that a summary cannot creep
-  in.
-
-⚠️ **Verified on a real solve, not a fake**: seed 7, budget 90, 3 distinct candidates in 206.9 s.
-The top candidate was published, **the API process killed**, and a fresh process returned the
-complete trace — run, seed, all seven weights, model version, budget, author, and all 218
-placements. A teacher asking for `/publications` got **403**.
-
-#### M4 — what landed, 2026-08-04
-
-`core/security.py`, `services/users.py`, `api/routers/auth.py`, the RBAC dependencies in
-`api/deps.py`, a `users` table with migration `4553e7a29780`, the seed command, and a login screen.
-**The acceptance criterion is met**: a teacher account obtains only its own availability.
-
-- ⚠️ **`passlib` was a declared dependency and did not work.** passlib 1.7.4 (2020, unmaintained)
-  reads `bcrypt.__about__`, removed in bcrypt 5, and its `hash()` raised *"password cannot be longer
-  than 72 bytes"* on ANY input. Replaced with `bcrypt` directly — four lines — rather than pinning
-  bcrypt backwards to keep an unmaintained wrapper alive. The 72-byte limit is now **refused**, not
-  truncated: bcrypt ignores the tail silently, so a long password would be far weaker than its owner
-  believes.
-- **Which teacher a caller is comes from the TOKEN.** Phase 4 took it from the path and said so; this
-  is the line it left. An account with no `teacher` link is refused every grid rather than defaulted
-  to one.
-- **The hash never leaves the store.** `domain.User` has no password field, so no router, schema or
-  log line can serialise one. `authenticate()` takes a password and returns a credential-free `User`.
-- ⚠️ **`TokenOut` disables the camelCase alias generator, and must.** Pydantic MERGES `model_config`
-  with the base class's, so declaring only `frozen=True` left `ApiModel`'s generator in force and the
-  endpoint answered `accessToken`/`tokenType` — a 200 no OAuth2 client can read. Caught by
-  `test_rbac.py` on its first run.
-- **`test_rbac.py` uses real tokens.** Every other API test overrides `current_user` so that a test
-  about the wire format is not also a test about signing in; this one must not, because overriding
-  the dependency would test the override.
-
-⚠️ **Account management through the interface is NOT delivered.** SRS Table 2 gives the
-administrator that right; accounts come from `python -m optiedt.services.seed` instead, which
-**refuses to run against an installation that already has accounts**. C-18 records the decision and
-what it leaves owed.
-
-⚠️ **Verified end to end, not asserted**: signed in as `t001` — the interface offered no
-Génération link, the teacher field was read-only at `T001`, and the API answered **403** for
-`T002`'s grid and for `POST /runs`. As `responsable`, the same screens offered the 44-teacher
-dropdown and the full navigation. A wrong password and an unknown username returned identical 401s.
-
-#### M3 — what landed, 2026-08-04
-
-`db/models.py`, `db/repositories.py`, `db/session.py`, the first alembic migration, and
-`services/stores.py` — the factory that decides which store a process uses. **No router changed**,
-which is exactly what Phase 4's Protocols were for.
-
-- **A tenth import contract, `api ⇸ db`**, verified to fire before being relied on (a deliberate
-  violation was injected and the build broke on it). The natural wiring — `api/deps.py` importing
-  `SqlRunStore` — would have put the ORM in the router layer; the factory keeps the API asking for a
-  store and never learning what it is.
-- **The store-contract suite found a real divergence on its first run.** One suite runs over both
-  implementations, and the *in-memory* store failed the invariant-6 test: it replaced the whole record
-  on `save`, so a later revision could overwrite a recorded candidate, while the SQL store refused.
-  Fixed in `services/runs.py`. That divergence would otherwise have surfaced only in production, after
-  a restart, as a run that came back different from the one written.
-- ⚠️ **A passing test was hiding a dependency.** When `persistence` began defaulting to `database`,
-  `test_availability_api.py` kept passing *and quietly wrote two rows into the developer's own
-  database* — it clears the dependency cache but never overrides the store. `tests/conftest.py` now
-  forces `OPTIEDT_PERSISTENCE=memory`, and the database tests take an explicit session factory against
-  a database of their own (`optiedt_test`). A green suite that silently depends on PostgreSQL and
-  mutates it is worse than a failing one.
-- **Verified rather than asserted:** a run was launched through the API, the process killed, and a
-  **fresh process** read it back complete — seed, budget, model version, all seven weights, a
-  timezone-aware timestamp, the recorded error and all five pre-analysis checks.
-
-⚠️ **`alembic current` failed before this milestone** — `alembic.ini` was configured, `migrations/`
-held only a `.gitkeep`, and `env.py` did not exist. Two traps came with initialising it, both now
-guarded in comments: `Base.metadata` is empty until the model module is imported (an autogenerate
-against partial metadata emits DROPs, and the test fixture hit exactly this and created no tables),
-and the URL must come from `Settings` rather than `alembic.ini` so that migrations and the API cannot
-target different databases.
-
-#### M2 — what landed, 2026-08-04, and the question it raised
-
-`CpSatSolver.diagnose` posts the four assumable rules under enforcement literals and reads the unsat
-core back; `tasks/executor.py` walks `INFEASIBLE → DIAGNOSING → DIAGNOSED`; `RunOut.diagnosis` carries
-it; `features/conflicts/ConflictReport.tsx` displays it. `ConstraintBuilder.apply` gained an optional
-literal so **stage 2 and stage 3 post through the same builders** — a separate diagnosis model could
-name a conflict that does not exist in the model actually solved, and nothing would catch it. The 22
-solver-marked tests re-derive H1–H12 from the raw CSVs and still pass, so nothing was dropped.
-
-`DiagnosisResult` **moved from `solver/interfaces.py` to `domain/entities.py`.** Leaving it in the
-solver would have forced `api/schemas.py` to reach it through a re-export in `services` — legal, since
-`api ⇸ solver` forbids direct imports only, and evasion rather than compliance. A shape three layers
-must name belongs to the layer all three may import.
-
-Three findings worth carrying:
-
-- ⚠️ **C-17, and it is the important one.** The mechanism the documentation specified — enforcement
-  literals passed as assumptions — was built, tested and then **measured unusable at reference scale**.
-  A literal takes its constraint out of presolve: an area contradiction a plain solve proves in
-  **0.0 s** returned **`UNKNOWN` after 240 s**, and four times the budget changed nothing. Stage 3 now
-  **withdraws one rule at a time and solves plainly**, which answers **`('H3',)`, minimal, in 1.9 s**
-  on that same instance. Two of the three properties `architecture.md` called "imposed by CP-SAT" were
-  imposed by the assumption mechanism and changed with it; only "no objective" survives as imposed.
-- **Several minimal explanations can exist and one is reported.** When two rules both forbid the same
-  placement, either alone explains the conflict. Rules are withdrawn in catalogue order, so the answer
-  is arbitrary between them but **reproducible** — which is what matters when the report tells a user
-  which rule to change. Measured: one teacher, one room, one slot, two sessions → `('H3',)`, every time.
-- **`is_minimal` is evidence, not a label.** Each removal is tested, so a set is normally irreducible
-  — but a removal the solver cannot decide keeps its rule *for want of evidence*, and the flag goes
-  false. The screen has two different paragraphs for the two cases.
-- **`DIAGNOSED` does not mean a conflict was named.** It can be conclusive-and-empty (no *withdrawable*
-  rule explains it — the conflict is in the data) or inconclusive (no proof was found). Measured on
-  the pre-C-13 room mix: **empty and not conclusive**, because CP-SAT cannot prove that infeasibility
-  at all — the pre-analysis catches it in milliseconds instead. Neither may read as "no problem found".
-
-### Phase 6 — Tests, documentation, presentation · 🟡 **under way** · 3 days
+### Phase 6 — Tests, documentation, presentation · ✅ **complete 2026-08-06** · 3 days
 
 **Purpose.** Acceptance requirement by requirement; the project is accepted that way.
 **Completion criteria.** The nine acceptance criteria in `docs/status.md` all ticked; documents complete.
@@ -689,109 +443,6 @@ instance. **M3 settles it** by writing the acceptance test that decides what "me
 
 Examination session (4 d) · weight adjustment from recorded comparisons (3 d). Natural-language
 constraint entry is **not undertaken** — see `docs/ai-integration.md`.
-
----
-
-## Phase 3 — complete 2026-07-31. What was built, and what Phase 4 inherits
-
-**Completed 2026-07-31.** All four completion criteria met, the milestone met, six closure items done,
-and the audit that closed the phase left no known contradiction between documents. Two acceptance
-criteria moved from unmet to met (three candidates; reproducibility), taking the total to **3 of 9**.
-
-**What it set out to achieve.** A *portfolio*, not a timetable. Several valid timetables produced under
-different weight profiles, ranked by an exact weighted sum, with the difference between any two
-decomposed criterion by criterion.
-
-**Why it exists.** The department will not adopt a timetable it cannot argue with. The score is linear
-precisely so the explanation *is* the calculation read term by term, recomputable by hand from the
-sub-scores and weights recorded with the run. That is the whole reason a weighted sum was chosen over
-lexicographic ordering or a learned ranker (ADR-002).
-
-**C-4 and C-12, resolved.** `docs/open-questions.md` carries the formulas for all seven criteria and the
-reasoning for each choice (including the ones that were judgment calls, not derivations — S4's resource
-and S6's target). S5 uses a labeled proxy (edge-of-day placement), not real preference data — recorded
-as a deliberate, scope-driven stand-in for the real fix (a genuine preferred-window column), not a
-definition of teacher preference.
-
-**Built.**
-
-| Module | What it does |
-|---|---|
-| `analysis/instance_view.py` | Shared hierarchy and day/period lookups, built once |
-| `analysis/criteria.py` | The seven `Criterion` implementations over realised placements |
-| `analysis/scoring.py` | `DefaultScorer`, `evaluate_candidate`, weight renormalisation |
-| `analysis/ranking.py` | `DefaultRanker` — rank, decompose, dominance, **recommend** (FR-16) |
-| `solver/objective.py` | The same seven formulas as CP-SAT expressions |
-| `solver/engine.py` | Posts the objective, and builds occupancy at all, only when a criterion carries weight; sets `interleave_search`; withholds the warm start under an objective |
-| `recommendations/translator.py` | The closed 3-action catalogue translated to a `RunOverride` |
-| `services/portfolio.py` | The three profiles, one seed, sequential solves, duplicates removed, survivors ranked under one weight vector |
-| `validation/itc2007/` | The benchmark harness — **not product code**, and nothing shipped may import it |
-
-**Tests went from 27 to 125** (103 fast + 22 solver-marked). The two that carry the most weight are
-`tests/integration/test_objective_matches_analysis.py`, which requires the solver's objective and the
-analysis layer's recomputation to agree *numerically* on the same placements — it is what caught S6's
-28× scale error, which reading the two implementations side by side did not — and
-`tests/integration/test_reproducibility.py`, which pins reproducibility at the **production** worker
-count rather than at a safe proxy.
-
-**Validated on published instances (`docs/testing-strategy.md` §1).** `optiedt/validation/itc2007/`
-models ITC-2007 Track 3 separately — a different problem, so no code is shared with `solver/` and the
-eighth import contract keeps the dependency one-way. Its cost function reproduces the published cost of
-seven solutions the archive ships, exactly, component by component; that agreement is what makes the
-rest of its output checkable rather than merely self-consistent.
-
-**Result: 21 of 21 timetables violate no hard constraint**, judged by re-deriving all four ITC-2007
-constraints rather than trusting CP-SAT's status. **The cost gap is large — median 1269 % against the
-seven instances the archive gives figures for — and that is expected**: the references are
-metaheuristics tuned for this problem, several with no time limit, against ~50 s of exact search, and
-the strategy document states plainly that beating them was never the objective. What makes the gap
-interpretable is that **the model is demonstrably correct**: `comp11` solved to **cost 0, proven
-optimal**, and `comp01` reaches the published optimum of **5** given more search. Both sweeps returned
-**identical costs on all 21 instances** despite per-instance wall clock differing by up to 2× — ADR-011's
-deterministic budget doing its job on instances the project did not design. Figures in `docs/status.md`.
-
-**Not built, and why.** H10's target-slot/room gap in `solver/variables.py` is **not** closed — it needs
-`solver/variables.py` and `solver/interfaces.py` changes, and nothing before Phase 5's run record can
-exercise it. `recommendations/translator.py` therefore returns a `RunOverride` (plain domain data), not
-a `SolverInput` — see "Known risks" above for why the existing `Run`/`Candidate` schema cannot support
-building one directly. **Regeneration is consequently half-built**: the catalogue and the translation
-of all three actions exist; turning an accepted recommendation into an actual new run
-needs run/instance context that arrives with Phase 5's run record.
-⚠️ **Corrected 2026-08-06: this said the translation `is tested`. It is not.** No test in the
-repository imports `optiedt.recommendations` - verified by grep across `backend/tests/`. The
-catalogue and `translator.py` have **zero coverage**, and the claim survived because `recommend()`
-in `analysis/ranking.py` IS tested and carries a similar name. Two different things, one word. That split is deliberate and
-recorded, not an omission — but do not read the phase's work row as claiming end-to-end regeneration.
-
-**S6 (room efficiency) is scored fully but optimised only partially.** `analysis/criteria.py` scores
-every room correctly after the fact. `solver/objective.py` can only post a CP-SAT term for
-non-cumulative room types (Salle) — cumulative types (Amphi, Lab_Info, Lab_Sciences, C-13) have no
-per-room decision variable at all; a specific room is chosen by a deterministic post-solve labeller the
-objective cannot see or influence. Closing this would mean changing `solver/variables.py`.
-
-**Which documents are authoritative, still.**
-
-| Question | Authority |
-|---|---|
-| The three formulas, bounds policy, the four required properties | [`docs/scoring-and-explanation.md`](scoring-and-explanation.md) |
-| The seven `v_i`/bounds formulas actually chosen, and why | [`docs/open-questions.md`](open-questions.md), C-4 and C-12 |
-| Criterion codes, names, default weights | `data/instance/constraint_catalogue.csv` — **not** the PDFs |
-| Which variables the objective may read | [`docs/constraint-model.md`](constraint-model.md), C-7 section |
-| Layer permissions | [`docs/architecture.md`](architecture.md) + `backend/.importlinter` |
-| Recommendations and regeneration | [`docs/ai-integration.md`](ai-integration.md) |
-| What the ITC-2007 figures do and do not prove | [`docs/testing-strategy.md`](testing-strategy.md) §1 |
-| ITC-2007 reference costs | The archive's own bundled report — transcribed in `validation/itc2007/published.py`, **never from an outside lookup** |
-
-**Constraints already implemented.** All twelve hard constraints. H1, H3, H7, H12 are real CP-SAT
-postings and carry assumption literals; H4, H5, H6, H8, H9, H10 are domain restrictions applied at
-variable construction; H2 is subsumed by H12 and H11 by H3, both registered as documented no-ops.
-**H10 is registered but dormant, still** — `build_variables` refuses to run if any session is locked,
-because there is no way yet to supply the target slot/room. The reference instance has no locked
-sessions. This did **not** get filled this session (out of scope, see above); recommendation-driven
-regeneration is what will first need it.
-
-**Constraints remaining.** None for the weekly model. X1–X4 and SX1 are the examination model —
-increment 2.
 
 ---
 
