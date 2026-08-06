@@ -159,6 +159,19 @@ numbers(answer) ⊆ numbers(context)
 If the inclusion does not hold, **the answer is discarded and the computed form is displayed
 instead**. The same fallback applies when the service errors or exceeds its timeout.
 
+✅ **Built in Phase 7 M3** — `assistant/verifier.py`. Three things about it are worth carrying:
+
+- **The answer is discarded WHOLE**, not repaired. A model that invented one number was not reasoning
+  from the context, and the rest of what it wrote has no better claim to be true.
+- **The context publishes the precisions the interface displays** (2 and 3 decimals) alongside the full
+  value. A model given 79.8163 writes "79.82" far more often than the full figure, and the screen shows
+  exactly that — so it is the figure, not a rounding allowance smuggled into the check.
+- ⚠️ **The check had a hole on its first implementation, and a test found it.** The number pattern
+  matched at most three ungrouped digits, so `4271` matched *nothing at all* and passed as grounded —
+  as would any ungrouped number above 999, which is exactly the range an invented count of minutes or
+  periods falls in. **A verifier that cannot see a number cannot reject it.** Recorded in
+  `docs/status.md`'s measurements and pinned by a parametrised regression.
+
 **Be honest about what this check does.** It detects a figure the model invented. It does **not**
 establish that the rest of the sentence is correct, and no requirement depends on it doing so. That
 limit is precisely why no decision the department must defend rests on this service.

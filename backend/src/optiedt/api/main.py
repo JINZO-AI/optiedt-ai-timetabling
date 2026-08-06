@@ -31,6 +31,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from optiedt.api.routers import (
+    assistant,
     auth,
     availability,
     candidates,
@@ -68,6 +69,11 @@ _api.include_router(availability.router)
 _api.include_router(runs.router)
 _api.include_router(candidates.router)
 _api.include_router(publications.router)
+# ⚠️ Registered unconditionally, even though the service is off by default.
+# Gating the routes on `assistant_enabled` would make the interface 404 rather
+# than fall back, and the fallback IS the specified behaviour: only text
+# disappears (invariant 5). The routes answer 200 with the computed form.
+_api.include_router(assistant.router)
 app.include_router(_api)
 
 

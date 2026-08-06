@@ -59,6 +59,18 @@ select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
 # Scaffold: interface definitions have no bodies yet.
 "src/optiedt/**/__init__.py" = ["F401"]
 
+# The assistant is the one package whose STRINGS are read by a user. Its
+# computed forms and its prompts are French prose displayed on screen, so they
+# use French typography - the apostrophe ’, the multiplication sign ×, the
+# minus sign −. RUF001-003 flag those as "ambiguous unicode", which is the
+# right default for code that is not meant to be read as prose and the wrong
+# one here: replacing ’ with ' would make the application's own French worse
+# to satisfy a rule about identifiers. The frontend already renders the same
+# characters (features/comparison/ComparisonScreen.tsx).
+"src/optiedt/assistant/*.py" = ["RUF001", "RUF002", "RUF003"]
+"tests/unit/test_assistant*.py" = ["RUF001", "RUF002", "RUF003"]
+"tests/acceptance/test_fr2*.py" = ["RUF001", "RUF002", "RUF003"]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true

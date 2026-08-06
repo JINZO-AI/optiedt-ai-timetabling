@@ -22,6 +22,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
+from optiedt.assistant.service import DefaultAssistant, assistant_from_settings
 from optiedt.core.config import Settings
 from optiedt.core.security import InvalidTokenError, read_access_token
 from optiedt.domain.entities import User
@@ -130,6 +131,29 @@ def get_user_store() -> UserStore:
     return build_user_store(get_settings())
 
 
+@lru_cache(maxsize=1)
+def get_assistant() -> DefaultAssistant:
+    """The language service — FR-22, FR-24, FR-25.
+
+    ⚠️ **Off by default**, and the default is the interesting case: every other
+    route works with it off, which is invariant 5 exercised by the ordinary
+    configuration rather than by a special test.
+
+    ⚠️ **It is handed no store, and that is invariant 4.** A router assembles
+    `RunFacts` from the run record and passes values; the assistant looks
+    nothing up and holds no connection. `.importlinter` forbids
+    `assistant -> db` so the boundary fails the build rather than a review.
+    """
+    settings = get_settings()
+    return assistant_from_settings(
+        enabled=settings.assistant_enabled,
+        base_url=settings.assistant_base_url,
+        api_key=settings.assistant_api_key,
+        model=settings.assistant_model,
+        timeout_seconds=settings.assistant_timeout_seconds,
+    )
+
+
 # ── Authentication and rights (FR-11) ──────────────────────────────────
 
 _bearer = OAuth2PasswordBearer(tokenUrl=f"{API_PREFIX}/auth/token", auto_error=False)
@@ -205,6 +229,7 @@ RunStoreDep = Annotated[RunStore, Depends(get_run_store)]
 UserStoreDep = Annotated[UserStore, Depends(get_user_store)]
 PublicationStoreDep = Annotated[PublicationStore, Depends(get_publication_store)]
 ExecutorDep = Annotated[RunExecutor, Depends(get_executor)]
+AssistantDep = Annotated[DefaultAssistant, Depends(get_assistant)]
 CurrentUserDep = Annotated[User, Depends(current_user)]
 
 PersonInChargeDep = Annotated[User, Depends(require_role(UserRole.PERSON_IN_CHARGE))]

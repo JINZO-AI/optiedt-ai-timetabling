@@ -33,6 +33,7 @@ from optiedt.analysis.interfaces import (
     DominanceVerdict,
     Recommendation,
 )
+from optiedt.assistant.interfaces import AssistantAnswer
 from optiedt.domain.entities import (
     Availability,
     Candidate,
@@ -522,6 +523,39 @@ class DiagnosisOut(ApiModel):
             is_conclusive=d.is_conclusive,
             detail=d.detail,
         )
+
+
+class AssistantAnswerOut(ApiModel):
+    """Text, and how it was obtained — FR-22, FR-24, FR-25.
+
+    ⚠️ **`generated` is load-bearing and the interface must show it.** A reader
+    has to be able to tell a sentence a language model wrote from one the
+    application computed. Dropping the flag would make them indistinguishable,
+    and since the computed form is the honest one, the confusion would run in
+    the direction that flatters the model.
+
+    `fallbackReason` is null on a generated answer and says WHY otherwise:
+    switched off, unreachable, timed out, or — the interesting one — the answer
+    contained a figure absent from the context and was discarded.
+    """
+
+    text: str
+    generated: bool
+    fallback_reason: str | None
+
+    @classmethod
+    def of(cls, answer: AssistantAnswer) -> AssistantAnswerOut:
+        return cls(
+            text=answer.text,
+            generated=answer.generated,
+            fallback_reason=answer.fallback_reason,
+        )
+
+
+class AssistantQuestionIn(ApiModel):
+    """A question in ordinary language — FR-24."""
+
+    question: str
 
 
 class RunOriginOut(ApiModel):

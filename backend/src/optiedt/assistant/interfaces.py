@@ -9,14 +9,24 @@ computes a score, never decides an order. See ADR-006.
 
 May NOT import the persistence layer or the solver — enforced by .importlinter.
 
+⚠️ **`ContextBuilder.build` takes FACTS, not a run id, and the change is not
+cosmetic.** The scaffold declared ``build(kind, run_id: str, ...)``, which
+cannot be implemented without looking a run up, which needs a store, which is
+the database — the exact thing invariant 4 forbids. The signature and the
+invariant could not both be honoured, so the signature moved: the caller has
+the store and assembles a ``RunFacts``; the assistant looks nothing up.
+
 See docs/ai-integration.md.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Protocol
+
+from optiedt.analysis.interfaces import Decomposition
+from optiedt.domain.entities import Candidate, CandidateId, ConstraintCode
 
 
 class RequestKind(StrEnum):
@@ -26,6 +36,37 @@ class RequestKind(StrEnum):
     COMPARE_CANDIDATES = "COMPARE_CANDIDATES"  # two candidates
     ANSWER_QUESTION = "ANSWER_QUESTION"  # bounded by the run
     PRODUCE_REPORT = "PRODUCE_REPORT"  # one run
+
+
+@dataclass(frozen=True, slots=True)
+class RunFacts:
+    """Everything about one run the assistant may be shown.
+
+    Assembled by the caller — which has the run store — and handed in whole.
+    **The assistant never looks anything up**, so this type is the boundary
+    invariant 4 draws: what is not in here cannot reach the model, and adding a
+    field is a deliberate act rather than a side effect of a query.
+
+    ⚠️ Carries no `Student`, no teacher name and no e-mail address, because
+    `Candidate` and the weights do not have them. That is data minimisation
+    holding by construction rather than by review — and it matters, since the
+    Kaggle archive this project deliberately did not load carries 3,000 rows of
+    names, e-mail addresses and postal addresses (docs/open-questions.md).
+    """
+
+    run_id: str
+    seed: int
+    deterministic_budget: float
+    model_version: str
+    weights: dict[ConstraintCode, float]
+    candidates: tuple[Candidate, ...]
+    criterion_names: dict[ConstraintCode, str] = field(default_factory=dict)
+    """Codes to human labels, from the instance catalogue. Labels only - a
+    label is not a figure and is not subject to the grounding check."""
+
+    published: CandidateId | None = None
+    decomposition: Decomposition | None = None
+    """Set for COMPARE_CANDIDATES. Computed by the analysis layer, never here."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +83,12 @@ class ContextPayload:
     DATA MINIMISATION is a requirement, not a courtesy: the payload carries
     aggregated figures, codes and labels. No student name, no teacher email
     address and no personal identifier leaves the institution.
+
+    ⚠️ **`figures` is also the grounding check's whole vocabulary.** A number
+    the answer may legitimately state has to be IN here, so leaving a figure
+    out does not merely withhold it — it makes any answer mentioning it get
+    discarded. That is the safe direction to fail in, and it is why each
+    builder adds the counts a sentence would naturally use.
     """
 
     kind: RequestKind
@@ -70,6 +117,12 @@ class VerificationOutcome:
     unverified_numbers: tuple[float, ...] = ()
 
 
+class AssistantUnavailableError(Exception):
+    """The service could not answer: disabled, unreachable, refused, or timed
+    out. Never propagated to a caller — `Assistant` catches it and returns the
+    computed form, which is what degraded mode means."""
+
+
 class AssistantAdapter(Protocol):
     """Provider-agnostic client. One adapter, switchable off by configuration.
 
@@ -78,14 +131,24 @@ class AssistantAdapter(Protocol):
     disabled without affecting any other function.
     """
 
-    def complete(self, context: ContextPayload, prompt: str, timeout_seconds: float) -> str: ...
+    @property
+    def enabled(self) -> bool: ...
+
+    def complete(self, context: ContextPayload, prompt: str, timeout_seconds: float) -> str:
+        """Raise `AssistantUnavailableError` rather than returning a message."""
+        ...
 
 
 class ContextBuilder(Protocol):
-    """Selects, from the run, only the figures needed to answer."""
+    """Selects, from facts the caller supplies, only what is needed to answer."""
 
     def build(
-        self, kind: RequestKind, run_id: str, question: str | None = None
+        self,
+        kind: RequestKind,
+        facts: RunFacts,
+        candidate: CandidateId | None = None,
+        other: CandidateId | None = None,
+        question: str | None = None,
     ) -> ContextPayload: ...
 
 
@@ -109,6 +172,22 @@ class SuggestionMatcher(Protocol):
     def match(self, suggestion: str) -> object | None: ...
 
 
+@dataclass(frozen=True, slots=True)
+class AssistantAnswer:
+    """Text, and how it was obtained.
+
+    ⚠️ **`generated` is not decoration.** A reader has to be able to tell a
+    sentence a language model wrote from one the application computed, and the
+    two are displayed differently for that reason. An answer that fell back —
+    because the service is off, failed, or produced an ungrounded figure — is
+    the computed form and says so.
+    """
+
+    text: str
+    generated: bool
+    fallback_reason: str | None = None
+
+
 class Assistant(Protocol):
     """The service as the application uses it.
 
@@ -124,8 +203,12 @@ class Assistant(Protocol):
     @property
     def enabled(self) -> bool: ...
 
-    def explain_candidate(self, candidate_id: str) -> str: ...
+    def explain_candidate(self, facts: RunFacts, candidate: CandidateId) -> AssistantAnswer: ...
 
-    def answer_question(self, run_id: str, question: str) -> str: ...
+    def compare_candidates(
+        self, facts: RunFacts, candidate: CandidateId, other: CandidateId
+    ) -> AssistantAnswer: ...
 
-    def produce_report(self, run_id: str) -> str: ...
+    def answer_question(self, facts: RunFacts, question: str) -> AssistantAnswer: ...
+
+    def produce_report(self, facts: RunFacts) -> AssistantAnswer: ...
