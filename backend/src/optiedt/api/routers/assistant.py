@@ -23,7 +23,13 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, status
 
 from optiedt.analysis.interfaces import Decomposition
-from optiedt.api.deps import AssistantDep, CurrentUserDep, InstanceDep, RunStoreDep
+from optiedt.api.deps import (
+    AssistantDep,
+    CurrentUserDep,
+    InstanceDep,
+    PublicationStoreDep,
+    RunStoreDep,
+)
 from optiedt.api.schemas import AssistantAnswerOut, AssistantQuestionIn
 from optiedt.assistant.interfaces import RunFacts
 from optiedt.assistant.service import facts_from_run
@@ -117,6 +123,7 @@ def answer_question(
 )
 def produce_report(
     store: RunStoreDep,
+    publications: PublicationStoreDep,
     instance: InstanceDep,
     assistant: AssistantDep,
     _user: CurrentUserDep,
@@ -127,7 +134,17 @@ def produce_report(
     ⚠️ Cutting it means cutting the model's prose, not this route: the computed
     form below is a complete report of the run's own figures, which is why that
     reduction was survivable enough to decide in advance.
+
+    ⚠️ **The published candidate is looked up here, in the router, and passed
+    in as a value.** `docs/ai-integration.md`'s context table gives a report
+    "the published timetable", and the assistant may not fetch it — invariant 4.
+    A report that silently omitted the publication would be describing a run
+    while leaving out the one candidate the department actually adopted.
     """
     record = _require_run(store, run_id)
-    answer = assistant.produce_report(_facts(record, instance))
+    published = next(
+        (p.candidate for p in publications.all() if p.run == run_id),
+        None,
+    )
+    answer = assistant.produce_report(_facts(record, instance, published=published))
     return AssistantAnswerOut.of(answer)

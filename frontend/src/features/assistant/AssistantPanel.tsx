@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { useAskAssistant, useExplanation } from '@/api/queries'
+import { useAskAssistant, useExplanation, useRunReport } from '@/api/queries'
 import type { AssistantAnswer } from '@/types/domain'
 
 /**
@@ -34,6 +34,7 @@ export function AssistantPanel({
   const ask = useAskAssistant(runId)
   const [question, setQuestion] = useState('')
   const [asked, setAsked] = useState<string | null>(null)
+  const [wantsReport, setWantsReport] = useState(false)
 
   return (
     <>
@@ -86,8 +87,31 @@ export function AssistantPanel({
           <Answer answer={ask.data} />
         </>
       )}
+
+      <h3>Compte rendu de l’exécution</h3>
+      <p className="panel__note">
+        Paramètres de l’exécution, tous les candidats avec leur score, et le candidat publié s’il y en
+        a un.
+      </p>
+      {/* ⚠️ Requested on demand rather than loaded with the page. The report is
+          the FIRST thing cut under time pressure (PPM §8.3), so it must not be
+          something every visit to this screen pays for. */}
+      {!wantsReport ? (
+        <button type="button" onClick={() => setWantsReport(true)}>
+          Produire le compte rendu
+        </button>
+      ) : (
+        <ReportSection runId={runId} />
+      )}
     </>
   )
+}
+
+function ReportSection({ runId }: { runId: string }) {
+  const report = useRunReport(runId)
+  if (report.isLoading) return <p className="empty">Rédaction…</p>
+  if (!report.data) return <p className="empty">Aucun compte rendu.</p>
+  return <Answer answer={report.data} />
 }
 
 /**

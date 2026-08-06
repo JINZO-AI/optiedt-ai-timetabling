@@ -17,9 +17,15 @@ remaining reasons the *only* ones.
 ✅ **The whole table was reviewed against evidence in one pass at M7**, as M2 promised — not row by row
 as work landed, which is how a table acquires a count nobody can reproduce.
 
-**Where the project actually is: 6 of 25 requirements are finished, 15 are under way, 4 are not
-started.** *(✓ FR-5, 12, 15, 19, 22, 23 · WIP FR-2, 3, 4, 6, 7, 8, 9, 11, 13, 14, 16, 17, 18, 24, 25 ·
+**Where the project actually is: 7 of 25 requirements are finished, 14 are under way, 4 are not
+started.** *(✓ FR-5, 12, 15, 19, 22, 23, 25 · WIP FR-2, 3, 4, 6, 7, 8, 9, 11, 13, 14, 16, 17, 18, 24 ·
 — FR-1, 10, 20, 21 — count them in the table rather than trusting this line.)*
+
+✅ **FR-25 is `✓` since Phase 7 M5**, and it is worth saying why an *Expected*
+requirement reached `✓` while a *Necessary* one beside it did not. FR-25's criterion is about the
+service being **off** — verifiable in full with no provider — and the computed report is complete:
+run parameters, every candidate with its score, and the published candidate. FR-24's criterion is
+about what a model does when **asked**, and only half of that is verifiable without one.
 
 ✅ **FR-23 was promoted at Phase 7 M2, 2026-08-06**, and it is the first requirement to reach `✓` with
 no outstanding reason of any kind. It is reachable from the comparison screen, has an acceptance test
@@ -231,7 +237,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-22** | Explain a candidate's quality from computed figures | Necessary | `assistant` ✓ — adapter, context builder, verifier, computed forms; `api/routers/assistant` ✓; `features/assistant` ✓ | `unit/test_assistant` ✓, `frontend Answer.test` ✓, `acceptance/test_fr22` ✓ | **✓** |
 | **FR-23** | Regenerate from an accepted recommendation, preserving H1–H12 | Necessary | `recommendations` ✓; `services/regeneration` ✓; `api/routers/runs` ✓; `features/comparison/RegenerationPanel` ✓ | `unit/test_recommendations` ✓, `unit/test_regeneration` ✓, `frontend RegenerationPanel.test` ✓, `acceptance/test_fr23` ✓ | **✓** |
 | **FR-24** | Answer a question in ordinary language about a run | Necessary | `assistant` ✓; `api/routers/assistant` ✓; `features/assistant` ✓ | `unit/test_assistant` ✓, `frontend Answer.test` ✓, `acceptance/test_fr24` ✓ | **WIP** |
-| **FR-25** | Produce a readable report on a run | Expected | `assistant` | `acceptance/test_fr25` | — |
+| **FR-25** | Produce a readable report on a run | Expected | `assistant` ✓; `api/routers/assistant` ✓; `features/assistant` ✓ | `acceptance/test_fr25` ✓ | **✓** |
 
 ## Increment 2 — conditional
 
