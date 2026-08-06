@@ -119,9 +119,8 @@ SRS row that is still missing.
 
 ## Next, in order
 
-⚠️ **Nine of the ten entries below are struck through and done. Exactly ONE is live — item 9, H10's
-dormant gap — and it is not startable on its own: it exists to serve FR-23, which has no home until
-the project owner decides where the assistant and regeneration go.**
+✅ **All ten entries below are struck through and done.** Item 9 — H10's dormant gap — was the last,
+closed on 2026-08-06 by Phase 7 M1 once C-19 decided how a locked session's target reaches the solver.
 
 **The completed entries are kept rather than deleted**, and deliberately: several carry a correction
 that other documents cite by number. Item 3 records a blocker that was never real ("a plausible
@@ -178,12 +177,31 @@ would break those references and lose the reasoning that makes each correction c
    (C-17 replaced the documented mechanism on measurement), FR-19's run record in PostgreSQL, FR-11's
    authentication and rights (C-18 decided how accounts are provisioned), publication with its trace,
    and a closing audit that found eight defects.
-9. **Fill H10's dormant gap** when recommendation regeneration needs it: `build_variables` currently
-   refuses to run if any session is locked, because `SolverInput` carries session ids without the
-   target slot and room. Safe today only because the reference instance has none.
-   `recommendations/translator.py` already reads a `lock_session`'s target slot/room out of the
-   candidate correctly (`LockedPlacement`); what is missing is downstream — `SolverInput` needs a way to
-   carry that target, and `build_variables` needs to honour it.
+9. ~~**Fill H10's dormant gap** when recommendation regeneration needs it: `build_variables` refuses
+   to run if any session is locked, because `SolverInput` carries session ids without the target slot
+   and room.~~ **Done 2026-08-06**, Phase 7 M1, under **C-19**. `SolverInput.locked_sessions:
+   frozenset[SessionId]` was **replaced** by `locked_placements: frozenset[Placement]` — the domain's
+   own `Placement`, because a lock *is* a placement the solver must reproduce. H10 is now applied by
+   domain pruning like the other five domain-pruned rules, so it carries no assumption literal (C-6)
+   and costs nothing during search.
+
+   ⚠️ **A lock INTERSECTS the other rules' pruning; it never replaces it.** A lock naming a closed
+   slot, a slot the teacher declared unavailable, or a room too small for the group raises naming the
+   session, the target and the rule that refused. Had it replaced the pruning, an accepted
+   recommendation could have placed a session where a hard rule forbids — an invariant-2 violation
+   arriving through the one door recommendations are allowed to use.
+
+   ⚠️ **Locking a session of a cumulative room type takes that whole type out of the cumulative
+   encoding, and that is required rather than tolerated.** A cumulative-encoded session has no
+   `assign[s, r]` variable and its room is chosen by a post-solve labeller (`solver/engine.py`), which
+   cannot honour a lock. Narrowing `candidate_rooms` makes the type stop being fully interchangeable,
+   so H7's exactly-one posts over a single room and the lock binds.
+   `test_locking_a_cumulative_type_falls_back_to_the_per_room_encoding` fails if that ever stops
+   happening — which would leave H10 unenforceable for a room type while still appearing to be applied.
+
+   **Verified against the real solver, not only against the domains** (`tests/integration/test_h10_locks.py`,
+   4 solver-marked tests): the limiting case locks **all 218 placements** and the solver returns exactly
+   the timetable it was given.
 10. ~~**Write the instance generator** (`data/generator/`), a stated deliverable of PPM §10.~~
    **Done 2026-08-05**, Phase 6 M5. `data/generator/generate_instance.py` — standard library only,
    importing nothing from `backend/`, because the 13 CSVs *are* the contract between generator and
@@ -299,7 +317,7 @@ Fill these in as they are taken. They are referenced from `CLAUDE.md` and `docs/
 |---|---|---|---|
 | **Instance generator** | **13 files, every documented figure, and the result SOLVES** | 2026-08-05 | Phase 6 M5. `data/generator/generate_instance.py` output passes `verify_instance.py` on all 25 checks including the two derived ones - heaviest load 12 periods (18 h), smallest margin 11 free slots - and both occupancy bounds land exactly (Lab_Info 90.9 % of two-period windows, 71.4 % of periods). ⚠️ **Solvability measured, not assumed: 218/218 placed in 5.1 s** at a deterministic budget of 30. A passing verifier is necessary and not sufficient - C-13 - so the check that matters most is the one no arithmetic can make |
 | **Acceptance suite** | **64 tests, 10 requirements, all passing** | 2026-08-05 | Phase 6 M2-M4. FR-3, FR-5, FR-8, FR-9, FR-11, FR-12, FR-13, FR-15, FR-17, FR-19, driven through the HTTP API. 33 need no solver and run in `run-checks.ps1`; the 26 solver-marked ones run in about **8 min** on **two** production portfolios (seed 42, deterministic budget 90), shared across FR-3, FR-13 and FR-19's first run. ⚠️ **A budget of 9 does not work and is not a smaller version of 90**: the portfolio divides the total between three profiles, each solve carries the objective, and 3 per profile returns `UNKNOWN` — the run lands in `FAILED` rather than presenting a non-answer. The 2.8–3.3 s row below is a *feasibility* solve with every weight at zero |
-| **Toolchain** | **all green** | 2026-08-05 | **10/10** layer contracts kept · ruff · format · mypy strict on **71** source files · **382 backend tests** (291 fast + 53 solver-marked + 38 database-marked) · instance verified · frontend `tsc` clean · **32 frontend tests** (`vitest`). `run-checks.ps1` has **nine** steps: the database step FAILS **when no database was reached**, and SKIPS when Docker is absent. ⚠️ **The failing half was broken until Phase 6 M1** — it tested the Docker daemon, not the outcome, so a stopped container let all 38 tests skip and the step print `[ok]`. Found by reading the step's output rather than its tick; fixed to require tests that actually passed, and the guard verified to fire by stopping the container. Phase 5 M1 added 32 backend and 5 frontend; M2 added 13 backend and 6 frontend; M3 added 30 backend. Ninth contract (`api ⇸ solver`) added in Phase 4 M1 and verified to fire; `pytest` exit 5 no longer tolerated |
+| **Toolchain** | **all green** | 2026-08-06 | **10/10** layer contracts kept · ruff · format · mypy strict on **71** source files · **395 backend tests** (300 fast + 57 solver-marked + 38 database-marked) · instance verified · frontend `tsc` clean · **32 frontend tests** (`vitest`). `run-checks.ps1` has **nine** steps: the database step FAILS **when no database was reached**, and SKIPS when Docker is absent. ⚠️ **The failing half was broken until Phase 6 M1** — it tested the Docker daemon, not the outcome, so a stopped container let all 38 tests skip and the step print `[ok]`. Found by reading the step's output rather than its tick; fixed to require tests that actually passed, and the guard verified to fire by stopping the container. Phase 5 M1 added 32 backend and 5 frontend; M2 added 13 backend and 6 frontend; M3 added 30 backend. Ninth contract (`api ⇸ solver`) added in Phase 4 M1 and verified to fire; `pytest` exit 5 no longer tolerated |
 | **FR-12 in the application** | **the five checks reproduce `verify-instance` exactly** | 2026-08-03 | Phase 5 M1. Rendered on the generation screen during a real run: Amphi 32/56 = 57.1 % · Lab_Info 160/224 = 71.4 % **and 80/88 two-period windows = 90.9 %** · Lab_Sciences 48/84 = 57.1 % and 24/33 = 72.7 % · Salle 82/196 = 41.8 %; heaviest load 12 periods (18 h); smallest margin 11 free slots. Two independent implementations agreeing is what makes the figures trustworthy rather than merely self-consistent |
 | **The report survives a failed run** | **verified** | 2026-08-03 | Budget 3 makes CP-SAT return `UNKNOWN` and the run lands in `FAILED` — and the pre-analysis report is still displayed. That is the C-13 case: when the solver cannot prove an infeasibility, the report is the only thing that says whether the instance is structurally sound |
 | **Python** | **3.14.2** | 2026-07-29 | Resolved by uv 0.12.0 |

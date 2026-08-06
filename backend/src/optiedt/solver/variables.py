@@ -53,7 +53,7 @@ from dataclasses import dataclass, field
 
 from ortools.sat.python import cp_model
 
-from optiedt.domain.entities import RoomId, Session, SessionId, SlotIndex
+from optiedt.domain.entities import Placement, RoomId, Session, SessionId, SlotIndex
 from optiedt.domain.enums import AvailabilityState, RoomType
 from optiedt.domain.instance import Instance
 from optiedt.solver.interfaces import SolverInput
@@ -104,6 +104,13 @@ class Variables:
     removed from candidacy (ADR-007). Recorded here so H7's exactly-one
     sum can be checked against it in tests; the exclusion itself already
     happened by the pair being absent from candidate_rooms."""
+
+    locked_placements: frozenset[Placement] = field(default_factory=frozenset)
+    """Sessions H10 pinned to one slot and one room. Recorded here for the
+    same reason as excluded_room_pairs: the pruning already happened, by
+    start[s]'s domain being the single locked slot and candidate_rooms[s]
+    being the single locked room, and a test needs something to check that
+    against."""
 
 
 def open_slot_map(instance: Instance) -> dict[SlotIndex, bool]:
@@ -169,6 +176,28 @@ def candidate_rooms_for_session(
     )
 
 
+def _locks_by_session(locked: frozenset[Placement]) -> dict[SessionId, Placement]:
+    """H10's locks indexed by session, refusing two locks on one session.
+
+    Two Placements naming the same session with different targets is not a
+    conflict CP-SAT should be asked to resolve - it is a caller that composed
+    two incompatible recommendations, and the one that would silently win
+    depends on frozenset iteration order. Raising names both targets.
+    """
+    by_session: dict[SessionId, Placement] = {}
+    for placement in sorted(locked, key=lambda p: (p.session, p.slot, p.room)):
+        existing = by_session.get(placement.session)
+        if existing is not None and existing != placement:
+            raise ValueError(
+                f"session {placement.session}: locked twice, to "
+                f"(slot {existing.slot}, room {existing.room}) and to "
+                f"(slot {placement.slot}, room {placement.room}). A session has one "
+                "placement; two locks on it cannot both be honoured."
+            )
+        by_session[placement.session] = placement
+    return by_session
+
+
 def _fully_interchangeable_types(
     instance: Instance, candidate_rooms: dict[SessionId, tuple[RoomId, ...]]
 ) -> frozenset[RoomType]:
@@ -215,24 +244,24 @@ def build_variables(model: cp_model.CpModel, request: SolverInput) -> Variables:
     it only refuses to build a model on data pre-analysis would have
     rejected.
 
-    request.locked_sessions is honoured by refusing to proceed: there is
-    currently no way to supply the TARGET slot/room a locked session should
-    keep (SolverInput carries only session ids, not the paired values), so a
-    non-empty set here is a caller error today, not a silently-ignored
-    field. See docs/open-questions.md for why this is a known gap rather
-    than an oversight - it only becomes fillable once recommendation-driven
-    regeneration (Phase 3) has a candidate to lock a session's placement
-    FROM. The reference instance has zero locked sessions, so this path is
-    never exercised by anything in Phase 2.
-    """
-    if request.locked_sessions:
-        raise ValueError(
-            "SolverInput.locked_sessions is non-empty, but there is no mechanism yet "
-            "to supply the target (slot, room) a locked session should keep - only "
-            "session ids are carried today. This is Phase 3 territory (recommendation "
-            "regeneration); see docs/open-questions.md."
-        )
+    request.locked_placements is H10, applied here like the other five
+    domain-pruned rules: a locked session's start domain becomes the single
+    locked slot and its candidate room tuple becomes the single locked room.
+    Nothing is posted, so H10 carries no assumption literal (C-6) and costs
+    nothing during search.
 
+    ⚠️ Until 2026-08-06 this function RAISED on a non-empty lock set, because
+    SolverInput carried session ids with no target to lock them to. C-19
+    replaced that field with frozenset[Placement] and H10 stopped being
+    dormant.
+
+    ⚠️ **A lock RESTRICTS; it never grants permission.** The locked slot and
+    room are INTERSECTED with the domains H4/H5/H6/H8/H9 already pruned, never
+    substituted for them, so a lock cannot smuggle a session onto a closed slot
+    or into a room too small for its group. When the intersection is empty the
+    function raises naming the session, the target and the rule that refused -
+    the same treatment every other unsatisfiable domain gets here.
+    """
     instance = request.instance
     all_slots = sorted(s.index for s in instance.slots)
     is_open = open_slot_map(instance)
@@ -246,6 +275,8 @@ def build_variables(model: cp_model.CpModel, request: SolverInput) -> Variables:
         excluded_starts_by_session.setdefault(session_id, set()).add(slot_index)
     for session_id, room_id in request.excluded_rooms:
         excluded_rooms_by_session.setdefault(session_id, set()).add(room_id)
+
+    lock_by_session = _locks_by_session(request.locked_placements)
 
     start: dict[SessionId, cp_model.IntVar] = {}
     interval: dict[SessionId, cp_model.IntervalVar] = {}
@@ -267,6 +298,20 @@ def build_variables(model: cp_model.CpModel, request: SolverInput) -> Variables:
                 f"(teacher {session.teacher}, duration {session.duration_periods}). "
                 "The pre-analysis should catch this before the solver is ever called."
             )
+
+        lock = lock_by_session.get(session.id)
+        if lock is not None:
+            # H10 INTERSECTS - see the docstring. A locked slot that H6/H8/H9
+            # already refused stays refused, and the caller is told which rule.
+            if lock.slot not in valid_start_slots:
+                raise ValueError(
+                    f"session {session.id}: H10 locks it to slot {lock.slot}, which "
+                    f"H6/H8/H9 already exclude (teacher {session.teacher}, duration "
+                    f"{session.duration_periods}). A lock restricts the solver's "
+                    "choices; it cannot grant a placement the hard rules forbid."
+                )
+            valid_start_slots = [lock.slot]
+
         domain = cp_model.Domain.FromValues(valid_start_slots)
         start[session.id] = model.new_int_var_from_domain(domain, f"start[{session.id}]")
         interval[session.id] = model.new_interval_var(
@@ -284,6 +329,17 @@ def build_variables(model: cp_model.CpModel, request: SolverInput) -> Variables:
                 f"(required type {session.required_room_type}, group {session.group}). "
                 "The pre-analysis should catch this before the solver is ever called."
             )
+
+        if lock is not None:
+            if lock.room not in rooms:
+                raise ValueError(
+                    f"session {session.id}: H10 locks it to room {lock.room}, which "
+                    f"H4/H5 already exclude (required type {session.required_room_type}, "
+                    f"group {session.group}). A lock restricts the solver's choices; it "
+                    "cannot grant a placement the hard rules forbid."
+                )
+            rooms = (lock.room,)
+
         candidate_rooms[session.id] = rooms
 
     cumulative_room_types = _fully_interchangeable_types(instance, candidate_rooms)
@@ -315,4 +371,6 @@ def build_variables(model: cp_model.CpModel, request: SolverInput) -> Variables:
         assign=assign,
         room_interval=room_interval,
         cumulative_room_types=cumulative_room_types,
+        excluded_room_pairs=request.excluded_rooms,
+        locked_placements=request.locked_placements,
     )

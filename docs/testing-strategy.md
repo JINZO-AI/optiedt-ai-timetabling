@@ -196,7 +196,8 @@ owner, 2026-08-05, and Phase 6 is now closed — so they are simply NOT DELIVERE
 in which they were going to be.** ADR-010 commits FR-22,
 FR-23 and FR-24 to increment 1; PPM Table 8 budgets them into no phase, which is C-1's ~2.5 unbudgeted
 days. `assistant/` is still scaffold-only, so these tests cannot be written against anything, and FR-23
-additionally needs H10's dormant gap filled. **Do not read their absence as an oversight, and do not
+additionally needs H10's dormant gap filled. ⚠️ *That last clause stopped being true on 2026-08-06:
+Phase 7 M1 made H10 execute (C-19). The rest of the paragraph still describes Phase 6's close.* **Do not read their absence as an oversight, and do not
 read Phase 6's completion as covering them** — Phase 6 closed on 2026-08-06 with these four still unbuilt, which is why increment 1 did not close with it (**C-1**).
 
 ✅ **FR-13's test no longer conflicts with the specification.** It did: "three distinct candidates" can

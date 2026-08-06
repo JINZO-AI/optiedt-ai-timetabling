@@ -114,12 +114,13 @@ class PortfolioRequest:
     """The single weight vector every candidate is scored and ranked under.
     None means the catalogue defaults. See the module docstring."""
 
-    locked_sessions: frozenset[SessionId] = frozenset()
+    locked_placements: frozenset[Placement] = frozenset()
     excluded_slots: frozenset[tuple[SessionId, SlotIndex]] = frozenset()
     excluded_rooms: frozenset[tuple[SessionId, RoomId]] = frozenset()
     """Carried through to every solve unchanged. These are the only three
     things a recommendation may alter (ADR-007), so a regenerated run is this
-    same call with one of them different."""
+    same call with one of them different - which is exactly what
+    `services/regeneration.py` does with it."""
 
     candidate_id_prefix: str = "cand"
 
@@ -224,7 +225,7 @@ def generate_portfolio(request: PortfolioRequest, solver: Solver) -> PortfolioRe
                 profile=profile,
                 seed=request.seed,
                 deterministic_budget=per_profile_budget,
-                locked_sessions=request.locked_sessions,
+                locked_placements=request.locked_placements,
                 excluded_slots=request.excluded_slots,
                 excluded_rooms=request.excluded_rooms,
             )

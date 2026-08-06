@@ -47,6 +47,9 @@ incompleteness of FR-12's own statement.
 
 - **FR-3** — H10 is registered but **dormant**: `build_variables` refuses to run if any session is
   locked. One of the twelve rules does not actually execute, so "respecting H1–H12" is not fully built.
+  ✅ **Closed 2026-08-06, Phase 7 M1 (C-19).** H10 now executes; `tests/integration/test_h10_locks.py`
+  verifies it against the real solver. FR-3's remaining reason is its acceptance test's own scope, not
+  a rule that does not run.
 - **FR-8** — the acceptance test passes, but the *requirement* says "report the rules in conflict when
   no timetable exists" and on the C-13 contiguity shape **no rules are reported**. The **criterion** was
   reworded to carry that limit (project-owner decision, 2026-08-05); the **requirement statement** was
@@ -145,8 +148,8 @@ all seven criteria, so even the tie Pareto newly admits resolves in the dominato
 **FR-3 is `WIP`, not `✓`, deliberately.** H1–H12 are implemented and demonstrated on the reference
 instance, with every hard constraint re-derived from the raw CSVs rather than trusted from CP-SAT's
 status (`backend/tests/integration/test_h1_h12.py`). What is missing is the path *to* it: no endpoint,
-no run record, no interface. H10 is also registered but dormant — `build_variables` refuses to run if
-any session is locked, which is safe only because the reference instance has none.
+no run record, no interface. ⚠️ **Written at Phase 3's close, when H10 was also registered but dormant.**
+That half is closed: Phase 7 M1 made H10 execute (C-19), so all twelve rules now run.
 
 **FR-4, FR-5, FR-6, FR-13, FR-15, FR-16 and FR-17 are `WIP` as of Phase 3's close (2026-07-31), for the
 same reason as FR-3** — all seven of them, which is every Phase 3 requirement. The seven soft criteria

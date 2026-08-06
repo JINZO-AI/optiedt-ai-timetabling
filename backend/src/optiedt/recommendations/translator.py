@@ -22,15 +22,14 @@ So ``translate()`` returns the delta as plain domain data and leaves final
 ``SolverInput`` assembly to that later layer - which is exactly what
 catalogue.py's deliberately vague ``-> object`` return type leaves room for.
 
-``lock_session`` in particular only becomes useful once solver/variables.py
-gains a way to carry a locked session's TARGET slot/room (see that module's
-own docstring on ``SolverInput.locked_sessions`` - it accepts only session
-ids today, which is why it refuses to build if that set is non-empty). That
-is out of scope here (solver/variables.py, solver/interfaces.py); this
-module still translates lock_session correctly against the schema as it
-stands, reading the target straight out of the candidate's own placement,
-which is what H10 means by "fixes start[s] and room[s] to their current
-value" (docs/ai-integration.md).
+``lock_session`` was unusable downstream until 2026-08-06: SolverInput
+carried ``locked_sessions: frozenset[SessionId]``, with no field for the
+target, so solver/variables.py refused to build on a non-empty set. **C-19
+replaced it with ``locked_placements: frozenset[Placement]`` and H10 now
+executes.** This module was already correct against that future - it reads
+the target straight out of the candidate's own placement, which is what H10
+means by "fixes start[s] and room[s] to their current value"
+(docs/ai-integration.md) - and needed no change when the gap closed.
 """
 
 from __future__ import annotations

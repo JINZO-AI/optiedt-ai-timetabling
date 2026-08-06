@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 from ortools.sat.python import cp_model
 
+from optiedt.domain.entities import Placement
 from optiedt.domain.enums import RoomType
 from optiedt.instance.loader import load_instance
 from optiedt.solver.interfaces import SolverInput
@@ -126,14 +127,123 @@ def test_fully_interchangeable_room_types_are_cumulative_encoded(instance, varia
     assert RoomType.SALLE not in v.cumulative_room_types
 
 
-def test_locked_sessions_not_yet_supported(instance):
+def _built_with(instance, **kwargs):
     model = cp_model.CpModel()
     request = SolverInput(
         instance=instance,
         profile=None,  # type: ignore[arg-type]
         seed=42,
         deterministic_budget=5.0,
-        locked_sessions=frozenset({"S0001"}),
+        **kwargs,
     )
-    with pytest.raises(ValueError, match="no mechanism yet"):
-        build_variables(model, request)
+    return model, build_variables(model, request)
+
+
+# ── H10, live since 2026-08-06 (C-19) ──────────────────────────────────────
+#
+# Until then SolverInput carried session ids with no target and
+# build_variables() raised. The test that pinned THAT behaviour was replaced
+# by these: a dormant rule is pinned by asserting it refuses, a live one by
+# asserting it restricts.
+
+
+def test_h10_locks_the_start_domain_to_the_single_locked_slot(instance):
+    # S0001 is T001's 1-period Amphi CM; slot 7 is inside its valid starts.
+    _, v = _built_with(instance, locked_placements=frozenset({Placement("S0001", 7, "2")}))
+    assert _expand_domain(v.start["S0001"]) == {7}
+
+
+def test_h10_locks_the_candidate_rooms_to_the_single_locked_room(instance):
+    # Unlocked, S0001 may take either Amphi (rooms 1 and 2).
+    _, unlocked = _built_with(instance)
+    assert unlocked.candidate_rooms["S0001"] == ("1", "2")
+
+    _, v = _built_with(instance, locked_placements=frozenset({Placement("S0001", 7, "2")}))
+    assert v.candidate_rooms["S0001"] == ("2",)
+
+
+def test_h10_leaves_every_other_session_untouched(instance):
+    """A lock restricts the session it names and nothing else.
+
+    Worth asserting rather than assuming: the pruning runs inside the loop
+    over every session, so an indexing slip would narrow the wrong one and
+    still produce a solvable model.
+    """
+    _, unlocked = _built_with(instance)
+    _, v = _built_with(instance, locked_placements=frozenset({Placement("S0001", 7, "2")}))
+    for session_id in v.start:
+        if session_id == "S0001":
+            continue
+        assert _expand_domain(v.start[session_id]) == _expand_domain(unlocked.start[session_id])
+        assert v.candidate_rooms[session_id] == unlocked.candidate_rooms[session_id]
+
+
+def test_h10_records_its_locks_on_the_variables(instance):
+    locks = frozenset({Placement("S0001", 7, "2")})
+    _, v = _built_with(instance, locked_placements=locks)
+    assert v.locked_placements == locks
+
+
+def test_h10_cannot_grant_a_slot_h6_forbids(instance):
+    """T001 is unavailable at slot 13 and teaches S0001.
+
+    The lock INTERSECTS the pruning H6/H8/H9 already did; it does not replace
+    it. If it replaced it, a recommendation could quietly place a session on
+    a slot a teacher declared unavailable - an invariant-2 violation arriving
+    through the one door recommendations are allowed to use.
+    """
+    with pytest.raises(ValueError, match="H10 locks it to slot 13, which H6/H8/H9 already exclude"):
+        _built_with(instance, locked_placements=frozenset({Placement("S0001", 13, "2")}))
+
+
+def test_h10_cannot_grant_a_closed_slot(instance):
+    # Slot 28 is Saturday afternoon, closed (H9).
+    with pytest.raises(ValueError, match="H10 locks it to slot 28"):
+        _built_with(instance, locked_placements=frozenset({Placement("S0001", 28, "2")}))
+
+
+def test_h10_cannot_grant_a_room_h4_forbids(instance):
+    # Room 4 is a Salle; S0001 requires an Amphi.
+    with pytest.raises(ValueError, match="H10 locks it to room 4, which H4/H5 already exclude"):
+        _built_with(instance, locked_placements=frozenset({Placement("S0001", 7, "4")}))
+
+
+def test_h10_refuses_two_conflicting_locks_on_one_session(instance):
+    """Which one wins would otherwise depend on frozenset iteration order."""
+    with pytest.raises(ValueError, match="locked twice"):
+        _built_with(
+            instance,
+            locked_placements=frozenset({Placement("S0001", 7, "2"), Placement("S0001", 8, "2")}),
+        )
+
+
+def test_h10_accepts_the_same_lock_twice(instance):
+    """Two identical Placements are one lock, not a conflict - and a frozenset
+    already collapses them. Asserted so the duplicate check is known to test
+    the TARGET rather than the count."""
+    _, v = _built_with(
+        instance,
+        locked_placements=frozenset({Placement("S0001", 7, "2"), Placement("S0001", 7, "2")}),
+    )
+    assert _expand_domain(v.start["S0001"]) == {7}
+
+
+def test_locking_a_cumulative_type_falls_back_to_the_per_room_encoding(instance):
+    """Locking an Amphi session takes Amphi out of cumulative_room_types.
+
+    This is required for correctness, not a side effect to tolerate: a
+    cumulative-encoded session has no assign[s, r] variable at all and its
+    specific room is chosen by a post-solve labeller (solver/engine.py), which
+    cannot honour a lock. Narrowing candidate_rooms makes the type stop being
+    fully interchangeable, so H7 posts its exactly-one over a single room and
+    the lock binds. If this test ever fails, H10 has become unenforceable for
+    that room type while still appearing to be applied.
+    """
+    _, unlocked = _built_with(instance)
+    assert RoomType.AMPHI in unlocked.cumulative_room_types
+    assert ("S0001", "2") not in unlocked.assign
+
+    _, v = _built_with(instance, locked_placements=frozenset({Placement("S0001", 7, "2")}))
+    assert RoomType.AMPHI not in v.cumulative_room_types
+    assert ("S0001", "2") in v.assign
+    assert ("S0001", "1") not in v.assign

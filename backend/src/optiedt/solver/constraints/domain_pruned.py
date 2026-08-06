@@ -130,13 +130,22 @@ class H9:
 class H10:
     """A locked session keeps the slot and room given to it.
 
-    Not yet enforceable: SolverInput.locked_sessions carries only session
-    ids, with no field for the (slot, room) a locked session should keep.
-    build_variables() raises rather than silently ignore a non-empty set
-    of locked session ids - see its docstring and docs/open-questions.md.
-    The reference instance has no locked sessions, so this path is dormant
-    until recommendation-driven regeneration (Phase 3) has a prior
-    candidate to lock a placement FROM.
+    Enforced by domain pruning, like H4/H5/H6/H8/H9: build_variables()
+    narrows a locked session's start domain to the single locked slot and
+    its candidate room tuple to the single locked room. Nothing is posted,
+    so there is nothing here to attach an assumption literal to (C-6) and
+    the rule costs nothing during search.
+
+    ⚠️ **Dormant until 2026-08-06.** SolverInput carried session ids with
+    no target, so build_variables() RAISED on a non-empty lock set rather
+    than ignore it. C-19 replaced that field with frozenset[Placement] and
+    this rule now executes. The reference instance still has no locked
+    sessions - what exercises H10 is regeneration from an accepted
+    lock_session recommendation (FR-23).
+
+    A lock INTERSECTS the other rules' pruning rather than replacing it, so
+    it cannot place a session on a closed slot or in a room too small for
+    its group; build_variables() raises naming the rule that refused.
     """
 
     @property

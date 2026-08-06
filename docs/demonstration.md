@@ -141,7 +141,7 @@ each has a one-sentence answer if asked.
 | Not shown | The honest answer |
 |---|---|
 | **The AI assistant** — explanations, questions, reports (FR-22, FR-24, FR-25) | Scaffold only: interfaces, no implementation. ADR-010 commits it to increment 1; the 20-day plan allocates it to no phase. That is **C-1**, recorded since 2026-07-29 and still unscheduled |
-| **Regeneration from an accepted recommendation** (FR-23) | Half-built. The closed three-action catalogue and its translation exist; turning an accepted recommendation into a new run does not, and `lock_session` additionally needs H10's dormant gap filled |
+| **Regeneration from an accepted recommendation** (FR-23) | Half-built. The closed three-action catalogue and its translation exist; turning an accepted recommendation into a new run does not. ⚠️ *H10's dormant gap — `lock_session`'s prerequisite — was filled on 2026-08-06 by Phase 7 M1 (C-19)* |
 | **Calendar administration screen** (FR-9) | Not built. ⚠️ **The acceptance criterion is met** — closing a half-day in *configuration* removes those slots from every timetable with no code change, and that is tested. What is absent is the screen |
 | **Data management** (FR-1) and **print/export** (FR-10) | Not built. Data arrives through the 13 CSVs and the loader |
 | **Account management** | Not built. Accounts come from the seed command (C-18), and every one shares a password |
