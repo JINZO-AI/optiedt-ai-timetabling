@@ -59,9 +59,15 @@ intercepts `urlopen` and calls no provider.
 it**. The overrun was understated because a figure was repeated rather than re-derived. Recorded
 rather than quietly corrected; ADR-010 is unchanged, as instructed.
 
-**The nine acceptance criteria remain as Phase 6 left them**, eight met and one — the timed FR-2
-walkthrough — still needing a person. Phase 7 added no acceptance criterion and moved none: its four
-requirements are verified against `docs/testing-strategy.md` §4's rows, which are a different list.
+✅ **All nine acceptance criteria are now met**, the ninth on 2026-08-07. ⚠️ **The ninth was REWORDED
+rather than met as written**, by project-owner decision and for the third time in this project (after
+C-5 and criterion 5): it read *"filled in under 5 minutes without training"* and **the run did not
+measure the time**, so the wording dropped the clause the evidence could not support. The participant
+was the **project owner**, who had not seen the screen but does know the domain, and no naive
+participant was available. **Read `docs/demonstration.md` §2 before quoting the tick** — the same
+session reported the navigation confusing, which is a usability finding rather than FR-2 evidence.
+Phase 7 added no acceptance criterion and moved none: its four requirements are verified against
+`docs/testing-strategy.md` §4's rows, which are a different list.
 
 ---
 
@@ -70,16 +76,16 @@ requirements are verified against `docs/testing-strategy.md` §4's rows, which a
 | | |
 |---|---|
 | **Project** | OptiEDT — generates, ranks and explains weekly university timetables (Tunisian public faculty, LMD) |
-| **Overall progress** | **Increment 1 is COMPLETE.** All seven phases delivered — the plan's six (20 days) plus Phase 7, approved 2026-08-06 for the work C-1 recorded and no phase carried. By *delivered product*: **8 of 9 acceptance criteria** met (the ninth needs a person), and **8 of 25 requirements `✓`, 13 under way, 4 not started** (FR-24 promoted 2026-08-07 on the live call in `demonstration.md` §4) — a requirement is `✓` only once a user can reach it *and* it is tested end to end. ⚠️ **This row said "75 %, Phases 1–4 delivered, Phase 5 under way, 0 requirements finished" until 2026-08-06** — false since 2026-08-04 and 2026-08-06 respectively, and missed by two closing audits. Both numbers are real; quote the measure with the number |
+| **Overall progress** | **Increment 1 is COMPLETE.** All seven phases delivered — the plan's six (20 days) plus Phase 7, approved 2026-08-06 for the work C-1 recorded and no phase carried. By *delivered product*: **8 of 9 acceptance criteria** met (the ninth on 2026-08-07, ⚠️ **reworded** — no time was measured), and **8 of 25 requirements `✓`, 13 under way, 4 not started** (FR-24 promoted 2026-08-07 on the live call in `demonstration.md` §4) — a requirement is `✓` only once a user can reach it *and* it is tested end to end. ⚠️ **This row said "75 %, Phases 1–4 delivered, Phase 5 under way, 0 requirements finished" until 2026-08-06** — false since 2026-08-04 and 2026-08-06 respectively, and missed by two closing audits. Both numbers are real; quote the measure with the number |
 | **Current phase** | **Phase 7 — the assistant and regeneration. COMPLETE 2026-08-06**, all seven milestones and a closing audit. Milestone table in the Phase 7 block below |
 | **Last completed phase** | **Phase 6 — COMPLETE 2026-08-06**, eight milestones and a closing audit: the acceptance suite, the instance generator, the demonstration script, C-5 and C-14 implemented. Before it, Phase 5 delivered pre-analysis in-app, the diagnosis run, the run record, authentication and publication |
 | **Milestone reached** | **Phase 7's, 2026-08-06** — *increment 1 closed*: FR-23 regenerates through the same solver, and the assistant explains, answers and reports under a grounding check. **C-1 is closed after 8 days open** |
 | **Current goal** | ⚠️ **None — increment 1 is delivered and no phase is open.** Increment 2 is *conditional on remaining time* and its content is fixed: the examination session (4 d) and weight adjustment from recorded comparisons (3 d). Natural-language constraint entry is **not undertaken** (`docs/ai-integration.md`) |
-| **Next task** | ⚠️ **A decision, not code, and it belongs to the project owner.** Two things are outstanding and neither is a defect: **(1)** the timed FR-2 walkthrough, which needs a teacher who has not seen the screen (`docs/demonstration.md` §2); **(2)** whether to open increment 2. ~~*(3) a first live provider call*~~ — **performed 2026-08-07**, recorded in `demonstration.md` §4, and FR-24 is `✓`. **C-9 and C-15 remain open** and block four requirement ticks between them. See the Phase 7 block for the full list |
+| **Next task** | ⚠️ **A decision, not code, and it belongs to the project owner.** Two things are outstanding and neither is a defect: **(1)** ~~the timed FR-2 walkthrough~~ — **run and settled 2026-08-07, criterion reworded** (`docs/demonstration.md` §2); what remains for FR-2's own `✓` is an `acceptance/test_fr02`); **(2)** whether to open increment 2. ~~*(3) a first live provider call*~~ — **performed 2026-08-07**, recorded in `demonstration.md` §4, and FR-24 is `✓`. **C-9 and C-15 remain open** and block four requirement ticks between them. See the Phase 7 block for the full list |
 | **Branch** | `main`. ⚠️ **Whether it is ahead of `origin/main` is NOT recorded here**, deliberately — and this row said *"ahead of `origin/main` by unpushed local commits"* until 2026-08-07, when everything had in fact been pushed. It is the same fault as the SHA in the row below and it has the same cause: **a push that does not touch this file cannot correct a claim stored in it.** Derive it — `git fetch`, then `git rev-list --count origin/main..HEAD` (0 means everything is pushed) |
 | **Latest commit** | **Not recorded here** — it is stale the moment anything is committed. `git log -1 --oneline`. The durable fact is the last *pushed* commit, in the row below |
 | **Repository status** | **No SHA and no commit count are recorded here. Derive them:** `git log -1 --oneline` · `git rev-parse --short HEAD` · `git rev-parse --short origin/main` · `git rev-list --count origin/main..HEAD` (0 means everything is pushed). Run `git fetch` first, or `origin/main` is only as fresh as your last one. ⚠️ **This row recorded a SHA and was wrong five times** — the fifth found on 2026-08-04, when it still named the Phase 4 audit commit and `origin/main` had moved two commits past it. Four of those five were *repaired by editing the value*, which is why there was a fifth: **a SHA cannot survive a push that does not touch this file, and a count cannot live in a file that commits change.** The values are therefore gone rather than corrected. The full record of each failure is in [`docs/history.md`](history.md) |
-| **Project health** | 🟢 **Green.** `scripts/run-checks.ps1` green across **nine** steps: **504 backend tests + 53 frontend**, **11/11 layer contracts** kept, mypy strict on **78** files, instance verified, **38 store-contract tests against real PostgreSQL** and **2 migration tests**. Separately, `scripts/run-acceptance.ps1` green: **106 acceptance tests over 14 requirements** (FR-3, 5, 8, 9, 11, 12, 13, 15, 17, 19, 22, 23, 24, 25), of which **35 solve for real**. **8 of 9 acceptance criteria met**; the ninth needs a person. The engine is validated on all 21 published ITC-2007 instances, and the whole path — declare availability, generate, compare, regenerate, explain, publish — is verified against the real solver |
+| **Project health** | 🟢 **Green.** `scripts/run-checks.ps1` green across **nine** steps: **504 backend tests + 53 frontend**, **11/11 layer contracts** kept, mypy strict on **78** files, instance verified, **38 store-contract tests against real PostgreSQL** and **2 migration tests**. Separately, `scripts/run-acceptance.ps1` green: **106 acceptance tests over 14 requirements** (FR-3, 5, 8, 9, 11, 12, 13, 15, 17, 19, 22, 23, 24, 25), of which **35 solve for real**. **9 of 9 acceptance criteria met**; ⚠️ the ninth **reworded** 2026-08-07, no time measured. The engine is validated on all 21 published ITC-2007 instances, and the whole path — declare availability, generate, compare, regenerate, explain, publish — is verified against the real solver |
 
 ```
 Increment 1   ████████████████████  COMPLETE - 20 budgeted days + Phase 7's unbudgeted work
@@ -323,7 +329,7 @@ instance, not merely a valid one (ADR-008). And the **timed FR-2 walkthrough**: 
 is built, but "filled in under 5 minutes without training" is about a person and no automated check
 stands in for it.
 
-**Status. COMPLETE 2026-08-06 — all eight milestones and a closing audit.** **Eight of nine** acceptance criteria are met; the ninth needs a person. ⚠️ **Increment 1 is not complete with it** — see the header of this file.
+**Status. COMPLETE 2026-08-06 — all eight milestones and a closing audit.** **Eight of nine** acceptance criteria were met at Phase 6's close; the ninth needed a person and was settled on 2026-08-07 (reworded — see the header of this file). ⚠️ **Increment 1 was not complete with Phase 6** — Phase 7 followed.
 
 #### The closing audit, 2026-08-06
 
@@ -354,7 +360,9 @@ nothing said the front door was part of it. A checklist that omits a file cannot
 hand* into *checked by the suite*, which is what Phase 6 owes them. **M3 measured criterion 5 and it
 was decided on the measurement** — see below.
 
-**The one that remains** is the timed FR-2 walkthrough, which needs a person and is M6's.
+**The one that remained** at Phase 6's close was the timed FR-2 walkthrough, which needed a person and
+was M6's. It was run on 2026-08-07 — and, like criterion 5 below, **reworded rather than met as
+written**, because no time was measured.
 
 ✅ **Criterion 5 was decided on 2026-08-05 and REWORDED rather than merely ticked.** Measured on both
 shapes it holds on one and not the other, so a tick against the original wording would have claimed

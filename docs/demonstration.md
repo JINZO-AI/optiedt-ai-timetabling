@@ -9,8 +9,9 @@ or a recovery. Every step below says what should appear, so **a failed demonstra
 Two things live here:
 
 - **§1 The demonstration script** — the whole path, twelve steps, about 12 minutes plus one solve.
-- **§2 The FR-2 timed walkthrough** — the one acceptance criterion no automated check can replace,
-  its protocol, and the table to record the result in. **Still outstanding: it needs a person.**
+- **§2 The FR-2 walkthrough** — the one acceptance criterion no automated check can replace, its
+  protocol, and the table recording the result. **Run 2026-08-07, and the criterion was reworded
+  rather than met as written** — read §2's Result before quoting it.
 
 And **§4** records the first live language-provider call, **performed 2026-08-07**. That was FR-24's
 last outstanding condition; it is a deployment step rather than a step of the script above.
@@ -124,15 +125,46 @@ criterion, and a participant who already knows where the save button is cannot m
 
 ### Result
 
-⚠️ **Not yet run.** The criterion is **built and unticked**, deliberately — it is the only one of the
-nine outstanding, and nothing in this repository can close it.
+**Run 2026-08-07, and the criterion was REWORDED rather than met as written.** Read the rewording
+before the row, because the row does not mean what the original wording asked for.
 
 | Date | Participant (role, seen it before?) | Time | Under 5 min? | Notes |
 |---|---|---|---|---|
-| *(to be filled)* | | | | |
+| **2026-08-07** | **Project owner**, acting as teacher then as person in charge. **Had not seen the interface before** — the frontend was not written by them | **not measured** | **not established** | Completed the grid unaided. Reported the *navigation* confusing, looked for a registration flow that does not exist (C-18), and said sections do not explain their purpose |
 
-**When it is run**, record the row above **and** tick the criterion in `docs/status.md`'s acceptance
-list, with the time. Those two edits are the whole of what remains.
+#### The rewording, and why
+
+The criterion read *"the availability grid is filled in under 5 minutes without training."* Two of its
+three clauses were satisfiable and one was not, so it was **reworded by project-owner decision** rather
+than ticked against wording the run did not meet — the same treatment as **C-5** and as acceptance
+criterion 5, and for the same reason: *the wording moved, the implementation did not.*
+
+> **Reworded criterion:** *the availability grid is completed without assistance by a user who had not
+> previously seen it.*
+
+**What the run established.** The participant reached the grid, understood the task, marked
+unavailability and saved, with **no assistance and no explanation given**. On the grid specifically the
+verdict was that the functionality is acceptable.
+
+⚠️ **What it did NOT establish, stated plainly so nobody quotes this row for more than it holds:**
+
+- **No time was measured.** *"Under 5 minutes"* is therefore unverified, and the reworded criterion
+  drops it rather than pretending otherwise.
+- **The participant is the project owner.** They had not seen the *screen* — which is what the protocol
+  above actually requires — but they know the domain, the calendar and the `SYNTHETIC` convention, so
+  the four comprehension questions above could not be asked of them fairly.
+- **The task was not isolated.** Navigation, sign-in and other screens were exercised in the same
+  sitting, so nothing here is a clean single-task measurement.
+- **No naive participant was available**, and the owner declined to involve one. That is a recorded
+  constraint on the evidence, not an oversight.
+
+⚠️ **The findings point the other way on the application as a whole**, and that tension is left visible
+on purpose: the same session reported that navigation is confusing and that pages do not explain their
+purpose. The grid passes; **the product around it did not**, and those findings are usability work, not
+FR-2 evidence.
+
+**If a naive participant ever becomes available, run the protocol above as written and add a second
+row.** A measured time against the original wording would be strictly better evidence than this row.
 
 ---
 

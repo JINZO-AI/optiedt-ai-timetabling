@@ -11,7 +11,7 @@ Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 FR-11, FR-13, FR-15, FR-17 and FR-19**, each driven through the HTTP API because a requirement is `✓`
 only once a user can *reach* it. ⚠️ **A passing acceptance test is necessary, not sufficient**: FR-13
 still waits on **C-15**, FR-11 on account management and a `secret_key` that is not published in this
-repository, and FR-2 on a timed walkthrough no automated check replaces. The suite is what makes those
+repository, and FR-2 on an acceptance test (its criterion was settled 2026-08-07). The suite is what makes those
 remaining reasons the *only* ones.
 
 ✅ **The whole table was reviewed against evidence in one pass at M7**, as M2 promised — not row by row
@@ -146,8 +146,19 @@ because a phase closed — is exactly why the promotion waited for evidence rath
 
 FR-2 joined the list in Phase 4 M1 and its grid landed in M6: two states, because
 `teacher_availability.csv` carries a boolean and there is no third to record (C-12(a), decided
-2026-08-01). It stays `WIP` for the criterion that matters most — "filled in under 5 minutes without
-training" needs a timed walkthrough with a real teacher, which no automated check replaces. **FR-7 and FR-18 joined in M4**: the four
+2026-08-01). ✅ **Its acceptance criterion was settled on 2026-08-07** — reworded by project-owner
+decision to *"completed without assistance by a user who had not previously seen it"*, because the run
+measured no time and so could not support *"under 5 minutes"*. Record and limitations:
+[`docs/demonstration.md`](demonstration.md) §2.
+
+⚠️ **FR-2 nevertheless stays `WIP`, and now for exactly one narrowed reason: there is no
+`acceptance/test_fr02`.** Every requirement promoted at M7 was promoted once an acceptance test existed
+(*"no acceptance test — written in M2/M3"* is the entry in all four rows of that table), and the FR-2
+row has carried `acceptance/test_fr02` with a ⚠️ rather than a ✓ since it was written. Promoting on the
+criterion alone would drop a bar the other eight ticks cleared. **The mechanical half is testable** —
+the grid loads, the replace-wholesale rule, the `SYNTHETIC`/`TEACHER` distinction — and
+`unit/test_availability_api` already covers it; what is missing is the same assertions driven through
+the HTTP API, which is what makes a capability *reachable* rather than merely present. **FR-7 and FR-18 joined in M4**: the four
 timetable views render a candidate by teacher, group and room, and report each room's occupancy —
 verified against the real solver, with the occupancy totals matching `verify-instance` exactly. They
 stay `WIP` because no automated test covers the views yet and there is no authentication deciding who

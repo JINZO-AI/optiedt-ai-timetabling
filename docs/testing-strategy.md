@@ -176,7 +176,7 @@ requirement itself**. Tests live in `backend/tests/acceptance/`, one per criteri
 
 | FR | Test | Expected result | State |
 |---|---|---|---|
-| FR-2 | Fill in the availability grid | Recorded in under 5 minutes | ⚠️ **not automatable — OUTSTANDING.** The protocol and the table to record the result in are `docs/demonstration.md` §2; the walkthrough itself needs a teacher who has not seen the screen. **This is the ninth acceptance criterion and the only one unmet** |
+| FR-2 | Fill in the availability grid | Completed unaided by a user who had not seen it | ⚠️ **not automatable — still true, and the criterion was REWORDED rather than automated.** Run 2026-08-07; the original wording asked for *"under 5 minutes"* and **the run measured no time**, so the clause was dropped by project-owner decision. Record and limitations: `docs/demonstration.md` §2. **A timed run with a naive participant would still be strictly better evidence** |
 | FR-3 | Generate on the reference instance | No hard-constraint violation | ✅ `test_fr03`, `solver` |
 | FR-5 | Read a candidate | Overall score and sub-scores displayed | ✅ `test_fr05` |
 | FR-8 | Generate on a deliberately infeasible instance | Report naming the rules in conflict by code | ✅ `test_fr08`, `solver` — ⚠️ **both shapes**, and the criterion holds on only one |

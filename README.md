@@ -157,8 +157,11 @@ solver input and launches a **new run** through the same engine, and the languag
 answers and reports from figures the analysis layer computed, with every number it writes checked
 against the context it was given.
 
-**Eight of the nine acceptance criteria are met**; the ninth is a timed walkthrough with a teacher,
-which no automated check can replace ([`docs/demonstration.md`](docs/demonstration.md) §2).
+**All nine acceptance criteria are met**, the ninth on 2026-08-07. ⚠️ **That one was reworded rather
+than met as written** — it asked for the grid to be filled *"in under 5 minutes without training"* and
+the run measured no time, so the wording dropped the clause the evidence could not support. The full
+record, including what the run did **not** establish, is in
+[`docs/demonstration.md`](docs/demonstration.md) §2.
 
 ⚠️ **The language service is off by default, and everything works with it off** — only text
 disappears. **No test calls a live provider and none can**: a model's output is not fixed by a seed,
