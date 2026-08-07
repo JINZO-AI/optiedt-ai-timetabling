@@ -96,6 +96,7 @@ class HttpAssistantAdapter:
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {self.api_key}",
+                "User-Agent": _USER_AGENT,
             },
             method="POST",
         )
@@ -110,6 +111,26 @@ class HttpAssistantAdapter:
                 f"the language service returned an unusable body: {exc}"
             ) from exc
 
+
+_USER_AGENT = "OptiEDT/0.1.0"
+"""How this client identifies itself. **Do not remove it as a redundant header.**
+
+`urllib` sends `Python-urllib/<version>` when no `User-Agent` is given, and
+hosted providers behind a CDN reject that value outright: Groq answers
+**HTTP 403 with Cloudflare `error code: 1010`** - a client-signature refusal
+that never reaches the API, so no key, model or body is at fault and the error
+says nothing about any of them. Measured 2026-08-07 on
+`api.groq.com/openai/v1/chat/completions`: absent and explicit
+`Python-urllib/3.14` are both refused, while `OptiEDT/0.1.0`, `curl/8.0` and a
+browser string are all accepted.
+
+⚠️ **An honest name is enough, and that is why one is used.** The block is on
+the `Python-urllib` value, not on non-browser clients, so nothing here pretends
+to be a browser - identifying the caller truthfully is what RFC 9110 asks for
+and it is the only reason this constant exists. Without it this module's own
+promise above - that swapping providers is a `assistant_base_url` and a
+`assistant_model` - is false for any CDN-fronted provider.
+"""
 
 _SYSTEM_PROMPT = """\
 Tu expliques des emplois du temps universitaires déjà calculés.

@@ -163,7 +163,9 @@ which no automated check can replace ([`docs/demonstration.md`](docs/demonstrati
 ⚠️ **The language service is off by default, and everything works with it off** — only text
 disappears. **No test calls a live provider and none can**: a model's output is not fixed by a seed,
 so what the suite verifies is the application's behaviour *around* a provider, never that any
-particular one works. A first live call is a deployment step.
+particular one works. A first live call is a deployment step — **performed once, on 2026-08-07, and
+recorded in [`docs/demonstration.md`](docs/demonstration.md) §4**, which is what moved FR-24 to `✓`.
+That record is a dated observation, not automation: a green build is still no evidence about a model.
 
 ⚠️ **`scripts/run-checks.ps1` is run by a person, not by a pipeline.** There is no CI configuration in
 this repository. The eleven `import-linter` contracts are real and do fire — but nothing runs them

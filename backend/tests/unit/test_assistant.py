@@ -18,6 +18,8 @@ deployment step (`docs/demonstration.md`), not a test.
 
 from __future__ import annotations
 
+import json
+import urllib.request
 from dataclasses import dataclass, field
 
 import pytest
@@ -178,6 +180,52 @@ def test_settings_that_enable_it_produce_the_http_adapter():
 
 def test_an_enabled_but_unconfigured_adapter_is_not_enabled():
     assert HttpAssistantAdapter(base_url="", api_key="", model="").enabled is False
+
+
+def test_the_adapter_identifies_itself_rather_than_sending_the_urllib_default(monkeypatch):
+    """The request must carry a `User-Agent` that is not `Python-urllib`.
+
+    ⚠️ **Not a cosmetic header.** `urllib` sends `Python-urllib/<version>` when
+    none is given, and a CDN-fronted provider refuses that value before the
+    request reaches the API - Groq answers HTTP 403 / Cloudflare `error code:
+    1010`, which names neither the key nor the model and so reads like an
+    authentication fault it is not. That refusal is what left FR-24's first live
+    call unable to obtain any answer at all.
+
+    **No live provider is called here (C-21).** `urlopen` is intercepted, so
+    what is pinned is the request this module BUILDS, which is the part that was
+    wrong - a live call would test the provider's mood instead.
+    """
+    seen: dict[str, str] = {}
+
+    class _Response:
+        def read(self) -> bytes:
+            return json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc: object) -> None:
+            return None
+
+    def _fake_urlopen(request, timeout):
+        del timeout
+        seen.update(request.headers)
+        return _Response()
+
+    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
+
+    adapter = HttpAssistantAdapter(base_url="https://example.invalid", api_key="k", model="m")
+    adapter.complete(
+        ContextPayload(kind=RequestKind.EXPLAIN_CANDIDATE, figures={}, identifiers=(), labels={}),
+        "prompt",
+        1.0,
+    )
+
+    # urllib title-cases header names when they are set through Request(headers=...).
+    agent = seen.get("User-agent") or seen.get("User-Agent")
+    assert agent, "the adapter sent no User-Agent, so urllib would supply its own"
+    assert "python-urllib" not in agent.lower()
 
 
 # ── invariant 4: the context is the whole boundary ─────────────────────

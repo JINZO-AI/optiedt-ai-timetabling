@@ -10,7 +10,10 @@ Two things live here:
 
 - **§1 The demonstration script** — the whole path, twelve steps, about 12 minutes plus one solve.
 - **§2 The FR-2 timed walkthrough** — the one acceptance criterion no automated check can replace,
-  its protocol, and the table to record the result in.
+  its protocol, and the table to record the result in. **Still outstanding: it needs a person.**
+
+And **§4** records the first live language-provider call, **performed 2026-08-07**. That was FR-24's
+last outstanding condition; it is a deployment step rather than a step of the script above.
 
 ⚠️ **Read §3 before presenting.** It lists what this demonstration deliberately does *not* show. A
 question about the assistant or about regeneration has an honest answer, and improvising one in the
@@ -140,7 +143,7 @@ each has a one-sentence answer if asked.
 
 | Not shown | The honest answer |
 |---|---|
-| ~~**The AI assistant** — explanations, questions, reports (FR-22, FR-24, FR-25)~~ | ✅ **Built 2026-08-06, Phase 7 M3–M5**, and reachable from the comparison screen. ⚠️ **What is still not shown is a LIVE model**: the service is off by default and no test calls a provider (**C-21**), so what a demonstration shows is the **computed form** — complete figures, no prose. Say so plainly; see §4 |
+| ~~**The AI assistant** — explanations, questions, reports (FR-22, FR-24, FR-25)~~ | ✅ **Built 2026-08-06, Phase 7 M3–M5**, and reachable from the comparison screen. ⚠️ **A LIVE model is still not shown BY THIS SCRIPT**: the service is off by default and no test calls a provider (**C-21**), so what a demonstration shows is the **computed form** — complete figures, no prose. Say so plainly. A first live call **was** performed once, on 2026-08-07, and §4 records it; that is a deployment step, not a step of this script |
 | ~~**Regeneration from an accepted recommendation** (FR-23)~~ | ✅ **Built 2026-08-06, Phase 7 M2.** Reachable from the comparison screen: choose one of the three catalogue actions, accept, and a **new run** is launched through the same solver. The candidate on screen is unchanged. H10's dormant gap — `lock_session`'s prerequisite — was filled by M1 (C-19) |
 | **Calendar administration screen** (FR-9) | Not built. ⚠️ **The acceptance criterion is met** — closing a half-day in *configuration* removes those slots from every timetable with no code change, and that is tested. What is absent is the screen |
 | **Data management** (FR-1) and **print/export** (FR-10) | Not built. Data arrives through the 13 CSVs and the loader |
@@ -157,14 +160,15 @@ answer containing a figure nobody computed is discarded and the computed form sh
 
 ---
 
-## 4 · The one step this demonstration cannot perform: a live model call
+## 4 · The step this demonstration cannot perform by itself: a live model call
 
 ⚠️ **Not a defect, and not optional either.** `assistant_enabled` is False by default and **no test in
 this repository calls a live provider** — a model's output is not fixed by a seed, so such a test would
 report the machine and the day rather than the software (**C-21**). Everything the suite proves is
-about the application's behaviour *around* a provider.
+about the application's behaviour *around* a provider. **That is still true, and performing the call
+below did not change it** — the suite is exactly as provider-free as it was.
 
-**So the first live call is a deployment step, and it is what FR-24 is waiting on.** Perform it once,
+**So the first live call is a deployment step, and it is what FR-24 was waiting on.** Perform it once,
 deliberately, and record the result here:
 
 1. Set `OPTIEDT_ASSISTANT_ENABLED=true`, `OPTIEDT_ASSISTANT_BASE_URL`, `OPTIEDT_ASSISTANT_API_KEY` and
@@ -176,10 +180,42 @@ deliberately, and record the result here:
 
 | Date | Provider and model | Generated? | Discarded any? | Figures matched? |
 |---|---|---|---|---|
-| *(not yet performed)* | | | | |
+| **2026-08-07** | Groq · `llama-3.3-70b-versatile` | **Yes — 3 of 3** | **No — none discarded** | **Yes** |
 
-⚠️ **Until this table has a row, do not describe the assistant as "working with a language model".**
-It works with the service off, which is verified; the other half is not.
+**What was actually done**, so the row above can be checked rather than believed. A real run through
+the API at production settings (seed 42, deterministic budget 90) reached `COMPLETED` with **3 distinct
+candidates**; the top one scored **80.30714644396436** under `student-favouring`. Three live calls
+followed, all HTTP 200 with `generated: true` and `fallbackReason: null`:
+
+| Call | Endpoint | Result |
+|---|---|---|
+| Explanation (FR-22) | `GET …/assistant/runs/{id}/candidates/{id}/explanation` | Quoted the score and the normalised values **exactly as the application displays them** — `0.9773936170212766` (S3), `0.6453488372093024` (S4), `0.8539144471347861` (S6), plus seed 42, budget 90 and 218 placements |
+| A question it can answer (FR-24) | `POST …/assistant/runs/{id}/question` | *"Le candidat avec le meilleur score est le candidat 1, avec un score de 80.307."* — **80.307 is the top candidate's score to three decimals** |
+| A question it **cannot** answer (FR-24's criterion) | `POST …/assistant/runs/{id}/question` | *"Le contexte ne fournit pas d'informations sur le nombre d'étudiants inscrits en deuxième année."* — **declined, and invented no figure** |
+
+⚠️ **One imprecision, recorded rather than smoothed over.** The second answer calls the winner *"le
+candidat 1"*. The top candidate is `…-cand-2`; "1" is defensible as *first in the ranked list*, and the
+digit is grounded, but a reader could take it for candidate id `cand-1`, which scores 79.65. **The
+grounding check cannot catch this and does not claim to** — it verifies that every number appears in
+the context, never that the surrounding sentence is right (`assistant/verifier.py`). This is precisely
+the class of defect C-21 says no test can fence off, and it is why nothing the department must defend
+rests on this service.
+
+⚠️ **A defect in `assistant/adapter.py` was found by performing this step, and no reading would have
+found it.** The adapter sent no `User-Agent`, so `urllib` supplied `Python-urllib/<version>`, which
+Groq's CDN refuses with **HTTP 403 / Cloudflare `error code: 1010`** — a client-signature refusal that
+names neither key nor model, so it reads like an authentication fault it is not. Every explanation fell
+back to its computed form with an honest reason, which is degraded mode working correctly, and which is
+also why nothing failed loudly. Fixed by having the client identify itself; pinned by
+`tests/unit/test_assistant.py::test_the_adapter_identifies_itself_rather_than_sending_the_urllib_default`,
+which intercepts `urlopen` and calls no provider.
+
+⚠️ **What this row does and does not establish.** It establishes that the application can obtain a
+grounded answer from a real provider, and that a question the context cannot answer produces no
+invented figure. **It does not establish that any provider answers well in general** — one call on one
+day with one model, which is the whole of C-21. Do not quote this row as evidence about a model.
+**And note the configuration it required:** `OPTIEDT_ASSISTANT_ENABLED` was returned to `false`
+afterwards, because that is the documented default and the suite's FR-22 degraded-mode test asserts it.
 
 ---
 

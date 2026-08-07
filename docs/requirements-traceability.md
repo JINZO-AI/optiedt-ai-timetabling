@@ -17,15 +17,16 @@ remaining reasons the *only* ones.
 ✅ **The whole table was reviewed against evidence in one pass at M7**, as M2 promised — not row by row
 as work landed, which is how a table acquires a count nobody can reproduce.
 
-**Where the project actually is: 7 of 25 requirements are finished, 14 are under way, 4 are not
-started.** *(✓ FR-5, 12, 15, 19, 22, 23, 25 · WIP FR-2, 3, 4, 6, 7, 8, 9, 11, 13, 14, 16, 17, 18, 24 ·
+**Where the project actually is: 8 of 25 requirements are finished, 13 are under way, 4 are not
+started.** *(✓ FR-5, 12, 15, 19, 22, 23, 24, 25 · WIP FR-2, 3, 4, 6, 7, 8, 9, 11, 13, 14, 16, 17, 18 ·
 — FR-1, 10, 20, 21 — count them in the table rather than trusting this line.)*
 
-✅ **FR-25 is `✓` since Phase 7 M5**, and it is worth saying why an *Expected*
-requirement reached `✓` while a *Necessary* one beside it did not. FR-25's criterion is about the
-service being **off** — verifiable in full with no provider — and the computed report is complete:
-run parameters, every candidate with its score, and the published candidate. FR-24's criterion is
-about what a model does when **asked**, and only half of that is verifiable without one.
+✅ **FR-25 is `✓` since Phase 7 M5**, and it reached `✓` before the *Necessary* FR-24 beside it for a
+reason worth keeping: FR-25's criterion is about the service being **off** — verifiable in full with
+no provider — and the computed report is complete: run parameters, every candidate with its score, and
+the published candidate. FR-24's criterion is about what a model does when **asked**, and only half of
+that was verifiable without one. *(The other half was settled on 2026-08-07 by the live call in
+[`docs/demonstration.md`](demonstration.md) §4, which is what finally moved FR-24.)*
 
 ✅ **FR-23 was promoted at Phase 7 M2, 2026-08-06**, and it is the first requirement to reach `✓` with
 no outstanding reason of any kind. It is reachable from the comparison screen, has an acceptance test
@@ -73,22 +74,30 @@ incompleteness of FR-12's own statement.
 - **FR-17** — built, displayed and tested, but **C-9** is open: it has no input/processing/output row in
   the SRS, so its criterion comes from this project's own design document rather than the specification.
 
-✅ **FR-22 is `✓` since Phase 7 M4**, and **FR-24 is `WIP`.** Both are built on the same three routes
-and the same panel; the difference is what remains outstanding.
+✅ **FR-22 is `✓` since Phase 7 M4. FR-24 joined it on 2026-08-07**, when the one thing it was waiting
+on — a first live provider call — was performed and recorded.
 
 - **FR-22** — the adapter, context builder, verifier and computed forms are built and tested, the
   acceptance criterion is **met** (`test_fr22`), and a user reaches an explanation from the comparison
   screen. Nothing is outstanding.
-- **FR-24** — the acceptance criterion is met and the question box works, but it stays `WIP` for one
-  stated reason: **no test establishes that a real provider answers a question well**, and cannot
-  (C-21 — a model's output is not fixed by a seed). What the suite proves is that a question the
-  context cannot answer produces no invented figure, which is the criterion. What it does not prove is
-  that a question the context *can* answer produces a good answer. **A first live call belongs in the
-  demonstration**, and until it happens FR-24 is not finished.
+- **FR-24** — the acceptance criterion was already met by the suite, and the last stated reason for
+  holding it at `WIP` was that **no test establishes that a real provider answers a question well**,
+  and none can (C-21). That gap is closed the only way it could be: **not by a test, but by the
+  deployment step the documentation always named** — one deliberate live call, recorded in
+  [`docs/demonstration.md`](demonstration.md) §4. Both halves are now evidenced: a question the context
+  *cannot* answer produced no invented figure, and a question it *can* answer returned the top
+  candidate's score correct to three decimals.
 
-⚠️ **Do not read that asymmetry as inconsistency.** FR-22's criterion is about the service being OFF,
-which is fully verifiable without a provider. FR-24's is about what a model does when asked, and only
-half of that is verifiable without one.
+⚠️ **What promoting FR-24 does NOT mean, because the distinction is the whole of C-21.** The suite is
+exactly as provider-free as before — **no test calls a live model, and none may.** The `✓` rests on a
+dated, reproducible record of one call, not on automation, and it is not a claim that any provider
+answers well in general. §4 also records an imprecision in that very answer (an ambiguous *"candidat
+1"*), kept deliberately: the grounding check verifies figures, never the sentence around them.
+
+⚠️ **Performing that call found a real defect no reading had.** `assistant/adapter.py` sent no
+`User-Agent`, so `urllib`'s default was refused by the provider's CDN (HTTP 403 / Cloudflare 1010) and
+every answer fell back to its computed form — degraded mode behaving correctly, which is exactly why
+nothing failed loudly. Fixed, and pinned by a test that intercepts `urlopen` and calls no provider.
 
 **FR-9 moved from `—` to `WIP`** at M7: the mechanism is built and its acceptance criterion is met and
 tested (`test_fr09`), while the administration screen it also names is not. `—` said "not started",
@@ -236,7 +245,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db` ✓ — models, migrations, repositories; `services/stores` ✓; `services/publications` ✓; `features/publication` ✓ | `integration/test_store_contract` ✓, `integration/test_publication` ✓, `frontend TraceTable.test` ✓, `acceptance/test_fr19` ✓ | **✓** |
 | **FR-22** | Explain a candidate's quality from computed figures | Necessary | `assistant` ✓ — adapter, context builder, verifier, computed forms; `api/routers/assistant` ✓; `features/assistant` ✓ | `unit/test_assistant` ✓, `frontend Answer.test` ✓, `acceptance/test_fr22` ✓ | **✓** |
 | **FR-23** | Regenerate from an accepted recommendation, preserving H1–H12 | Necessary | `recommendations` ✓; `services/regeneration` ✓; `api/routers/runs` ✓; `features/comparison/RegenerationPanel` ✓ | `unit/test_recommendations` ✓, `unit/test_regeneration` ✓, `frontend RegenerationPanel.test` ✓, `acceptance/test_fr23` ✓ | **✓** |
-| **FR-24** | Answer a question in ordinary language about a run | Necessary | `assistant` ✓; `api/routers/assistant` ✓; `features/assistant` ✓ | `unit/test_assistant` ✓, `frontend Answer.test` ✓, `acceptance/test_fr24` ✓ | **WIP** |
+| **FR-24** | Answer a question in ordinary language about a run | Necessary | `assistant` ✓; `api/routers/assistant` ✓; `features/assistant` ✓ | `unit/test_assistant` ✓, `frontend Answer.test` ✓, `acceptance/test_fr24` ✓, **live call** `demonstration.md` §4 ✓ | **✓** |
 | **FR-25** | Produce a readable report on a run | Expected | `assistant` ✓; `api/routers/assistant` ✓; `features/assistant` ✓ | `acceptance/test_fr25` ✓ | **✓** |
 
 ## Increment 2 — conditional
