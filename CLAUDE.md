@@ -20,9 +20,10 @@ a bug in the documentation to fix before continuing.
 | Order | File | Why |
 |---|---|---|
 | 1 | **`docs/dashboard.md`** | **The handoff page.** State, progress, roadmap, open questions, risks, next task, and the brief for the current phase. Usually the only file you need before starting work |
-| 2 | "The seven invariants" below | What you may never break |
-| 3 | `docs/open-questions.md` | What is **not** decided. Do not silently pick an answer |
-| 4 | `docs/status.md` | Detail behind the dashboard: blockers, measurements, phases, acceptance criteria |
+| 2 | **`docs/project-roadmap.md`** | **"What phase are we in?"** — the whole project as ONE continuous phase sequence, Phase 1 to the final phase. The project owner's tracking view. Answers *what is left before Phase N is complete* without needing increments, milestones or requirement codes |
+| 3 | "The seven invariants" below | What you may never break |
+| 4 | `docs/open-questions.md` | What is **not** decided. Do not silently pick an answer |
+| 5 | `docs/status.md` | Detail behind the dashboard: blockers, measurements, phases, acceptance criteria |
 
 `docs/history.md` is the session-by-session archive. **Do not read it to get oriented** — it is long
 and it contains superseded conclusions kept on purpose. Open it only to check what was already tried

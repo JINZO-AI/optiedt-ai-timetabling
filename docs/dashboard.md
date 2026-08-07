@@ -3,6 +3,11 @@
 **The handoff file. Read this second, after `CLAUDE.md`.** It carries the whole project state; every
 other document is detail you fetch only when you need it.
 
+> 📍 **For "what phase are we in?" read [`docs/project-roadmap.md`](project-roadmap.md).** It maps the
+> whole project — the plan's phases, increment 1 and increment 2 alike — onto **one continuous numbered
+> sequence**, which is the project owner's tracking view. **Currently Phase 9 of 14.** This page stays the
+> handoff page and the traceability table stays the authority on any single requirement.
+
 **Last updated 2026-08-07. Phase 7 is COMPLETE — all seven milestones and a closing audit.**
 
 > ### Is this page still true? Check before trusting it
@@ -555,6 +560,7 @@ constraint entry is **not undertaken** — see `docs/ai-integration.md`.
 
 | You need | Read |
 |---|---|
+| **"What phase are we in?" · what is left before Phase N** | [`docs/project-roadmap.md`](project-roadmap.md) — **the continuous phase view**, Phase 1 to the final phase, with increment 1 and increment 2 mapped into it |
 | Invariants, commands, conventions | `CLAUDE.md` |
 | Detailed state, measurements, acceptance criteria | [`docs/status.md`](status.md) |
 | What is undecided | [`docs/open-questions.md`](open-questions.md) |
