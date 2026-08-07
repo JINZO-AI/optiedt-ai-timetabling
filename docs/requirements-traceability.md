@@ -222,7 +222,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-5** | Produce several candidates, each scored out of 100 | Necessary | `analysis` — scoring ✓; `features/generation` ✓ | `acceptance/test_fr05` ✓ | **✓** |
 | **FR-6** | Order candidates by score | Necessary | `analysis` — ranking | `property` ✓ | **WIP** |
 | **FR-7** | Display the timetable by teacher, group and room | Necessary | `features/timetable` | `integration` | **WIP** |
-| **FR-8** | Report the rules in conflict when no timetable exists | Necessary | `preanalysis` ✓, `solver` — `diagnose()` ✓; `features/conflicts` ✓ | `unit/test_diagnosis` ✓, `integration/test_api_runs` ✓, `frontend ConflictReport.test` ✓, `acceptance/test_fr08` | **WIP** |
+| **FR-8** | Report the rules in conflict when no timetable exists | Necessary | `preanalysis` ✓, `solver` — `diagnose()` ✓; `features/conflicts` ✓ | `unit/test_diagnosis` ✓, `integration/test_api_runs` ✓, `frontend ConflictReport.test` ✓, `acceptance/test_fr08` ✓ | **WIP** |
 | **FR-9** | Configure the calendar: holidays, closed slots, shortened day | Necessary | `db` ✓ — `Slot.is_open` + H9; `features/admin` ⬜ **not built** | `acceptance/test_fr09` ✓ | **WIP** |
 | **FR-10** | Print or export a timetable view | Expected | `features/timetable` | `integration` | — |
 | **FR-11** | Authenticate users and restrict access by role | Necessary | `core/security` ✓; `services/users` ✓; `api/deps` + `routers/auth` ✓; `features/auth` ✓ | `integration/test_rbac` ✓, `unit/test_seed` ✓, `acceptance/test_fr11` ✓ | **WIP** |

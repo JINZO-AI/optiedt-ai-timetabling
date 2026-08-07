@@ -3,7 +3,7 @@
 **The handoff file. Read this second, after `CLAUDE.md`.** It carries the whole project state; every
 other document is detail you fetch only when you need it.
 
-**Last updated 2026-08-06. Phase 7 is COMPLETE — all seven milestones and a closing audit.**
+**Last updated 2026-08-07. Phase 7 is COMPLETE — all seven milestones and a closing audit.**
 
 > ### Is this page still true? Check before trusting it
 >
@@ -65,7 +65,7 @@ requirements are verified against `docs/testing-strategy.md` §4's rows, which a
 | **Milestone reached** | **Phase 7's, 2026-08-06** — *increment 1 closed*: FR-23 regenerates through the same solver, and the assistant explains, answers and reports under a grounding check. **C-1 is closed after 8 days open** |
 | **Current goal** | ⚠️ **None — increment 1 is delivered and no phase is open.** Increment 2 is *conditional on remaining time* and its content is fixed: the examination session (4 d) and weight adjustment from recorded comparisons (3 d). Natural-language constraint entry is **not undertaken** (`docs/ai-integration.md`) |
 | **Next task** | ⚠️ **A decision, not code, and it belongs to the project owner.** Three things are outstanding and none is a defect: **(1)** the timed FR-2 walkthrough, which needs a teacher who has not seen the screen (`docs/demonstration.md` §2); **(2)** a first **live** call to a language provider, without which FR-24 cannot be called done (**C-21**); **(3)** whether to open increment 2. **C-9 and C-15 remain open** and block four requirement ticks between them. See the Phase 7 block for the full list |
-| **Branch** | `main` — ahead of `origin/main` by unpushed local commits. **No count is recorded here**, deliberately: `git rev-list --count origin/main..HEAD` |
+| **Branch** | `main`. ⚠️ **Whether it is ahead of `origin/main` is NOT recorded here**, deliberately — and this row said *"ahead of `origin/main` by unpushed local commits"* until 2026-08-07, when everything had in fact been pushed. It is the same fault as the SHA in the row below and it has the same cause: **a push that does not touch this file cannot correct a claim stored in it.** Derive it — `git fetch`, then `git rev-list --count origin/main..HEAD` (0 means everything is pushed) |
 | **Latest commit** | **Not recorded here** — it is stale the moment anything is committed. `git log -1 --oneline`. The durable fact is the last *pushed* commit, in the row below |
 | **Repository status** | **No SHA and no commit count are recorded here. Derive them:** `git log -1 --oneline` · `git rev-parse --short HEAD` · `git rev-parse --short origin/main` · `git rev-list --count origin/main..HEAD` (0 means everything is pushed). Run `git fetch` first, or `origin/main` is only as fresh as your last one. ⚠️ **This row recorded a SHA and was wrong five times** — the fifth found on 2026-08-04, when it still named the Phase 4 audit commit and `origin/main` had moved two commits past it. Four of those five were *repaired by editing the value*, which is why there was a fifth: **a SHA cannot survive a push that does not touch this file, and a count cannot live in a file that commits change.** The values are therefore gone rather than corrected. The full record of each failure is in [`docs/history.md`](history.md) |
 | **Project health** | 🟢 **Green.** `scripts/run-checks.ps1` green across **nine** steps: **503 backend tests + 53 frontend**, **11/11 layer contracts** kept, mypy strict on **78** files, instance verified, **38 store-contract tests against real PostgreSQL** and **2 migration tests**. Separately, `scripts/run-acceptance.ps1` green: **106 acceptance tests over 14 requirements** (FR-3, 5, 8, 9, 11, 12, 13, 15, 17, 19, 22, 23, 24, 25), of which **35 solve for real**. **8 of 9 acceptance criteria met**; the ninth needs a person. The engine is validated on all 21 published ITC-2007 instances, and the whole path — declare availability, generate, compare, regenerate, explain, publish — is verified against the real solver |
@@ -371,10 +371,11 @@ shortfall — which is **not a timeout**, and is the phase's stated purpose, but
 stated wording.
 
 **The tick is a project-owner decision, not a keyboard one**, and it is the same class as C-5: an
-accepted criterion whose wording does not fit what was built. It is left **unticked** until decided,
-because that is the conservative reading. The evidence is above and in the tests, which encode **both**
-outcomes — writing only the area case would have let the suite report a capability the product does not
-have.
+accepted criterion whose wording does not fit what was built. It was left **unticked** until decided,
+because that was the conservative reading — ✅ **and it was decided on 2026-08-05: the criterion was
+reworded to carry the limit and is now ticked** (`docs/status.md`). The evidence is above and in the
+tests, which encode **both** outcomes — writing only the area case would have let the suite report a
+capability the product does not have.
 
 ⚠️ **The contiguity test does not prove "CP-SAT can never do this".** It runs at one budget, and one
 budget cannot support a claim about every budget. What supports that claim is the recorded measurement
