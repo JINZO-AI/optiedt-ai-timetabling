@@ -179,9 +179,12 @@ went stale again the moment Phase 6 closed — because the audit ran before the 
 was written. Phase 7's audit found it a second time. **A closing audit cannot verify the sentence that
 records its own phase closing**; that line has to be written after.*
 
-⚠️ **Not deployable as it stands.** `OPTIEDT_SECRET_KEY` defaults to a value published in this
-repository, so tokens signed with it can be forged; account management through the interface is not
-built; and the seed command gives every account the same password. Safe to demonstrate, not to expose.
+⚠️ **Still not deployable as it stands** — but it can no longer fail silently. `OPTIEDT_SECRET_KEY`
+defaults to a value published in this repository, so tokens signed with it could be forged. **Since
+2026-08-07, setting `OPTIEDT_ENVIRONMENT=production` makes start-up REFUSE that default**, so the
+failure is loud instead of invisible. What remains genuinely unbuilt is account management through the
+interface, and the seed command still gives every account the same password. Safe to demonstrate, not
+to expose.
 
 **[`docs/dashboard.md`](docs/dashboard.md) is the one page that answers "where is this project".**
 `docs/status.md` holds the detail, `docs/open-questions.md` what is still undecided.

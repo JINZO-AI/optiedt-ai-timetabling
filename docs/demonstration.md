@@ -180,7 +180,7 @@ each has a one-sentence answer if asked.
 | **Calendar administration screen** (FR-9) | Not built. ⚠️ **The acceptance criterion is met** — closing a half-day in *configuration* removes those slots from every timetable with no code change, and that is tested. What is absent is the screen |
 | **Data management** (FR-1) and **print/export** (FR-10) | Not built. Data arrives through the 13 CSVs and the loader |
 | **Account management** | Not built. Accounts come from the seed command (C-18), and every one shares a password |
-| **A deployment** | ⚠️ **Not deployable as it stands.** `OPTIEDT_SECRET_KEY` defaults to a value published in this repository, so tokens signed with it can be forged. Safe to demonstrate, not to expose |
+| **A deployment** | ⚠️ **Not deployable as it stands**, though it can no longer fail silently: `OPTIEDT_SECRET_KEY` defaults to a value published in this repository, and **since 2026-08-07 `OPTIEDT_ENVIRONMENT=production` makes start-up REFUSE that default** (`Settings.require_deployable`, verified to fire). Account management is still unbuilt and every seeded account shares one password. Safe to demonstrate, not to expose |
 
 ⚠️ **If asked "where is the AI?"**, the answer is in `docs/ai-integration.md` and it is worth giving in
 full rather than deflecting: **constraint programming is the AI here**, in the symbolic sense — CP-SAT

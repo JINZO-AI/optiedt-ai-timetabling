@@ -9,6 +9,20 @@ from __future__ import annotations
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+DEFAULT_SECRET_KEY = "change-me-in-env"
+"""The published signing key. Named rather than inlined so the guard below and
+the test that pins it compare against ONE value - a second literal is how a
+guard silently stops matching the thing it guards."""
+
+
+class InsecureConfigurationError(RuntimeError):
+    """Raised when a deployment would run on the published defaults.
+
+    A distinct type rather than a bare RuntimeError so a caller can catch this
+    and nothing else: it means "your configuration is unsafe", never "something
+    went wrong".
+    """
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix="OPTIEDT_", extra="ignore")
@@ -31,7 +45,21 @@ class Settings(BaseSettings):
     a demonstration on a machine with no database."""
 
     # ── Security ───────────────────────────────────────────────────
-    secret_key: str = "change-me-in-env"
+    environment: str = "development"
+    """`development` or `production`. The ONLY thing it changes is whether the
+    published `secret_key` default is tolerated - see `require_deployable()`.
+
+    Defaulting to `development` is deliberate: the whole test suite, the seed
+    command and `run-checks.ps1` construct `Settings()` with no environment at
+    all, and a default of `production` would turn every one of them into a
+    configuration error. The guard has to be opt-IN to be safe to add."""
+
+    secret_key: str = DEFAULT_SECRET_KEY
+    """⚠️ **This default is published in this repository**, so tokens signed
+    with it can be forged by anyone who has read it. It is kept as a default so
+    the suite and a local demonstration run with no configuration at all, and
+    `require_deployable()` is what stops it reaching a deployment."""
+
     access_token_expire_minutes: int = 480
 
     # ── Solver ─────────────────────────────────────────────────────
@@ -91,3 +119,36 @@ class Settings(BaseSettings):
     instance_path: str = "../data/instance"
     constraint_catalogue_path: str = "../data/instance/constraint_catalogue.csv"
     """Authority for H/S codes, default weights and XHSTT references."""
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment.strip().lower() == "production"
+
+    def require_deployable(self) -> None:
+        """Refuse to run on the published defaults when environment=production.
+
+        ⚠️ **A guard, not a note.** `secret_key`'s default is printed in this
+        repository, so a deployment that forgets to set it signs tokens anyone
+        who has read the source can forge - authentication that is present and
+        worthless, which is worse than none because it looks like protection.
+        Four documents recorded that risk in prose and prose stops nobody.
+
+        Raises rather than warns. A warning on stderr at start-up is read once,
+        by the person who already knows, and never by the person who deploys at
+        midnight - and the failure this prevents is silent by nature.
+
+        ⚠️ **It fires only when `environment` is `production`**, which is why
+        that setting exists. The suite, the seed command and every local
+        demonstration construct `Settings()` with no configuration at all; a
+        guard that fired for them would be removed within a day, and a guard
+        that gets removed protects nothing.
+        """
+        if not self.is_production:
+            return
+        if self.secret_key == DEFAULT_SECRET_KEY or not self.secret_key.strip():
+            raise InsecureConfigurationError(
+                "OPTIEDT_SECRET_KEY is unset or still the published default, and "
+                "OPTIEDT_ENVIRONMENT is 'production'. Tokens signed with that key can "
+                "be forged by anyone who has read this repository. Set a real secret "
+                "before serving anyone but yourself."
+            )
