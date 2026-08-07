@@ -139,7 +139,10 @@ catalogued in `docs/open-questions.md` rather than resolved silently.
 
 ## Status
 
-**Increment 1 of 2 · COMPLETE. Phases 1–7 delivered.**
+**Increment 1 · COMPLETE. Phases 1–8 delivered. Currently Phase 9 of 14 — not started.**
+
+📍 **[`docs/project-roadmap.md`](docs/project-roadmap.md) is the phase view** — the whole project as one
+continuous sequence, with what the specification calls increment 1 and increment 2 mapped into it.
 
 The decision layer is built: all twelve hard constraints, a conflict-free timetable on the reference
 instance in about three seconds, every constraint re-verified from the raw data rather than trusted
