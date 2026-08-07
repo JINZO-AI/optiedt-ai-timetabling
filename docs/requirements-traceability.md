@@ -11,14 +11,14 @@ Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 FR-11, FR-13, FR-15, FR-17 and FR-19**, each driven through the HTTP API because a requirement is `✓`
 only once a user can *reach* it. ⚠️ **A passing acceptance test is necessary, not sufficient**: FR-13
 still waits on **C-15**, FR-11 on account management and a `secret_key` that is not published in this
-repository, and FR-2 on an acceptance test (its criterion was settled 2026-08-07). The suite is what makes those
+repository. *(FR-2's own reasons are both discharged as of 2026-08-07.)* The suite is what makes those
 remaining reasons the *only* ones.
 
 ✅ **The whole table was reviewed against evidence in one pass at M7**, as M2 promised — not row by row
 as work landed, which is how a table acquires a count nobody can reproduce.
 
-**Where the project actually is: 8 of 25 requirements are finished, 13 are under way, 4 are not
-started.** *(✓ FR-5, 12, 15, 19, 22, 23, 24, 25 · WIP FR-2, 3, 4, 6, 7, 8, 9, 11, 13, 14, 16, 17, 18 ·
+**Where the project actually is: 9 of 25 requirements are finished, 12 are under way, 4 are not
+started.** *(✓ FR-2, 5, 12, 15, 19, 22, 23, 24, 25 · WIP FR-3, 4, 6, 7, 8, 9, 11, 13, 14, 16, 17, 18 ·
 — FR-1, 10, 20, 21 — count them in the table rather than trusting this line.)*
 
 ✅ **FR-25 is `✓` since Phase 7 M5**, and it reached `✓` before the *Necessary* FR-24 beside it for a
@@ -151,14 +151,20 @@ decision to *"completed without assistance by a user who had not previously seen
 measured no time and so could not support *"under 5 minutes"*. Record and limitations:
 [`docs/demonstration.md`](demonstration.md) §2.
 
-⚠️ **FR-2 nevertheless stays `WIP`, and now for exactly one narrowed reason: there is no
-`acceptance/test_fr02`.** Every requirement promoted at M7 was promoted once an acceptance test existed
-(*"no acceptance test — written in M2/M3"* is the entry in all four rows of that table), and the FR-2
-row has carried `acceptance/test_fr02` with a ⚠️ rather than a ✓ since it was written. Promoting on the
-criterion alone would drop a bar the other eight ticks cleared. **The mechanical half is testable** —
-the grid loads, the replace-wholesale rule, the `SYNTHETIC`/`TEACHER` distinction — and
-`unit/test_availability_api` already covers it; what is missing is the same assertions driven through
-the HTTP API, which is what makes a capability *reachable* rather than merely present. **FR-7 and FR-18 joined in M4**: the four
+✅ **FR-2 is `✓` since 2026-08-07**, once `acceptance/test_fr02` was written — the bar every
+requirement promoted at M7 had to clear, and the one FR-2's row had carried with a ⚠️ since it was
+written. **Five tests, real tokens, no dependency override**, for the reason `test_fr11` uses them:
+FR-2 is about what a *teacher* can do with their own grid, so overriding `current_user` would test the
+override rather than the path.
+
+⚠️ **The test does not automate the criterion and says so in its own docstring.** Whether a person
+completes the grid unaided was settled by the walkthrough, with its limitations recorded in
+[`docs/demonstration.md`](demonstration.md) §2. What the test establishes is the half a stopwatch
+cannot: that the capability is **reachable by a teacher over the same HTTP path the screen uses**, that
+the whole week arrives in one request as a full day × period rectangle, that closed slots are **marked
+as data** so the grid can withhold them without special-casing a day (invariant 7, ADR-003), and that a
+generated declaration stays distinguishable from the teacher's own — which is precisely what §2 asks
+the participant whether they noticed. **FR-7 and FR-18 joined in M4**: the four
 timetable views render a candidate by teacher, group and room, and report each room's occupancy —
 verified against the real solver, with the occupancy totals matching `verify-instance` exactly. They
 stay `WIP` because no automated test covers the views yet and there is no authentication deciding who
@@ -236,7 +242,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | FR | Requirement | Priority | Module | Test | Status |
 |---|---|---|---|---|---|
 | **FR-1** | Load and manage department data | Necessary | `api`, `db`, `services` | `acceptance/test_fr01` | — |
-| **FR-2** | Teacher declares availability on a weekly grid | Necessary | `api`, `db`; `features/availability` ✓ | `unit/test_availability_api` ✓, `acceptance/test_fr02` ⚠️ timed walkthrough | **WIP** |
+| **FR-2** | Teacher declares availability on a weekly grid | Necessary | `api`, `db`; `features/availability` ✓ | `unit/test_availability_api` ✓, `acceptance/test_fr02` ✓, **walkthrough** `demonstration.md` §2 ✓ | **✓** |
 | **FR-3** | Generate a timetable respecting H1–H12 | Necessary | `solver` | `integration/test_h1_h12` ✓, `acceptance/test_fr03` ✓ | **WIP** |
 | **FR-4** | Improve quality criteria within a time limit | Necessary | `solver` — objective | `integration` | **WIP** |
 | **FR-5** | Produce several candidates, each scored out of 100 | Necessary | `analysis` — scoring ✓; `features/generation` ✓ | `acceptance/test_fr05` ✓ | **✓** |
