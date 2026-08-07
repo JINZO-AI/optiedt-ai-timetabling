@@ -274,8 +274,30 @@ produced."** If two profiles converge, the system behaves correctly and the test
 ## Weight profiles and the portfolio
 
 Three profiles by default: **balanced** (catalogue values), **student-favouring** (raises S2),
-**teacher-favouring** (raises S3 and S5). The total budget is divided between them; a candidate
+**teacher-favouring** (raises **S3 and S4**). The total budget is divided between them; a candidate
 identical to one already obtained is not retained.
+
+⚠️ **Teacher-favouring raised S3 and S5 until 2026-08-07. Raising S5 was C-15**, and the change is
+recorded there in full with its six measurements. In short: S5 is an admitted proxy (**C-12** — the
+instance carries no preferred-window column, so S5 counts edge-of-day sessions), it is the most
+expensive criterion to optimise, and weighting it 0.40 made teacher-favouring come back **worst of the
+three on S3, S4 and S5 at once**. S3 and S4 are what measure teacher experience from real placements,
+and **C-4** chose *teacher* as S4's resource for exactly that purpose. Measured effect: S3 **29 → 0**
+(the proven single-criterion optimum), S5 103 → 95, score 79.45 → 81.10.
+
+**What a favouring profile promises**, stated because the unstated stronger reading is what made C-15
+look like a defect:
+
+> A favouring profile produces **the best value of its headline criterion** among the three candidates.
+> It does **not** promise to win every criterion of its constituency.
+
+⚠️ **The stronger promise is unachievable at any weighting, and that is demonstrable rather than
+asserted**: solving S3 alone drives S5 to 113, and solving S5 alone drives S4 to 73. The teacher
+criteria genuinely conflict, so no weight vector wins all of them. `balanced` still holds the best S4.
+
+The objective formula is **unchanged** — `minimise Σ(weightᵢ × violationsᵢ)`, raw weights. C-15 was
+resolved by changing *which criteria a profile raises*, never the formulation; normalising the
+objective by bound range was measured and is **worse** (S3 has the largest range, so it shrinks S3 most).
 
 Diversity comes from **varying the objective, not the random seed** — deliberately. Two candidates
 differing only by seed differ for no reason anyone can state; two candidates from two profiles differ

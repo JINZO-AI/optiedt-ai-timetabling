@@ -17,20 +17,21 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 
 ## Index — what is actually still open
 
-**Two.** Everything else on this page is resolved and kept for its reasoning.
+**One.** Everything else on this page is resolved and kept for its reasoning. **C-15 was resolved on
+2026-08-07** — on measurement, and by refuting its own recorded diagnosis.
 
 | # | Still open | Blocks | Owner |
 |---|---|---|---|
 | **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | ⚠️ **Not the Phase 6 acceptance suite** — see the correction in C-9's own section | Technical lead |
-| **C-15** | The objective weights raw violation counts of incomparable scale, so "teacher-favouring" favours only S5, not S3. **Deferred by decision 2026-07-30** — recorded, objective unchanged. Phase 4's comparison screen sidesteps it by showing measured sub-scores and making **no claim about what a profile favours** | FR-13's `✓` | Technical lead |
+| ~~**C-15**~~ | ~~The objective weights raw violation counts of incomparable scale~~ — **RESOLVED 2026-08-07 on measurement.** The diagnosis was wrong: the objective formulation is sound and is unchanged. `teacher-favouring` now raises **S3 and S4** rather than S3 and S5, because S5 is an admitted proxy (C-12) and the most expensive criterion to optimise. A profile's promise is reworded to its **headline** criterion, the only reading the arithmetic can deliver | ~~FR-13~~ — unblocked | ~~Technical lead~~ |
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
 **C-17, C-18** (2026-08-04) · **C-5, C-14** (2026-08-05, project-owner decision) ·
 **C-19, C-20, C-21** (2026-08-06, project-owner decision, before any Phase 7 code) ·
-**C-8, C-11** · **C-4, C-12** · **C-16** (2026-07-30, implemented). The sections below keep their full reasoning;
-headings say which is which.
+**C-8, C-11** · **C-4, C-12** · **C-16** (2026-07-30, implemented) · **C-15** (2026-08-07, on
+measurement). The sections below keep their full reasoning; headings say which is which.
 
-**Eighteen resolved plus two open is twenty, and the codes run C-1 to C-21 — there is no C-10, and that
+**Nineteen resolved plus one open is twenty, and the codes run C-1 to C-21 — there is no C-10, and that
 is not a lost question.** The number was never assigned. Recorded here for the same reason the retired
 soft-criterion codes S1/S8/S9 are recorded in the errata: a gap in a sequence invites someone to go
 looking for what fell through it.
@@ -357,7 +358,12 @@ which is a different thing.
 
 **Blocked:** nothing. FR-17's `✓` is unblocked. **Resolved by:** project owner, 2026-08-05.
 
-### C-15 — The objective weights raw violation counts of incomparable scale · **NEW, OPEN — deferred 2026-07-30 by decision**
+### C-15 — The objective weights raw violation counts of incomparable scale · **RESOLVED 2026-08-07 → teacher-favouring raises S3 and S4, and a profile's promise is reworded**
+
+⚠️ **The heading above states the ORIGINAL diagnosis, and the resolution at the foot of this section
+refutes it.** The problem was never the objective's formulation — it was *which criteria the profile
+raised*. Read the resolution before acting on anything between here and there; the analysis in between
+is kept because its measurements are real and its reasoning error is instructive, exactly as C-13's is.
 
 `docs/constraint-model.md` specifies the objective as `minimise Σ ( weight_i × violations_i )`, in
 **raw** units. The seven criteria do not share a scale: on the reference instance S5 measures ~100
@@ -394,6 +400,99 @@ finished, because the profiles do not yet differentiate for the documented reaso
 
 **Blocks:** FR-13's eventual `✓`; the Phase 4 comparison screen, which would otherwise explain a
 difference by a cause that is not the real one. **Owner:** technical lead.
+
+#### RESOLVED 2026-08-07 → teacher-favouring raises S3 and S4, and a profile's promise is reworded
+
+⚠️ **Everything above misdiagnoses the problem, and the three obvious fixes are all wrong.** Six
+measurements were taken on the reference instance (seed 42) before anything was changed. They are
+recorded in full because the dead ends are more useful than the conclusion.
+
+**First, the symptom is worse than this section says.** C-15 records *"favours only S5, not S3"*. Measured
+head-to-head at production settings — which the original evidence never did, it compared **one profile
+across budgets** — teacher-favouring is the **worst of the three on every teacher criterion at once**,
+and on the overall score:
+
+| profile | S3 | S4 | S5 | score |
+|---|---|---|---|---|
+| balanced | 22 | 57 | 100 | 82.87 |
+| student-favouring | 24 | 58 | 100 | 83.00 |
+| **teacher-favouring** | **29** | **65** | **103** | **79.45** |
+
+It wins only S10, which carries weight 0.
+
+##### The four refuted hypotheses
+
+**(1) Normalise the objective by each criterion's bound range** — the fix this section proposes first.
+**Refuted analytically.** S3's instance-derived range is **752, the largest of the seven**; S5's is 218.
+Dividing by the range therefore shrinks S3's coefficient *most*. Raw S3:S5 = 1 : 1.33; range-normalised
+= **1 : 4.6**. It makes the imbalance **3.4× worse**. Measured ranges: S2 720 · S3 752 · S4 172 · S5 218
+· S6 12.64 · S7 268 · S10 180.
+
+**(2) Renormalise each profile's weights to sum to 1.** **Refuted empirically** — teacher-favouring
+returned a **bit-identical** timetable (S3=29, S4=65, S5=103, score 79.45). It must: `minimise Σ(wᵢvᵢ)`
+and `minimise Σ((wᵢ/T)vᵢ)` share an argmin, so scaling an objective cannot move its optimum. A theorem
+the experiment re-derived the expensive way.
+
+**(3) The per-profile budget is too small.** **Refuted.** Tripled to 90 per profile: teacher-favouring's
+own timetable stayed **~16 objective units worse on its own objective** than a sibling profile's
+(16.50 at budget 30, 15.65 at budget 90). Convergence is not the mechanism.
+
+**(4) The S3/S5 objective terms are miscoded** — the C-4 S6 failure repeating. **Refuted.** Solving with
+one criterion carrying all the weight: **S3-only reaches 0, proven optimal, using 14.45 of 90 budget
+units**; S5-only reaches 48 against balanced's incidental 84. Both terms work.
+
+##### The actual mechanism, and why the profile was indefensible
+
+**S3 is cheap and S5 is expensive.** S3 alone is *proven optimal at zero* in 14 units; S5 alone consumes
+the entire 90-unit budget and proves nothing. Teacher-favouring put its **largest single weight** (0.40,
+leverage 0.40 × 218 = 87.2) on the expensive criterion, so the budget drained into S5 and every other
+criterion drifted — **including S5 itself**, which ended at 103 against balanced's 100.
+
+**And S5 is not teacher preference.** **C-12** records it as *"a labeled stand-in for real preference
+data, not a definition of teacher preference"* — `teacher_availability.csv` has no preferred-window
+column, so S5 counts sessions at the edge of the day. A *teacher-favouring* profile was therefore
+spending 40 % of its weight on a proxy for data that does not exist, while under-weighting the two
+criteria that measure teacher experience from real placements. **C-4 chose *teacher* as S4's resource
+for exactly this purpose**: *"S3 already penalises gaps within a day a teacher is present, but not a
+teacher spread thinly across many low-load days — S4 fills exactly that gap."* S3 and S4 together **are**
+teacher welfare in this model; S5 is a placeholder.
+
+##### The decision, in two parts
+
+**(i) `teacher-favouring` raises S3 and S4**, not S3 and S5. This is a deliberate change to
+`docs/constraint-model.md`'s profile definition, taken on the evidence above. Measured effect:
+
+| | S3 | S4 | S5 | score |
+|---|---|---|---|---|
+| before (raises S3, S5) | 29 | 65 | 103 | 79.45 |
+| **after (raises S3, S4)** | **0** | 69 | **95** | **81.10** |
+
+S3 reaches **0 — the proven single-criterion optimum** — and teacher-favouring now holds the best S3
+*and* the best S5 of the three profiles, having previously held neither.
+
+**(ii) What a favouring profile PROMISES is reworded**, because the old implicit promise is
+unachievable and that is what made this look like a defect:
+
+> **A favouring profile produces the best value of its headline criterion among the three candidates.**
+> It does **not** promise to win every criterion of its constituency.
+
+⚠️ **No weighted-sum scalarisation can deliver the stronger promise, and that is provable here rather
+than asserted:** S3-only drives S5 to 113; S5-only drives S4 to 73. The teacher criteria genuinely
+conflict, so a profile that wins all of them does not exist at any weighting. Under the new profile
+`balanced` still holds the best S4 (57 vs 69) and the best *normalised* teacher aggregate — because S4
+has the smallest range of the three (172), so a unit of S4 moves that aggregate most. **That is
+multi-objective reality, and it is now stated instead of read as a bug.**
+
+##### What this does not change
+
+`minimise Σ(weightᵢ × violationsᵢ)` is **untouched** — raw weights, exactly as
+`docs/constraint-model.md` specifies. `solver/objective.py` is untouched, and its docstring's refusal to
+normalise inside the solver is **vindicated**, not overruled. Scoring, ranking and the exact
+decomposition are untouched: profiles steer the *search*, and `scoring_weights` prices every candidate
+under one vector. No import contract moves.
+
+**Blocked:** nothing. **FR-13's `✓` is unblocked.** **Resolved by:** lead engineer, 2026-08-07, on
+measurement.
 
 ### C-18 — Nothing says where the first account comes from · **RESOLVED 2026-08-04 → a seed command**
 

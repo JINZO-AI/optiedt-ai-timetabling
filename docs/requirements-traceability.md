@@ -17,8 +17,8 @@ remaining reasons the *only* ones.
 ✅ **The whole table was reviewed against evidence in one pass at M7**, as M2 promised — not row by row
 as work landed, which is how a table acquires a count nobody can reproduce.
 
-**Where the project actually is: 9 of 25 requirements are finished, 12 are under way, 4 are not
-started.** *(✓ FR-2, 5, 12, 15, 19, 22, 23, 24, 25 · WIP FR-3, 4, 6, 7, 8, 9, 11, 13, 14, 16, 17, 18 ·
+**Where the project actually is: 10 of 25 requirements are finished, 11 are under way, 4 are not
+started.** *(✓ FR-2, 5, 12, 13, 15, 19, 22, 23, 24, 25 · WIP FR-3, 4, 6, 7, 8, 9, 11, 14, 16, 17, 18 ·
 — FR-1, 10, 20, 21 — count them in the table rather than trusting this line.)*
 
 ✅ **FR-25 is `✓` since Phase 7 M5**, and it reached `✓` before the *Necessary* FR-24 beside it for a
@@ -68,7 +68,12 @@ incompleteness of FR-12's own statement.
   no timetable exists" and on the C-13 contiguity shape **no rules are reported**. The **criterion** was
   reworded to carry that limit (project-owner decision, 2026-08-05); the **requirement statement** was
   not. Promoting on a reworded criterion would be promoting on a moved goalpost.
-- **FR-13** — **C-15** is open: the profiles do not differentiate for the documented reason.
+- ~~**FR-13** — **C-15** is open: the profiles do not differentiate for the documented reason.~~
+  ✅ **Closed 2026-08-07. C-15 was resolved by refuting its own diagnosis**: the objective formulation
+  is sound and unchanged; what was wrong was *which criteria the profile raised*. `teacher-favouring`
+  now raises **S3 and S4** — S5 being an admitted proxy for absent preference data (C-12) and the most
+  expensive criterion to optimise. Measured: S3 **29 → 0** (the proven single-criterion optimum), S5
+  103 → 95, score 79.45 → 81.10. **FR-13 is `✓`.**
 - **FR-11** — account management through the interface is not built (C-18), and `secret_key` still
   defaults to a value published in this repository.
 - **FR-17** — built, displayed and tested, but **C-9** is open: it has no input/processing/output row in
@@ -229,11 +234,23 @@ recommendation yet. The ⚠️ note above is about something else: one *clause* 
 that can never occur. Do not read that note as the reason FR-16 is unfinished, and do not let it delay
 FR-16's `✓` once the interface exists; C-14 governs the clause, not the requirement.
 
-⚠️ **FR-13 is `WIP`, not `✓`, for a second reason beyond the missing interface.** It produces candidates
-under distinct profiles, but the profiles do not yet differentiate for the documented reason:
-"teacher-favouring" raises S3 and S5 and measurably improves only S5, because the objective weights raw
-violation counts of very different magnitudes. Recorded as a live risk in
-[`docs/status.md`](status.md); it needs a decision before FR-13 can be called done.
+✅ **FR-13 reached `✓` on 2026-08-07, and the second reason it carried is worth keeping.** It read:
+*"the profiles do not yet differentiate — teacher-favouring raises S3 and S5 and measurably improves
+only S5, because the objective weights raw violation counts of very different magnitudes."*
+
+**That diagnosis was wrong, and measuring it is what fixed FR-13.** Six measurements on the reference
+instance refuted four candidate fixes — including normalising the objective by bound range, which is
+**worse** because S3 has the largest range of the seven, and renormalising the weights, which returned a
+*bit-identical* timetable because scaling cannot move an argmin. The objective formulation is sound and
+is **unchanged**. What was wrong was *which criteria the profile raised*: S5 is an admitted proxy for
+absent preference data (**C-12**) and the most expensive criterion to optimise, so weighting it 0.40 left
+teacher-favouring **worst of the three on S3, S4 and S5 at once**.
+
+`teacher-favouring` now raises **S3 and S4** — the two criteria that measure teacher experience from
+real placements, which is why **C-4** chose *teacher* as S4's resource. Measured: S3 **29 → 0**, S5
+103 → 95, score 79.45 → 81.10. `acceptance/test_fr13` now asserts the promise as C-15 reworded it — a
+favouring profile holds the best value of its **headline** criterion — which is the only reading the
+arithmetic can deliver, since the teacher criteria genuinely conflict.
 
 ---
 
@@ -253,7 +270,7 @@ violation counts of very different magnitudes. Recorded as a live risk in
 | **FR-10** | Print or export a timetable view | Expected | `features/timetable` | `integration` | — |
 | **FR-11** | Authenticate users and restrict access by role | Necessary | `core/security` ✓; `services/users` ✓; `api/deps` + `routers/auth` ✓; `features/auth` ✓ | `integration/test_rbac` ✓, `unit/test_seed` ✓, `acceptance/test_fr11` ✓ | **WIP** |
 | **FR-12** | Verify data before solving; report structural risks | Necessary | `preanalysis` ✓; `api` — `RunOut.preAnalysis`; `features/generation` ✓ | `unit/test_preanalysis` ✓, `integration/test_preanalysis_matches_verifier` ✓, `frontend PreAnalysisReport.test` ✓, `acceptance/test_fr12` ✓ | **✓** |
-| **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs; `solver` | `unit/test_portfolio` ✓, `acceptance/test_fr13` ✓ ⚠️ | **WIP** |
+| **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs ✓; `solver` ✓ | `unit/test_portfolio` ✓, `acceptance/test_fr13` ✓ | **✓** |
 | **FR-14** | Compare two candidates criterion by criterion | Necessary | `features/comparison` | `integration` | **WIP** |
 | **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition; `features/comparison` | `property` ✓, `frontend ContributionsTable.test` ✓, `acceptance/test_fr15` ✓ | **✓** |
 | **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking | `unit/test_recommendation` ✓ | **WIP** |

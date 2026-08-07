@@ -18,11 +18,19 @@ the assertion stays at exactly three, because the measurement is 3 distinct /
 ⚠️ **This criterion is explicitly instance-specific.** If the reference
 instance changes, the expectation of three must be re-derived, not assumed.
 
-⚠️ **FR-13 is not `✓` on this test alone.** C-15 is still open: the objective
-weights raw violation counts of incomparable scale, so "teacher-favouring"
-measurably improves S5 and not S3. This file asserts what was accepted - three
-distinct candidates under distinct profiles - and makes no claim about what a
-profile favours, exactly as the comparison screen makes none.
+✅ **C-15 was resolved on 2026-08-07** and this file gained the assertion it
+previously could not make. `teacher-favouring` raises **S3 and S4** rather than
+S3 and S5, because S5 is an admitted proxy for absent preference data (C-12)
+and was the most expensive criterion to optimise; weighting it 0.40 left
+teacher-favouring worst of the three on S3, S4 AND S5 at once.
+
+⚠️ **What is asserted below is the promise as C-15 reworded it** - a favouring
+profile produces the best value of its HEADLINE criterion, not a win on every
+criterion of its constituency. The stronger reading is unachievable at any
+weighting: solving S3 alone drives S5 to 113, solving S5 alone drives S4 to 73.
+`balanced` still holds the best S4, and asserting otherwise would pin a claim
+the arithmetic forbids - the same mistake C-14's "dominated top candidate"
+clause made.
 """
 
 from __future__ import annotations
@@ -83,6 +91,43 @@ def test_each_candidate_records_the_profile_that_produced_it(
 
     assert len(profiles) == EXPECTED_CANDIDATES
     assert profiles == {"balanced", "student-favouring", "teacher-favouring"}
+
+
+def test_a_favouring_profile_wins_its_headline_criterion(
+    portfolio: dict[str, object],
+) -> None:
+    """C-15's reworded promise, and the reason FR-13 can now be `✓`.
+
+    Each favouring profile must produce the BEST value of the criterion it
+    raises hardest - student-favouring on S2, teacher-favouring on S3. Lower
+    raw values are better for every criterion in this catalogue.
+
+    ⚠️ **Only the headline criterion is asserted, deliberately.** A profile
+    that won every criterion of its constituency is unachievable at any
+    weighting and C-15 proves it by measurement: solving S3 alone drives S5 to
+    113, solving S5 alone drives S4 to 73. `balanced` legitimately holds the
+    best S4. Asserting a sweep would pin a claim the arithmetic forbids -
+    exactly the fault C-14 found in the "dominated top candidate" clause.
+
+    ⚠️ Before 2026-08-07 this test could not have existed: teacher-favouring
+    raised S5, an admitted proxy (C-12), and came back worst of the three on
+    S3, S4 and S5 simultaneously.
+    """
+    headline = {"student-favouring": "S2", "teacher-favouring": "S3"}
+
+    raw = {
+        candidate["profileName"]: {s["criterion"]: s["rawValue"] for s in candidate["subScores"]}
+        for candidate in portfolio["candidates"]
+    }
+
+    for profile, code in headline.items():
+        assert profile in raw, f"{profile} produced no distinct candidate"
+        best = min(raw, key=lambda name: raw[name][code])
+        assert best == profile, (
+            f"{profile} must hold the best {code} of the three, but {best} does: "
+            + ", ".join(f"{name} {code}={raw[name][code]}" for name in sorted(raw))
+            + ". See C-15 - a favouring profile promises its HEADLINE criterion."
+        )
 
 
 def test_the_general_contract_holds_too_at_most_three_duplicates_removed(

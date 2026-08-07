@@ -161,9 +161,39 @@ def profiles_from(base: dict[ConstraintCode, float]) -> tuple[WeightProfile, ...
     """The three profiles of docs/constraint-model.md, over a supplied base.
 
     balanced = the base as given · student-favouring raises S2 · teacher-
-    favouring raises S3 and S5. Returned in a fixed order so a run is
+    favouring raises **S3 and S4**. Returned in a fixed order so a run is
     reproducible (ADR-011); a set or a dict comprehension over an unordered
     source would not be.
+
+    ⚠️ **Teacher-favouring raised S3 and S5 until 2026-08-07, and raising S5
+    was the whole of C-15.** S5 is an admitted PROXY - C-12 records it as "a
+    labeled stand-in for real preference data, not a definition of teacher
+    preference", because `teacher_availability.csv` has no preferred-window
+    column and S5 therefore counts sessions at the edge of the day. Spending a
+    teacher profile's largest weight on a proxy for absent data is not
+    favouring teachers, and it measurably was not: teacher-favouring came back
+    **worst of the three on S3, S4 AND S5 at once**, and on the overall score.
+
+    S3 and S4 are what measure teacher experience from real placements, and
+    C-4 chose *teacher* as S4's resource for exactly that reason - "S3 already
+    penalises gaps within a day a teacher is present, but not a teacher spread
+    thinly across many low-load days - S4 fills exactly that gap."
+
+    Measured on the reference instance, seed 42, budget 90 (C-15):
+
+        raises S3, S5   ->  S3=29  S4=65  S5=103  score 79.45   (won nothing)
+        raises S3, S4   ->  S3= 0  S4=69  S5= 95  score 81.10   (best S3 AND S5)
+
+    S3=0 is the proven single-criterion optimum, reached in 14.45 of 90 budget
+    units when S3 is solved alone.
+
+    ⚠️ **A favouring profile promises the best value of its HEADLINE criterion
+    among the three, not a win on every criterion of its constituency** - the
+    stronger reading is unachievable at any weighting and claiming it is what
+    made C-15 look like a defect. Proof that it is unachievable rather than
+    merely unachieved: solving S3 alone drives S5 to 113; solving S5 alone
+    drives S4 to 73. The teacher criteria genuinely conflict. `balanced` still
+    holds the best S4, and that is multi-objective reality, not a regression.
 
     The base is the catalogue for an ordinary run. It is the run's ADJUSTED
     weight vector for a run regenerated from an accepted `weight_delta`
@@ -180,7 +210,7 @@ def profiles_from(base: dict[ConstraintCode, float]) -> tuple[WeightProfile, ...
     return (
         WeightProfile(name="balanced", weights=dict(base)),
         WeightProfile(name="student-favouring", weights=raising("S2")),
-        WeightProfile(name="teacher-favouring", weights=raising("S3", "S5")),
+        WeightProfile(name="teacher-favouring", weights=raising("S3", "S4")),
     )
 
 
