@@ -139,7 +139,7 @@ catalogued in `docs/open-questions.md` rather than resolved silently.
 
 ## Status
 
-**Increment 1 · COMPLETE. Phases 1–8 delivered. Currently Phase 9 of 14 — not started.**
+**Increment 1 · COMPLETE. Phases 1–9 delivered. Currently Phase 10 of 14 — not started.**
 
 📍 **[`docs/project-roadmap.md`](docs/project-roadmap.md) is the phase view** — the whole project as one
 continuous sequence, with what the specification calls increment 1 and increment 2 mapped into it.
@@ -150,7 +150,9 @@ from the solver's own status. The analysis layer sits on top: seven quality crit
 weighted score, ranking, the term-by-term decomposition, Pareto dominance, and a portfolio returning
 three distinct candidates reproducibly. The engine is validated on the 21 published ITC-2007 instances.
 The web interface reaches all of it — availability grid, generation, four timetable views, comparison,
-the conflict report and published timetables with their trace.
+the conflict report and published timetables with their trace. **Phase 9 added the way out of the
+screen** (FR-10): every timetable view prints as an identified sheet and downloads as a spreadsheet,
+both carrying the run, seed and full weight vector that produced them.
 
 Phase 5 added the five pre-solve checks inside the application, a diagnosis run that names the rules
 in conflict, the run record in PostgreSQL, authentication with rights, and publication. Phase 6 added
@@ -176,6 +178,13 @@ That record is a dated observation, not automation: a green build is still no ev
 ⚠️ **`scripts/run-checks.ps1` is run by a person, not by a pipeline.** There is no CI configuration in
 this repository. The eleven `import-linter` contracts are real and do fire — but nothing runs them
 automatically, so a violation is caught when someone runs the script, not when they push.
+
+⚠️ **10 of 25 requirements are `✓`, and that number understates the software badly.** Of the 12 marked
+`WIP`, none lacks working code: five need only an acceptance test, four wait on a specification row
+nobody in this repository can write (**C-9**), two need a screen over a mechanism that already works,
+and one needs its statement reworded to match its own criterion. **FR-10 is the clearest case** — Phase
+9 delivered print and export in full and the `✓` count did not move, because C-9 leaves it with no
+criterion to verify against. Quote the measure with the number.
 
 ⚠️ *This Status section was two phases stale when Phase 6's audit found it, was corrected, and then
 went stale again the moment Phase 6 closed — because the audit ran before the phase's own final state

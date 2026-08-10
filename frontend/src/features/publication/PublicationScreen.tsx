@@ -24,13 +24,24 @@ export function PublicationScreen() {
   }
 
   return (
-    <section className="panel">
+    <section className="panel panel--printable">
       <h1>Emplois du temps publiés</h1>
       <p className="panel__note">
         Chaque publication est présentée avec ce qui l’a produite — exécution, graine, pondération
         et version du modèle — afin qu’un emploi du temps publié reste rattachable à son origine
         sans avoir à recouper plusieurs écrans.
       </p>
+
+      {/* FR-10. The trace is the part of a publication worth having on paper:
+          it is what makes a printed timetable answerable to the run that
+          produced it rather than to whoever is holding it. */}
+      {published.data !== undefined && published.data.length > 0 && (
+        <div className="outputs">
+          <button className="outputs__action" onClick={() => window.print()}>
+            Imprimer
+          </button>
+        </div>
+      )}
 
       {published.isPending && <p className="panel__note">Chargement…</p>}
       {published.isError && (

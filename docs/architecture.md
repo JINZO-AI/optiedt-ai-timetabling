@@ -63,6 +63,7 @@ the change is wrong.
 | Layer | May | May **not** |
 |---|---|---|
 | Presentation | Display, filter, print, ask | Compute a score, decide an order |
+| ↳ *"print" is load-bearing* | FR-10's print stylesheet and CSV export live in `features/timetable/`, and **no backend code was written for them** (Phase 9). The exporter re-serialises figures the API already sent, in day-then-period order — a grid axis | Emit a column it would have to work out for itself. That is the edge this permission stops at |
 | Application | Persist, authorise, orchestrate runs, publish | Place a session |
 | Pre-analysis | Read the instance, report structural risk | Call the solver |
 | Decision | Assign slots and rooms | Read a score, know a weight profile's *name* |

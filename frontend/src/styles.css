@@ -665,3 +665,153 @@ table.trace .num {
   color: var(--ink-soft);
   font-size: 0.75rem;
 }
+
+/* ── FR-10: print and export ──────────────────────────────────────── */
+
+.outputs {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.outputs__action {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  font-weight: 600;
+}
+
+/* Shown only on paper. The same facts are already on screen, in the selectors
+ * above the grid, so repeating them in the interface would be noise. */
+.print-only {
+  display: none;
+}
+
+@media print {
+  /* Anything whose purpose is to change what is displayed has no meaning on
+   * paper: a printed <select> is a rectangle nobody can operate. */
+  .app__header,
+  .app__account,
+  .app__nav,
+  .no-print,
+  .outputs,
+  .tabs {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .app__main {
+    padding: 0;
+    max-width: none;
+  }
+
+  .panel {
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* A grid split across two sheets is a timetable with a day missing from each
+   * half, so the printed week is kept whole. */
+  .panel--printable {
+    break-inside: avoid;
+  }
+
+  table.grid,
+  table.subscores,
+  table.trace {
+    break-inside: auto;
+  }
+
+  table.grid tr,
+  table.subscores tr,
+  table.trace tr {
+    break-inside: avoid;
+  }
+
+  /* Browsers drop background colours by default, which would erase the CM/TD/TP
+   * distinction the cells carry — so the cell keeps a visible border instead of
+   * relying on a fill that will not be printed. */
+  .cell {
+    height: auto;
+    min-height: 3.2rem;
+    border: 1px solid #333;
+  }
+
+  .cell--closed {
+    background: none;
+  }
+
+  table.grid th {
+    background: none;
+    border: 1px solid #333;
+  }
+
+  .bar,
+  .bar__track {
+    display: none;
+  }
+
+  a[href]::after {
+    content: '';
+  }
+}
+
+.print-header {
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid var(--ink);
+}
+
+.print-header__top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.print-header__brand {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.print-header__title {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+/* The trace reads as label/value pairs rather than as a table, so it stays
+ * compact enough to sit above the grid on the same sheet. */
+.print-header__trace {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.2rem;
+  margin: 0;
+  font-size: 0.72rem;
+}
+
+.print-header__trace div {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.print-header__trace dt {
+  color: var(--ink-soft);
+}
+
+.print-header__trace dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}

@@ -2,8 +2,21 @@ import { useMemo, useState } from 'react'
 
 import { useInstance, useRun, useRuns } from '@/api/queries'
 import { OccupancyView } from '@/features/timetable/OccupancyView'
+import { PrintHeader } from '@/features/timetable/PrintHeader'
 import { TimetableGrid } from '@/features/timetable/TimetableGrid'
-import { buildLookups, placementsFor, type Dimension } from '@/features/timetable/model'
+import {
+  downloadCsv,
+  exportFilename,
+  occupancyCsv,
+  provenanceEntries,
+  timetableCsv,
+} from '@/features/timetable/export'
+import {
+  buildLookups,
+  placementsFor,
+  roomOccupancy,
+  type Dimension,
+} from '@/features/timetable/model'
 
 type View = Dimension | 'occupancy'
 
@@ -61,10 +74,41 @@ export function TimetableScreen() {
           : []
 
   const selectedResource = resourceId ?? resources[0]?.id ?? null
+  const selectedResourceLabel =
+    resources.find((r) => r.id === selectedResource)?.label ?? selectedResource
+
+  // FR-10. Both outputs describe the same thing, so both are built from one
+  // provenance list: a printed sheet and an exported file cannot disagree
+  // about which run and which candidate they came from.
+  const outputs =
+    run.data && candidate
+      ? (() => {
+          const viewLabel = VIEW_LABELS[view]
+          const resourceLabel = view === 'occupancy' ? null : selectedResourceLabel
+          const entries = provenanceEntries(run.data, candidate, viewLabel, resourceLabel)
+          return {
+            entries,
+            title: resourceLabel === null ? viewLabel : `${viewLabel} — ${resourceLabel}`,
+            download: () =>
+              downloadCsv(
+                exportFilename(viewLabel, resourceLabel, candidate.id),
+                view === 'occupancy'
+                  ? occupancyCsv(roomOccupancy(candidate, instance.data, lookups), entries)
+                  : timetableCsv(
+                      selectedResource
+                        ? placementsFor(candidate, view, selectedResource, lookups)
+                        : [],
+                      lookups,
+                      entries,
+                    ),
+              ),
+          }
+        })()
+      : null
 
   return (
     <>
-      <section className="panel">
+      <section className="panel no-print">
         <h1>Emplois du temps</h1>
 
         <div className="form-row">
@@ -144,10 +188,32 @@ export function TimetableScreen() {
             groupes parents, que ses étudiants suivent également.
           </p>
         )}
+
+        {outputs && (
+          <div className="outputs">
+            <button className="outputs__action" onClick={() => window.print()}>
+              Imprimer
+            </button>
+            <button className="outputs__action" onClick={outputs.download}>
+              Exporter (CSV)
+            </button>
+            <span className="hint">
+              La vue affichée est imprimée seule, et le fichier exporté porte l’exécution, la graine
+              et la pondération qui l’ont produite.
+            </span>
+          </div>
+        )}
       </section>
 
       {candidate && (
-        <section className="panel">
+        <section className="panel panel--printable">
+          {outputs && (
+            <PrintHeader
+              title={outputs.title}
+              entries={outputs.entries}
+              printedOn={new Date().toLocaleDateString('fr-FR')}
+            />
+          )}
           {view === 'occupancy' ? (
             <OccupancyView candidate={candidate} instance={instance.data} lookups={lookups} />
           ) : selectedResource ? (

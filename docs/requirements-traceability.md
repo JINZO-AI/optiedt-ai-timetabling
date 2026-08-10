@@ -267,7 +267,7 @@ arithmetic can deliver, since the teacher criteria genuinely conflict.
 | **FR-7** | Display the timetable by teacher, group and room | Necessary | `features/timetable` | `integration` | **WIP** |
 | **FR-8** | Report the rules in conflict when no timetable exists | Necessary | `preanalysis` ✓, `solver` — `diagnose()` ✓; `features/conflicts` ✓ | `unit/test_diagnosis` ✓, `integration/test_api_runs` ✓, `frontend ConflictReport.test` ✓, `acceptance/test_fr08` ✓ | **WIP** |
 | **FR-9** | Configure the calendar: holidays, closed slots, shortened day | Necessary | `db` ✓ — `Slot.is_open` + H9; `features/admin` ⬜ **not built** | `acceptance/test_fr09` ✓ | **WIP** |
-| **FR-10** | Print or export a timetable view | Expected | `features/timetable` | `integration` | — |
+| **FR-10** | Print or export a timetable view | Expected | `features/timetable` ✓ — `export.ts`, `PrintHeader.tsx`; `styles.css` `@media print` ✓ | `frontend export.test` ✓, `frontend PrintHeader.test` ✓ | **WIP** |
 | **FR-11** | Authenticate users and restrict access by role | Necessary | `core/security` ✓; `services/users` ✓; `api/deps` + `routers/auth` ✓; `features/auth` ✓ | `integration/test_rbac` ✓, `unit/test_seed` ✓, `acceptance/test_fr11` ✓ | **WIP** |
 | **FR-12** | Verify data before solving; report structural risks | Necessary | `preanalysis` ✓; `api` — `RunOut.preAnalysis`; `features/generation` ✓ | `unit/test_preanalysis` ✓, `integration/test_preanalysis_matches_verifier` ✓, `frontend PreAnalysisReport.test` ✓, `acceptance/test_fr12` ✓ | **✓** |
 | **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs ✓; `solver` ✓ | `unit/test_portfolio` ✓, `acceptance/test_fr13` ✓ | **✓** |
@@ -298,7 +298,7 @@ Recorded rather than silently filled. See **C-9** in `docs/open-questions.md`.
 | Gap | Detail |
 |---|---|
 | **FR-6, FR-10, FR-17, FR-18** | Listed in the summary tables, but **no input/processing/output row** in SRS §3.2. Their implementation is inferred from the summary statement alone |
-| **FR-10** | **Missing entirely from SRS Table 36**, the traceability matrix. Its mapping above is reconstructed, not quoted |
+| **FR-10** | **Missing entirely from SRS Table 36**, the traceability matrix. Its mapping above is reconstructed, not quoted. ⚠️ **Built in Phase 9 and still `WIP`, deliberately** — both halves of "print or export" are reachable and tested, and there is no criterion to verify them against. Software and tick are not the same thing, and the count must not be inflated |
 | **FR-13's acceptance test** | ⚠️ "Three distinct candidates" can fail while the system behaves correctly — see **C-5** |
 
 **On reconstructing the numbering.** SRS Table 36 is the only reliable source for which code maps to

@@ -74,15 +74,26 @@ Use the password from the first seed, or drop the `users` table.
 | 12 | Publish the top candidate, then open **Publications** | The trace in full: run id, **seed 42**, the **whole weight vector including S10's zero**, model version `weekly.h1-h12.s2-s10`, the deterministic budget, the author and the moment. A score is only recomputable by hand from *every* weight, so no summary is shown |
 | 13 | **Kill the API process** (Ctrl-C) and restart it; reload Publications | The complete trace comes back. It survives a restart because it is **assembled from the run record on every read**, never stored beside the publication — a second copy of the seed would be a second answer, free to drift |
 
-**Stop here for a 15-minute slot.** Steps 14–15 are the part that distinguishes this system from one
+#### Hand the timetable out — FR-10
+
+| # | Do | Expect |
+|---|---|---|
+| 14 | Open **Emplois du temps**, pick a group, press **Exporter (CSV)** | A file named for what it holds — `optiedt-par-groupe-…-cand-2.csv`. Open it: **above the table sit the run, the candidate, the seed, the model version and the whole weight vector**, so a timetable that has left the application still traces back to what produced it. ⚠️ Pick a **TP subgroup** and point out that the file carries the promotion's `CM` rows too — a subgroup shown only its own sessions would hand a student a week with holes they do not have |
+| 15 | Press **Imprimer** on the same view, and stop at the preview | The navigation, the selectors, the tabs and the buttons are gone; **a header appears that is on paper only**, naming the view, the resource, the run and the candidate. Say why it exists: without it the sheet is a correct print of an **unidentifiable** document, and two candidates of one run are indistinguishable once printed |
+
+⚠️ **Do not present FR-10 as finished on the requirement sheet.** The software is done and tested; the
+requirement is **`WIP`**, because **C-9** leaves it with no acceptance criterion to verify against. If
+asked why, that is the whole answer — and it is a specification gap, not unfinished work.
+
+**Stop here for a 15-minute slot.** Steps 16–17 are the part that distinguishes this system from one
 that merely produces a timetable, and they need their own time.
 
 #### An instance with no solution — FR-8
 
 | # | Do | Expect |
 |---|---|---|
-| 14 | Withdraw four computer laboratories from `data/instance/rooms.csv` (or run `pytest tests/acceptance/test_fr08.py`), then launch a run | The pre-analysis fails first and **names the resource and the quantity**: `Lab_Info` short by **48 periods / 36 two-period windows**. The run then reaches **`DIAGNOSED`** and the conflict report names **`H3`**, marked *irreducible* because each rule was withdrawn and re-solved |
-| 15 | State the limit rather than waiting to be asked | On an infeasibility CP-SAT **cannot prove** — the pre-C-13 contiguity shape — the run lands in **`FAILED`** carrying *"neither a solution nor a proof"*, and **the pre-analysis is the only thing that says what is wrong**. That is honest and it is the recorded behaviour; the acceptance criterion is worded to include it |
+| 16 | Withdraw four computer laboratories from `data/instance/rooms.csv` (or run `pytest tests/acceptance/test_fr08.py`), then launch a run | The pre-analysis fails first and **names the resource and the quantity**: `Lab_Info` short by **48 periods / 36 two-period windows**. The run then reaches **`DIAGNOSED`** and the conflict report names **`H3`**, marked *irreducible* because each rule was withdrawn and re-solved |
+| 17 | State the limit rather than waiting to be asked | On an infeasibility CP-SAT **cannot prove** — the pre-C-13 contiguity shape — the run lands in **`FAILED`** carrying *"neither a solution nor a proof"*, and **the pre-analysis is the only thing that says what is wrong**. That is honest and it is the recorded behaviour; the acceptance criterion is worded to include it |
 
 ⚠️ **Restore `rooms.csv` afterwards.** `scripts/verify-instance.ps1` will tell you if you forgot.
 
@@ -178,7 +189,8 @@ each has a one-sentence answer if asked.
 | ~~**The AI assistant** — explanations, questions, reports (FR-22, FR-24, FR-25)~~ | ✅ **Built 2026-08-06, Phase 7 M3–M5**, and reachable from the comparison screen. ⚠️ **A LIVE model is still not shown BY THIS SCRIPT**: the service is off by default and no test calls a provider (**C-21**), so what a demonstration shows is the **computed form** — complete figures, no prose. Say so plainly. A first live call **was** performed once, on 2026-08-07, and §4 records it; that is a deployment step, not a step of this script |
 | ~~**Regeneration from an accepted recommendation** (FR-23)~~ | ✅ **Built 2026-08-06, Phase 7 M2.** Reachable from the comparison screen: choose one of the three catalogue actions, accept, and a **new run** is launched through the same solver. The candidate on screen is unchanged. H10's dormant gap — `lock_session`'s prerequisite — was filled by M1 (C-19) |
 | **Calendar administration screen** (FR-9) | Not built. ⚠️ **The acceptance criterion is met** — closing a half-day in *configuration* removes those slots from every timetable with no code change, and that is tested. What is absent is the screen |
-| **Data management** (FR-1) and **print/export** (FR-10) | Not built. Data arrives through the 13 CSVs and the loader |
+| **Data management** (FR-1) | Not built. Data arrives through the 13 CSVs and the loader |
+| **Print / export** (FR-10) | ✅ **Built 2026-08-10** — steps 14–15 above. ⚠️ Still shows as **`WIP`** on the requirement sheet: **C-9** leaves it with no acceptance criterion, so there is nothing to verify a `✓` against. Say *"the software is finished and the specification row is missing"*, which is exactly what it is |
 | **Account management** | Not built. Accounts come from the seed command (C-18), and every one shares a password |
 | **A deployment** | ⚠️ **Not deployable as it stands**, though it can no longer fail silently: `OPTIEDT_SECRET_KEY` defaults to a value published in this repository, and **since 2026-08-07 `OPTIEDT_ENVIRONMENT=production` makes start-up REFUSE that default** (`Settings.require_deployable`, verified to fire). Account management is still unbuilt and every seeded account shares one password. Safe to demonstrate, not to expose |
 

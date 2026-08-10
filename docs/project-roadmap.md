@@ -2,8 +2,11 @@
 
 **This is the practical tracking view.** One question, one answer: *what phase are we in?*
 
-> **Phase 9 — Outputs and distribution.** Phase 8 closed at `fa5378c` on 2026-08-07. Phase 9 has not
-> begun.
+> **Phase 10 — Requirement closure by test.** Phase 9 closed on 2026-08-10. Phase 10 has not begun.
+>
+> ⚠️ **Phase 9 delivered FR-10's software and did NOT tick it.** Print and export are reachable from all
+> four timetable views and covered by 28 display tests; FR-10 stays **`WIP`** because C-9 leaves it with
+> no criterion to verify against. The `✓` count is unchanged at 10 of 25.
 
 ⚠️ **This document does not replace anything.** `docs/dashboard.md` remains the handoff page and
 `docs/requirements-traceability.md` remains the authority on any single requirement's status. This file
@@ -39,8 +42,8 @@ Reference instance: 218 sessions · 51 groups · 44 teachers · 20 rooms · 28 o
 | **6** | Acceptance suite, generator, demo | ✅ COMPLETE | One test per requirement; 8 of 9 criteria met | FR-9 · promotes FR-5, FR-12, FR-15, FR-19 → ✓ | `3c210a7` … `ab98390` |
 | **7** | Regeneration and the assistant | ✅ COMPLETE | New run from a recommendation; explain/answer/report | FR-22 · FR-23 · FR-24 · FR-25 | `2fba7c4` … `197b702` |
 | **8** | Increment-1 closure and hardening | ✅ COMPLETE | **9/9 criteria** · C-15 resolved · production guard | FR-2 · FR-13 · FR-24 → ✓ | `faf86cc` … `fa5378c` |
-| **9** | **Outputs and distribution** | 🔵 **CURRENT** | A timetable that can leave the screen | FR-10 | — |
-| **10** | Requirement closure by test | ⏳ PLANNED | Close requirements that lack only an acceptance test | FR-3 · FR-4 · FR-7 · FR-14 · FR-16 | — |
+| **9** | Outputs and distribution | ✅ COMPLETE | A timetable that can leave the screen — print and CSV, all four views | FR-10 *(software; tick held by C-9)* | — |
+| **10** | Requirement closure by test | 🔵 **CURRENT** | Close requirements that lack only an acceptance test | FR-3 · FR-4 · FR-7 · FR-14 · FR-16 | — |
 | **11** | Administrative surfaces | ⏳ PLANNED | The screens whose mechanisms already exist | FR-9 · FR-11 · student view | — |
 | **12** | Data management | ⏳ PLANNED | A second institution becomes possible | FR-1 | — |
 | **13** | Examination session | ⬜ CONDITIONAL | Exam timetabling (*was increment 2*) | FR-20 | — |
@@ -66,7 +69,7 @@ requirement to `✓`, which is not always the phase that built it.
 | FR-7 | Display by teacher, group, room | WIP | 4 | **10** | no acceptance test |
 | FR-8 | Report rules in conflict | WIP | 5 | 🔴 supervisor | statement ≠ criterion |
 | FR-9 | Configure the calendar | WIP | 5–6 | **11** | screen not built |
-| FR-10 | Print or export a view | — | — | **9** *(tick 🔴 C-9)* | not started |
+| FR-10 | Print or export a view | WIP | **9** | 🔴 **C-9** | no SRS row |
 | FR-11 | Authenticate and restrict by role | WIP | 5 | **11** | account management |
 | FR-12 | Verify data before solving | ✅ | 5 | **6** | — |
 | FR-13 | Candidates under distinct profiles | ✅ | 3 | **8** | — |
@@ -83,9 +86,13 @@ requirement to `✓`, which is not always the phase that built it.
 | FR-24 | Answer a question in ordinary language | ✅ | 7 | **8** | — |
 | FR-25 | Produce a readable report | ✅ | 7 | **7** | — |
 
-**Totals: 10 ✅ · 11 WIP · 4 not started = 25.** Of the 11 WIP, **none lacks working software**: 5 need
-an acceptance test, 3 wait on C-9, 2 need a screen over a working mechanism, 1 needs its statement
+**Totals: 10 ✅ · 12 WIP · 3 not started = 25.** Of the 12 WIP, **none lacks working software**: 5 need
+an acceptance test, **4 wait on C-9**, 2 need a screen over a working mechanism, 1 needs its statement
 reworded.
+
+⚠️ **FR-10 moved `—` → `WIP` on 2026-08-10 and the `✓` count did not move.** That is the shape a C-9
+requirement takes when it is built: the software is finished and reachable, and the tick is held by a
+missing specification row nobody in this repository can write.
 
 ---
 
@@ -164,43 +171,64 @@ now raises **S3 and S4**: S3 **29 → 0**, S5 103 → 95, score 79.45 → 81.10.
 **Also delivered:** the FR-24 live call (Groq, `llama-3.3-70b-versatile`, 3/3 generated, none discarded)
 and the first-use walkthrough, whose usability findings are recorded **unscheduled** in `status.md`.
 
+### Phase 9 — Outputs and distribution ✅ *(2026-08-10)*
+
+**What FR-10 turned out to promise.** The requirement statement is *"Print or export a timetable view"*
+and nothing else: **`docs/requirements-traceability.md` is the authority here**, because FR-10 is absent
+from SRS Table 36 entirely and that file is what the project designated for exactly this case. It is a
+disjunction naming two destinations — a noticeboard and a spreadsheet — so **both halves were built**,
+each minimal. `docs/architecture.md` §Layers permits the presentation layer to *"display, filter,
+print"*, which is what put the whole phase in the frontend: **no backend file was touched.**
+
+**Delivered.**
+- **Print** — a `@media print` stylesheet, and a print button on the four timetable views and on
+  publications. Navigation, selectors, tabs and the buttons themselves are suppressed.
+- **Export** — a semicolon-separated, BOM-prefixed CSV per view, built in the browser from data already
+  fetched. French separator and decimal mark, because a French Excel opens `71.4` as text.
+- **Provenance on both** — `provenanceEntries` is one list with two renderings, so a printed sheet and
+  an exported file can never name different runs. It carries run, candidate, profile, score, seed, model
+  version, deterministic budget and **the whole weight vector**, which is the FR-19 trace.
+- **28 display tests**, `export.test.ts` (22) and `PrintHeader.test.tsx` (6). Frontend total 53 → 81.
+
+⚠️ **The answer to "is a stylesheet enough?" was no, and for one specific reason.** Hiding the
+navigation and printing the grid gives a correct but **anonymous** page — two candidates of one run are
+indistinguishable on paper. `PrintHeader.tsx` exists to fix precisely that, and it is why the phase's
+brief said not to assume.
+
+**Two findings, both from exercising the real product rather than reading it.**
+
+1. **A two-period session straddling the midday break exported as `11:50–15:30`** — arithmetically
+   right, and it reads as 3h40 of unbroken laboratory work. The grid shows two bands. A `Périodes`
+   column was added so the file can say what the screen says.
+2. **`npm run lint` has never worked** — `frontend/package.json` declares the script and `eslint` is a
+   devDependency, but **no ESLint config has ever been tracked in this repository**. It is invisible
+   because `run-checks.ps1` does not run it. Pre-existing, unrelated to FR-10, **left unfixed on scope
+   discipline** and recorded here so it is not lost.
+
+⚠️ **FR-10 is `WIP`, not `✓`, and that is the correct outcome** — C-9 leaves it with no criterion to
+verify against. The tests are therefore display-layer tests and **not** an acceptance file: there was no
+promise to quote at the top of one, and inventing a criterion would be worse than having none.
+
 ---
 
-## 4 · Current phase — Phase 9, Outputs and distribution
+## 4 · Current phase — Phase 10, Requirement closure by test
 
-**Status: 🔵 CURRENT — not started.** Phase 8 closed at `fa5378c`.
+**Status: 🔵 CURRENT — not started.** Phase 9 closed on 2026-08-10.
 
 ### Why this phase is next
-A timetable nobody can hand out is not delivered. FR-10 is a **stated requirement**, it is `—` not
-started, and it was the gap found in first-use testing. It is also independent of every other phase, so
-nothing later has to wait for it.
-
-### What already exists
-The four timetable views render every figure needed — by teacher, by group, by room, and room occupancy —
-verified to match `verify-instance.ps1` exactly. **The data problem is solved; only the output path is
-missing.**
-
-### What remains
-- Determine what FR-10 actually promises before choosing a mechanism — a print stylesheet may or may not
-  be sufficient, and that is a question to answer from the requirement rather than assume.
-- Per-view output for the teacher, group, room and master timetables.
-- The publication trace should be exportable with the timetable it describes.
-- Display tests, in the manner of the existing `vitest` display-layer tests.
-
-### Completion condition
-A user can obtain a printable or downloadable artefact for each of the four views, and it is covered by a
-test. ⚠️ **FR-10 will remain `WIP`, not `✓`** — C-9 leaves it with no criterion to verify against. **That
-is a documentation gate, not unfinished software**, and the count must not be inflated.
+Five requirements are built, reachable and working, and are held at `WIP` only because no acceptance
+test exists against their criterion. It is the cheapest remaining move on the `✓` count — pure
+evidence, no new software.
 
 ### What Claude should do next
-Inspect `frontend/src/features/timetable/`, determine FR-10's actual promise from the requirement, then
-implement and test. Do **not** assume a stylesheet is enough.
+One acceptance file per requirement — FR-3, FR-4, FR-7, FR-14, FR-16 — driven through the HTTP API,
+each opening with the criterion it verifies, in the established `tests/acceptance/` pattern.
 
 ---
 
-## 5 · Future phases
+## 5 · Current and future phases in detail
 
-### Phase 10 — Requirement closure by test ⏳
+### Phase 10 — Requirement closure by test 🔵 CURRENT
 **Purpose.** Five requirements are built, reachable and working, and are held at `WIP` only because no
 acceptance test exists against their criterion.
 **Requirements:** FR-3 (acceptance-test scope), FR-4, FR-7, FR-14, FR-16.
@@ -258,14 +286,14 @@ Taken from the project's own documents, not from the size of the repository.
 
 ### ✅ Required — and **already delivered**
 The specification's acceptance gate is **nine acceptance criteria** (`docs/status.md`). **All nine are
-met.** ADR-010 commits the assistant to increment 1 and it is built. Phases 1–8 are complete.
+met.** ADR-010 commits the assistant to increment 1 and it is built. Phases 1–9 are complete.
 
 > **By the project's own stated gate, the mandatory work is done.**
 
 ### 🟡 Strongly recommended before submission
 | Item | Phase | Why |
 |---|---|---|
-| **FR-10 export/print** | 9 | A stated requirement; a timetable that cannot leave the screen is not delivered |
+| ~~**FR-10 export/print**~~ | 9 | ✅ **DELIVERED 2026-08-10.** Print and CSV on all four views. ⚠️ The requirement is still `WIP` — C-9 holds the tick, not the software |
 | **Acceptance tests for 5 requirements** | 10 | Moves 10 `✓` → 15 `✓`; pure evidence, no new software |
 
 ### 🔵 Optional — improves the product, not required by the gate
@@ -287,25 +315,28 @@ a solver-validation harness that does not fit the project.
 
 | Measure | Value | Note |
 |---|---|---|
-| **Phases complete** | **8 of 14** (57 %) | 8 of 12 (67 %) excluding the two conditional phases |
+| **Phases complete** | **9 of 14** (64 %) | 9 of 12 (75 %) excluding the two conditional phases |
 | **Acceptance criteria** | **9 of 9 (100 %)** | The specification's actual gate |
-| **Requirements `✓`** | **10 of 25 (40 %)** | ⚠️ Understates reality badly — see below |
+| **Requirements `✓`** | **10 of 25 (40 %)** | ⚠️ Understates reality badly — see below. **Unchanged by Phase 9**, deliberately |
 | **Open questions** | **19 of 20 resolved** | One remains: C-9, supervisor-dependent |
-| **Tests** | **517 backend + 53 frontend** | 411 fast + 62 solver + 44 database |
+| **Tests** | **517 backend + 81 frontend** | 411 fast + 62 solver + 44 database; frontend 53 → 81 in Phase 9 |
 | **Mandatory work remaining** | **None** | By the nine-criteria gate |
 
-⚠️ **Why 40 % is the most misleading number here.** Of the 11 `WIP` requirements, **none lacks working
-software**. They are held by: no acceptance test (5), an unwritten SRS row — C-9 (3), an unbuilt screen
+⚠️ **Why 40 % is the most misleading number here.** Of the 12 `WIP` requirements, **none lacks working
+software**. They are held by: no acceptance test (5), an unwritten SRS row — C-9 (4), an unbuilt screen
 over a working mechanism (2), and a requirement statement never reworded to match its criterion (1).
+
+⚠️ **Phase 9 is the clearest illustration of that gap.** It delivered a whole requirement's software
+and moved the `✓` count by **zero**. Anyone quoting 40 % as progress should say what it measures.
 
 **If a single figure is wanted, use this one and say how it is computed:**
 
-> **~85 % of the project as scoped.** = Phases 1–8 complete (8/12 non-conditional phases = 67 %),
-> weighted by the fact that the **acceptance gate is 100 % met** and the four remaining non-conditional
+> **~88 % of the project as scoped.** = Phases 1–9 complete (9/12 non-conditional phases = 75 %),
+> weighted by the fact that the **acceptance gate is 100 % met** and the three remaining non-conditional
 > phases are refinement rather than core capability. Phases 13–14 are excluded as conditional by PPM.
 
-**Realistic remaining effort:** Phase 9 ≈ 1 day · Phase 10 ≈ 1 day · Phase 11 ≈ 2 days · Phase 12 ≈ 3–5
-days · Phases 13–14 ≈ 7 days if undertaken.
+**Realistic remaining effort:** Phase 10 ≈ 1 day · Phase 11 ≈ 2 days · Phase 12 ≈ 3–5 days ·
+Phases 13–14 ≈ 7 days if undertaken.
 
 ---
 

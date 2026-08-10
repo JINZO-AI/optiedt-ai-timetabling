@@ -216,6 +216,13 @@ two" — the measurement is 3 distinct / 0 removed, and a weaker assertion would
 why only FR-17 appears above: C-14's resolution reworded `docs/scoring-and-explanation.md` §Dominance,
 and that wording is a criterion a test can be written against. **C-9 remains open for the other three.**
 
+⚠️ **FR-10 was BUILT in Phase 9 and still has no row above, deliberately.** Its software is finished,
+reachable and covered by **28 display-layer tests** — `frontend/src/features/timetable/export.test.ts`
+(22) and `PrintHeader.test.tsx` (6) — but an acceptance file opens with the criterion it verifies,
+**quoted**, and there is no criterion to quote. Writing one would mean this project inventing the
+promise it then declares itself to have met, which is the opposite of what this table is for. **A built
+requirement with no acceptance row is the correct shape of a C-9 requirement**, not an oversight.
+
 ### How the suite is built · Phase 6 M2
 
 `backend/tests/acceptance/`, one file per requirement, each opening with the criterion it verifies
