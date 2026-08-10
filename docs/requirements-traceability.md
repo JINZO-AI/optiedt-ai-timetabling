@@ -37,8 +37,9 @@ without touching C-9:
 |---|---|---|---|
 | FR-3 | ✅ yes | ✅ yes | Yes — both, and `test_fr03` now opens with both |
 | **FR-4, FR-7, FR-14, FR-16** | ❌ **no** | ✅ **yes** | **Yes** — the §3.2 row, quoted verbatim |
-| FR-17 | ❌ no | ❌ no | Only this project's own document (C-14) — **ruling not taken** |
-| FR-6, FR-10, FR-18 | ❌ no | ❌ no | **No. This is C-9, and it is not ours to close** |
+| FR-17 | ❌ no | ❌ no | ✅ **Yes — SRS §6.7 and §8.4 Table 34, found 2026-08-10.** Table 36 names both. Corrected below; FR-17 is `✓` |
+| FR-6 | ❌ no | ❌ no | ✅ **Yes — SRS §6.7, found 2026-08-10.** Table 36 names it. Leaves C-9; still needs an acceptance test |
+| FR-10, FR-18 | ❌ no | ❌ no | **No. This is what remains of C-9** |
 
 The four §3.2 rows were **transcribed verbatim into `docs/testing-strategy.md` §4**, so no future
 session needs the PDF to check what these requirements promise. Nothing was invented: every criterion
@@ -58,8 +59,8 @@ quoted in the five acceptance files is the supervisor's own wording.
 backend mutations and three frontend ones. One of them is the FR-16 finding above, which is recorded in
 the test's own docstring rather than papered over with a stronger-sounding name.
 
-**Where the project actually is: 15 of 25 requirements are finished, 7 are under way, 3 are not
-started.** *(✓ FR-2, 3, 4, 5, 7, 12, 13, 14, 15, 16, 19, 22, 23, 24, 25 · WIP FR-6, 8, 9, 10, 11, 17,
+**Where the project actually is: 16 of 25 requirements are finished, 6 are under way, 3 are not
+started.** *(✓ FR-2, 3, 4, 5, 7, 12, 13, 14, 15, 16, 17, 19, 22, 23, 24, 25 · WIP FR-6, 8, 9, 10, 11,
 18 · — FR-1, 20, 21 — count them in the table rather than trusting this line.)*
 
 ⚠️ **This line read "10 finished, 11 under way, 4 not started" until 2026-08-10, and the second and
@@ -67,6 +68,64 @@ third figures contradicted the table in the same file.** Phase 9 moved FR-10 fro
 sentence was not re-derived, so it kept counting FR-10 as not started — the identical fault it already
 records against itself at M7, in the identical sentence, eleven days later. **Count the table.** The
 line is kept because a summary that has now been wrong twice is worth a warning rather than a deletion.
+
+---
+
+## Pre-Phase-11 audit — FR-17 closed, C-9 narrowed, 2026-08-10
+
+> **Project decision — determined from repository evidence because supervisor clarification was
+> unavailable.** The supervisor did not answer and the project owner directed that the question be
+> settled from the material to hand. **No wording below is attributed to the supervisor that the
+> supervisor did not write.** Full reasoning: **C-9's NARROWED subsection** in
+> [`docs/open-questions.md`](open-questions.md), which stays the authority.
+
+**✅ FR-17 → `✓`. The count moves 15 → 16 of 25.**
+
+The question was framed as *"may a project-authored criterion tick a requirement?"* — and that framing
+was wrong, which is why it looked undecidable. **FR-17's criterion is not project-authored.** SRS
+**Table 36** maps FR-17 → **"§6.7 and §8.4 — Test of dominance"**, and both sections state it:
+
+> **§6.7:** "A candidate which another candidate improves on every criterion is signalled…"
+> **§8.4, Table 34:** *Detection of dominance* — "A candidate improved on every criterion is signalled."
+
+**Neither says "recommended" or "top-ranked".** That clause lives only in the *summary* tables, which
+this file already records as damaged by cell-offset with Table 36 the reliable source. So C-14's
+decision (ii) restored the specification's own detailed wording rather than inventing a reading.
+
+C-14's decision (i) — strict `>` → Pareto — is a project-owner amendment and it **widens** the signal:
+`>` on every criterion implies `≥` on every and `>` on one, so the implementation satisfies §8.4
+**literally** and catches more besides. ⚠️ **That is why this is not FR-8's situation.** FR-8's criterion
+was *narrowed* to accommodate something the software cannot do, and promoting on it would move a
+goalpost. FR-17's was widened, and the requirement it now meets is the harder one.
+
+**Evidence for the tick, against this project's own rule — `✓` once a user can reach it and it is
+tested end to end:**
+
+| | Evidence |
+|---|---|
+| Reachable | `features/comparison/DominanceNotice.tsx`, under "Dominance" on the comparison screen |
+| Tested end to end | `acceptance/test_fr17.py` — 5 tests through the HTTP API |
+| The §8.4 property itself | `property/test_scoring_properties.py::test_dominance_is_detected` — hypothesis, which is the form §8.4 asks for ("properties tested on candidates generated at random") |
+| **The signal provably fires** | `unit/test_recommendation.py::test_dominance_still_reports_non_top_candidates` — a dominated runner-up is named. Not a control that can never fire |
+| Displayed honestly | `DominanceNotice.test.tsx` — 8 tests, including that an empty result reads as "checked, none found" |
+
+⚠️ **What this tick does not claim.** FR-17 still has **no SRS §3.2 row and no Table 35 row**, and the
+ERRATA table's two corrections for it are still unsent. If the supervisor later insists on the strict
+reading, the implementation still satisfies it — which is precisely why this tick is safe to take
+without an answer.
+
+**C-9 narrowed from four requirements to two.** FR-6 also leaves it: SRS §6.7 states its behaviour
+verbatim ("ordered by decreasing score… equal scores separated by the criteria taken in the order of
+their weights") and Table 36 points FR-6 at that section. ⚠️ **FR-6 is unblocked, not finished** — the
+behaviour is implemented and reachable, and **no acceptance file exists**. That is scheduled work now,
+not a blocker.
+
+**FR-10 and FR-18 are what remains of C-9**, and the reason has changed: both are named in
+supervisor-written scope statements, so it is no longer "nobody specified them". What is missing is an
+acceptance *standard* — and for FR-18, something sharper: **no document defines what the occupancy
+figure is.** C-13 is this project's record of losing three sessions to the wrong occupancy denominator,
+so choosing one here is the one invention that could actively mislead. C-9 records the strongest
+defensible criterion for each; **neither is ticked**, and `OccupancyView.tsx` has no test of any kind.
 
 ✅ **FR-25 is `✓` since Phase 7 M5**, and it reached `✓` before the *Necessary* FR-24 beside it for a
 reason worth keeping: FR-25's criterion is about the service being **off** — verifiable in full with
@@ -332,7 +391,7 @@ arithmetic can deliver, since the teacher criteria genuinely conflict.
 | **FR-14** | Compare two candidates criterion by criterion | Necessary | `analysis` — decomposition ✓; `features/comparison` ✓ | `acceptance/test_fr14` ✓, `frontend ContributionsTable.test` ✓ | **✓** |
 | **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition; `features/comparison` | `property` ✓, `frontend ContributionsTable.test` ✓, `acceptance/test_fr15` ✓ | **✓** |
 | **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking ✓; `features/comparison` ✓ | `unit/test_recommendation` ✓, `acceptance/test_fr16` ✓ | **✓** |
-| **FR-17** | Signal a candidate that another dominates, wherever it appears in the portfolio ⚠️ *statement corrected, C-14* | Expected | `analysis` — dominance ✓; `features/comparison` ✓ | `property` ✓, `unit/test_recommendation` ✓, `frontend DominanceNotice.test` ✓, `acceptance/test_fr17` ✓ | **WIP** |
+| **FR-17** | Signal a candidate that another dominates, wherever it appears in the portfolio ⚠️ *statement corrected, C-14* | Expected | `analysis` — dominance ✓; `features/comparison` ✓ | `property` ✓ (SRS §8.4 Table 34), `unit/test_recommendation` ✓, `frontend DominanceNotice.test` ✓, `acceptance/test_fr17` ✓ | **✓** |
 | **FR-18** | Display occupancy of each classroom and laboratory | Expected | `features/timetable` | `integration` | **WIP** |
 | **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db` ✓ — models, migrations, repositories; `services/stores` ✓; `services/publications` ✓; `features/publication` ✓ | `integration/test_store_contract` ✓, `integration/test_publication` ✓, `frontend TraceTable.test` ✓, `acceptance/test_fr19` ✓ | **✓** |
 | **FR-22** | Explain a candidate's quality from computed figures | Necessary | `assistant` ✓ — adapter, context builder, verifier, computed forms; `api/routers/assistant` ✓; `features/assistant` ✓ | `unit/test_assistant` ✓, `frontend Answer.test` ✓, `acceptance/test_fr22` ✓ | **✓** |
@@ -355,7 +414,7 @@ Recorded rather than silently filled. See **C-9** in `docs/open-questions.md`.
 
 | Gap | Detail |
 |---|---|
-| **FR-6, FR-10, FR-17, FR-18** | Listed in the summary tables, but **no input/processing/output row** in SRS §3.2. Their implementation is inferred from the summary statement alone |
+| ~~**FR-6, FR-10, FR-17, FR-18**~~ → **FR-10 and FR-18** | Listed in the summary tables, but **no input/processing/output row** in SRS §3.2. ⚠️ **Narrowed 2026-08-10**: SRS **Table 36** names a specifying section for three of the four, and two of those sections state testable behaviour — **FR-6 → §6.7** ("ordered by decreasing score… equal scores separated by the criteria taken in the order of their weights") and **FR-17 → §6.7 and §8.4 Table 34** ("A candidate improved on every criterion is signalled"). Both leave C-9. **FR-10 and FR-18 remain**: their scope is named in the CdC but no document states an acceptance standard, and for FR-18 **no document defines the occupancy figure itself**. See C-9's NARROWED subsection |
 | **FR-4, FR-7, FR-14, FR-16** | ⚠️ **A different gap, found in Phase 10, and NOT part of C-9.** They have a full §3.2 row and **no row in SRS §8.6 Table 35**, the acceptance-test table. The §3.2 row is therefore what their acceptance files verify against, quoted verbatim and transcribed into `docs/testing-strategy.md` §4 so the PDF need never be opened again. **This gap is closed** — all four are `✓` — and it is recorded because the distinction is what makes C-9 unclosable by comparison: a requirement with no promise of *either* kind cannot be verified at all |
 | **FR-1** | Also absent from Table 35. Not yet relevant — FR-1 is `—` and its closing phase is 12 |
 | **FR-10** | **Missing entirely from SRS Table 36**, the traceability matrix. Its mapping above is reconstructed, not quoted. ⚠️ **Built in Phase 9 and still `WIP`, deliberately** — both halves of "print or export" are reachable and tested, and there is no criterion to verify them against. Software and tick are not the same thing, and the count must not be inflated |

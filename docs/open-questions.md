@@ -899,7 +899,13 @@ instead.
 
 **Resolved:** the channelling, and now the auxiliaries. **Nothing of C-7 remains open.**
 
-### C-9 — Four requirements have no detailed specification
+### C-9 — Four requirements have no detailed specification · **NARROWED 2026-08-10 → two remain: FR-10 and FR-18**
+
+⚠️ **Read the NARROWED subsection at the foot of this entry before acting on anything above it.** The
+heading states the original scope; **FR-6 and FR-17 have since been shown to have supervisor-written
+criteria** in SRS §6.7 and §8.4, located through SRS Table 36. FR-17 is `✓`. The analysis in between is
+kept because it is what the project believed for five days and because its 2026-08-05 correction is
+cited elsewhere — the same treatment C-13 and C-15 get.
 
 **FR-6, FR-10, FR-17, FR-18** appear in the summary tables but have no input/processing/output row in
 SRS §3.2. **FR-10 is missing entirely from the SRS Table 36 traceability matrix.**
@@ -932,7 +938,97 @@ FR-17 now has a testable criterion and an acceptance test. That does **not** res
 input/processing/output rows in SRS §3.2 for FR-6, FR-10 and FR-18 are untouched, and FR-17's SRS row
 is still absent — its criterion now comes from this project's own design document instead.
 
-**Blocks:** the `✓` of FR-6, FR-10 and FR-18. **Not** the Phase 6 acceptance suite. **Owner:** technical lead.
+#### NARROWED 2026-08-10 → FR-17 leaves C-9 entirely; FR-6 leaves it too; **FR-10 and FR-18 remain**
+
+> **Project decision — determined from repository evidence because supervisor clarification was
+> unavailable.** The supervisor was asked and did not answer, and the project owner instructed that the
+> question be settled from the material to hand. Nothing below is attributed to the supervisor that the
+> supervisor did not write; every criterion adopted is **quoted** from a specification document in
+> `docs/specifications/`, and the sentence saying which requirement it governs is quoted too.
+
+**The premise of this entry was too strong, and one search falsified it.** C-9 says these four
+requirements have no detailed specification. What is true is narrower: **they have no §3.2
+input/processing/output row.** They were never checked against **SRS Table 36**, which this very entry
+calls "the only reliable place to reconstruct the FR numbering" — and Table 36 carries a row for three
+of the four, naming the SRS section that specifies each:
+
+| FR | Table 36 → | "Element which implements it" | Does that section state testable behaviour? |
+|---|---|---|---|
+| **FR-6** | **§6.7** | "Order by decreasing score" | ✅ **Yes, verbatim** — see below |
+| **FR-17** | **§6.7 and §8.4** | "Test of dominance" | ✅ **Yes, twice** — §6.7 states it and §8.4 Table 34 states how it is verified |
+| **FR-18** | §4.1 and §5.1 | "Views by classroom and by laboratory" | ⚠️ **Partly** — §4.1 names the *filter*, never the *occupancy figure* |
+| **FR-10** | **absent** | — | ⚠️ **Partly** — the CdC names both halves; nothing states what "done" is |
+
+**FR-6 — leaves C-9. Criterion found, quoted, supervisor-written.** SRS §6.7:
+
+> "The candidates are ordered by decreasing score. Equal scores are separated by the criteria taken in
+> the order of their weights."
+
+Two sentences, both testable, both falsifiable, and Table 36 points FR-6 at exactly this section. This
+is *stronger* evidence than the §3.2 rows Phase 10 closed FR-4, FR-7, FR-14 and FR-16 against, because
+Table 36 names the section explicitly. ⚠️ **FR-6 is unblocked, not finished** — `DefaultRanker.rank()`
+implements both sentences and `GET /runs/{id}/candidates` returns that order, but **no acceptance file
+exists**. It is ordinary scheduled work now, not a blocked requirement.
+
+**FR-17 — leaves C-9 completely, and is `✓` as of 2026-08-10.** Two supervisor-written statements, and
+**neither contains the "recommended candidate" clause** that made this look unspecifiable:
+
+> **SRS §6.7:** "A candidate which another candidate improves on every criterion is signalled, because
+> that situation shows that the weights conceal a compromise instead of expressing one, and the person
+> in charge must then decide with full knowledge of it."
+>
+> **SRS §8.4, Table 34 — "Properties tested on the analysis layer":**
+> *Detection of dominance* — "A candidate improved on every criterion is signalled."
+
+⚠️ **This changes what C-14's decision (ii) was.** "Signal a dominated candidate anywhere in the
+portfolio" is **not a project invention** — it is what the SRS's own detailed sections already say. The
+"top-ranked candidate" clause exists only in the **summary** tables (SRS Table 3, CdC Table 3), and
+this entry already records those as damaged by cell-offset with Table 36 the reliable source. C-14 (ii)
+restored the specification's own detailed wording over a damaged summary row.
+
+⚠️ **C-14's decision (i) — strict `>` → Pareto — remains a project-owner amendment, and it does not
+weaken the tick.** §6.7 and §8.4 both say "improved on every criterion", which is the strict reading.
+Pareto is **strictly wider**: anything the supervisor's literal wording requires to be signalled
+(`>` on every criterion) is also `≥` on every criterion and `>` on at least one, so the implementation
+satisfies §8.4 **literally**, and additionally catches the case the literal wording misses. **No
+goalpost moved toward the implementation** — which is the exact opposite of FR-8, where the criterion
+was narrowed to accommodate a limitation and promotion was therefore refused.
+
+**FR-10 and FR-18 — C-9 continues to hold their ticks, and the reason has changed.** It is no longer
+"nobody specified them". Both requirements are named in supervisor-written scope statements:
+
+> **CdC §3, "For the students":** "Printing and export of the displayed view."
+> **CdC, module list:** "Display module: views by teacher, by group, by classroom, by laboratory and by
+> examination, **printing and export**."
+> **SRS §4.1:** "Timetable view: weekly grid filtered by teacher, group, classroom or laboratory, **with
+> printing of the displayed view**."
+> **CdC §1, needs:** "Any authorised user to consult **the occupancy of a classroom or of a
+> laboratory**."
+
+What is missing is an **acceptance standard**, and for FR-18 something sharper: **no document anywhere
+defines what the occupancy figure IS.** Occupied periods over open periods? Over the whole week? The
+two-period-window figure? That is not a pedantic gap — **C-13 is the record of this project losing three
+sessions to reading the period figure when the window figure was the one that bound**, and
+`features/timetable/model.ts` already carries a warning that the figure it displays is the reassuring
+one. Choosing the denominator here would be inventing the requirement, and it is the one place where
+inventing it could actively mislead.
+
+**The strongest project interpretation, adopted so the next session does not re-derive it:**
+
+| FR | Criterion adopted — **project decision, from the quoted text above** | Testable? |
+|---|---|---|
+| **FR-10** | *A timetable view can be printed or exported, and what leaves the screen is **the displayed view**.* | ✅ Yes, and Phase 9's closing audit already produced this evidence by hand: rendered grid cells and exported rows compared as sets, 6 = 6, identical |
+| **FR-18** | *An authorised user can consult, for **each** classroom and **each** laboratory, how heavily it is used on a given candidate.* | ⚠️ Partly — reachability and completeness are testable; **the quantity is not fixed**, and a test asserting one formula would invent the requirement |
+
+⚠️ **Neither is ticked, and adopting a criterion is not the same as meeting one.** Both stay `WIP`, for
+the ordinary reason: no acceptance file exists for either, and `OccupancyView.tsx` has **no test of any
+kind**. A future `✓` must cite both the quoted source and this project-decision label, so the tick stays
+reversible if the supervisor ever answers differently.
+
+**Blocks after this narrowing:** the `✓` of **FR-10 and FR-18** — and, for FR-18, the *definition* of
+its central figure, which is the part no repository evidence supplies. **No longer blocks:** FR-6 (a
+criterion exists; an acceptance test does not) or FR-17 (closed). **Owner:** technical lead; the
+supervisor is still the only source for FR-18's quantity and for a Table 35 row.
 
 ### C-11 — The generated instance · **RESOLVED — it exists and it verifies**
 

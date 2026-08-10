@@ -141,6 +141,9 @@ catalogued in `docs/open-questions.md` rather than resolved silently.
 
 **Increment 1 · COMPLETE. Phases 1–10 delivered. Phase 11 of 14 is next and has not started.**
 
+📍 **A fresh session should read [`docs/dashboard.md`](docs/dashboard.md), then
+[`docs/project-roadmap.md`](docs/project-roadmap.md) §5's Phase 11 subsection — that is the handoff.**
+
 📍 **[`docs/project-roadmap.md`](docs/project-roadmap.md) is the phase view** — the whole project as one
 continuous sequence, with what the specification calls increment 1 and increment 2 mapped into it.
 
@@ -181,19 +184,26 @@ That record is a dated observation, not automation: a green build is still no ev
 this repository. The eleven `import-linter` contracts are real and do fire — but nothing runs them
 automatically, so a violation is caught when someone runs the script, not when they push.
 
-⚠️ **15 of 25 requirements are `✓`, and that number still understates the software.** Of the 7 marked
-`WIP`, none lacks working code: three wait on a specification row nobody in this repository can write
-(**C-9**), two need a screen over a mechanism that already works, one needs its statement reworded to
-match its own criterion, and one waits on a ruling nobody has taken (FR-17). **Nothing is waiting for a
-test** — Phase 10 closed that group. **FR-10 is still the clearest case** — Phase 9 delivered print and
-export in full and the `✓` count did not move, because C-9 leaves it with no criterion to verify
-against. Quote the measure with the number.
+⚠️ **16 of 25 requirements are `✓`, and that number still understates the software.** Of the 6 marked
+`WIP`, none lacks working code: **two** wait on an acceptance standard nobody in this repository can
+write (**C-9** — FR-10 and FR-18), two need a screen over a mechanism that already works, one needs its
+statement reworded to match its own criterion, and one needs an acceptance file that has simply not been
+written (FR-6). **FR-10 is still the clearest case** — Phase 9 delivered print and export in full and
+the `✓` count did not move. Quote the measure with the number.
 
 ⚠️ **Phase 10 found that four of its own five requirements had no acceptance criterion either**, and
 closed them honestly rather than inventing one: SRS Table 35 has no row for FR-4, FR-7, FR-14 or FR-16,
-but all four have a **detailed SRS §3.2 input/processing/output row** — which C-9's four do not. That
-row is what each acceptance file quotes, and all four are now transcribed into
+but all four have a **detailed SRS §3.2 input/processing/output row**. That row is what each acceptance
+file quotes, and all four are now transcribed into
 [`docs/testing-strategy.md`](docs/testing-strategy.md) §4.
+
+⚠️ **A pre-Phase-11 audit then narrowed C-9 from four requirements to two**, by checking something
+nobody had: **SRS Table 36 names a specifying section for three of them**, and two of those sections
+state testable behaviour — **FR-6 → §6.7** and **FR-17 → §6.7 and §8.4**. FR-17 is now `✓`; FR-6 needs
+only an acceptance file. **FR-10 and FR-18 remain**, and FR-18's gap is the sharper one: no document
+anywhere defines what its occupancy figure *is*. Both decisions were taken from repository evidence
+because the supervisor was unavailable, and are labelled as such in
+[`docs/open-questions.md`](docs/open-questions.md).
 
 ⚠️ *This Status section was two phases stale when Phase 6's audit found it, was corrected, and then
 went stale again the moment Phase 6 closed — because the audit ran before the phase's own final state

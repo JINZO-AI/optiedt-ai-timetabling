@@ -25,7 +25,19 @@ FR-10.
 detailed **SRS §3.2 input/processing/output row** written by the supervisor; **C-9's four have neither
 kind of row.** So the §3.2 row is the promise, it is quoted at the head of each acceptance file, and all
 four rows are now **transcribed verbatim** into `docs/testing-strategy.md` §4 so no session needs the
-PDF again. **C-9 is untouched and still blocks three ticks.**
+PDF again. **C-9 was untouched by Phase 10 and blocked three ticks** — ⚠️ **superseded the same day: the audit below narrowed it to two.**
+
+✅ **A pre-Phase-11 audit on 2026-08-10 closed FR-17 and narrowed C-9 from four requirements to two.**
+The count is **16 of 25**. Both were settled from repository evidence because **the supervisor did not
+answer and the project owner directed that they be settled** — recorded as project decisions, with no
+wording attributed to the supervisor that the supervisor did not write.
+
+⚠️ **The FR-17 question was framed wrongly for five days, which is why it looked undecidable.** It was
+put as *"may a project-authored criterion tick a requirement?"* — but FR-17's criterion is **not**
+project-authored. **SRS Table 36 maps FR-17 to §6.7 and §8.4**, and both state the behaviour in the
+supervisor's own words; neither contains the "top-ranked candidate" clause that made the requirement
+look impossible. Nobody had checked Table 36, because C-9 had framed the gap as a missing §3.2 row.
+**Look in Table 36 before calling any requirement unspecifiable.**
 
 ⚠️ **Phase 9 remains the counter-example to quote beside any count.** It delivered a whole requirement's
 software and moved the tick count by zero. **Software status and requirement status are different
@@ -102,12 +114,12 @@ Phase 7 added no acceptance criterion and moved none: its four requirements are 
 | | |
 |---|---|
 | **Project** | OptiEDT — generates, ranks and explains weekly university timetables (Tunisian public faculty, LMD) |
-| **Overall progress** | **Increment 1 is COMPLETE.** **Ten phases delivered** — the plan's six (20 days), Phase 7 for the work C-1 recorded and no phase carried, Phase 8 for increment-1 closure, **Phase 9, outputs and distribution**, and **Phase 10, requirement closure by test**, both on 2026-08-10. ⚠️ **The continuous phase view is [`docs/project-roadmap.md`](project-roadmap.md); Phase 11 of 14 is next and has not begun.** By *delivered product*: **all 9 of 9 acceptance criteria** met (the ninth on 2026-08-07, ⚠️ **reworded** — no time was measured), and **15 of 25 requirements `✓`, 7 under way, 3 not started** — a requirement is `✓` only once a user can reach it *and* it is tested end to end. ⚠️ **The 7 remaining are held by nothing inside the code**: an unwritten SRS row (C-9, 3), an unbuilt screen over a working mechanism (2), a statement never reworded (FR-8), and a ruling nobody has taken (FR-17). **Phase 10 emptied the "needs a test" group.** ⚠️ **This row said "75 %, Phases 1–4 delivered, Phase 5 under way, 0 requirements finished" until 2026-08-06** — false since 2026-08-04 and 2026-08-06 respectively, and missed by two closing audits. Both numbers are real; quote the measure with the number |
+| **Overall progress** | **Increment 1 is COMPLETE.** **Ten phases delivered** — the plan's six (20 days), Phase 7 for the work C-1 recorded and no phase carried, Phase 8 for increment-1 closure, **Phase 9** (outputs and distribution) and **Phase 10** (requirement closure by test), both 2026-08-10. ⚠️ **The continuous phase view is [`docs/project-roadmap.md`](project-roadmap.md); Phase 11 of 14 is next and has not begun.** By *delivered product*: **all 9 of 9 acceptance criteria** met (the ninth on 2026-08-07, ⚠️ **reworded** — no time was measured), and **16 of 25 requirements `✓`, 6 under way, 3 not started** — a requirement is `✓` only once a user can reach it *and* it is tested end to end. ⚠️ **The 6 remaining are held by**: no supervisor-written acceptance standard (C-9 — FR-10, FR-18), an unbuilt screen over a working mechanism (FR-9, FR-11), a statement never reworded (FR-8), and **one acceptance file nobody has written yet (FR-6)**. ⚠️ **This row said "75 %, Phases 1–4 delivered, Phase 5 under way, 0 requirements finished" until 2026-08-06** — false since 2026-08-04 and 2026-08-06 respectively, and missed by two closing audits. Both numbers are real; quote the measure with the number |
 | **Current phase** | **Phase 11 — Administrative surfaces. NOT STARTED**, and **opening it is the project owner's call, not a session's.** Phase 10 closed on 2026-08-10. ⚠️ **This row said "Phase 7" until 2026-08-07** and was stale for two phases; the continuous roadmap is now the tracking view — [`docs/project-roadmap.md`](project-roadmap.md) |
 | **Last completed phase** | **Phase 10 — COMPLETE 2026-08-10**: FR-3, FR-4, FR-7, FR-14 and FR-16 closed by test, **10 `✓` → 15**. `acceptance/test_fr03` rewritten to cover **all twelve H codes** (it checked seven and named two of them by the wrong code); new `test_fr04`, `test_fr07`, `test_fr14`, `test_fr16`; and two frontend files for FR-7's display half. **One source file touched — a stale comment.** Before it, **Phase 9 — COMPLETE 2026-08-10**: FR-10's software — a `@media print` stylesheet with a print-only identity header, and a CSV export carrying the run's whole trace, on all four timetable views and on publications. **No backend file was touched.** Before it, **Phase 8 — COMPLETE 2026-08-07**: the ninth acceptance criterion (FR-2), FR-24's live provider call, **C-15 resolved on measurement** (FR-13 → `✓`) and the production secret-key guard. Before it, **Phase 7 — COMPLETE 2026-08-06**, regeneration and the assistant. Before that, **Phase 6 — COMPLETE 2026-08-06**, eight milestones and a closing audit: the acceptance suite, the instance generator, the demonstration script, C-5 and C-14 implemented. Before it, Phase 5 delivered pre-analysis in-app, the diagnosis run, the run record, authentication and publication |
-| **Milestone reached** | **Phase 10's, 2026-08-10** — *every requirement that could be closed by evidence has been*. For the first time, no requirement in this project is waiting for a test to be written; what remains is held by a document, a screen, a wording or a decision. Before it, Phase 9's — *a timetable can leave the screen* |
-| **Current goal** | **None until the project owner opens Phase 11.** Its content is settled and small: the two screens over mechanisms that already work and are already acceptance-tested — FR-9's calendar administration (`features/admin` is a `.gitkeep`) and FR-11's account management (C-18 records the seed command as a development tool, never a provisioning mechanism) — plus the **student view**, whose role is seeded with no screen. ⚠️ Increment 2 (Phases 13–14) remains *conditional on remaining time*. Natural-language constraint entry is **not undertaken** (`docs/ai-integration.md`) |
-| **Next task** | **A decision, not code: whether to open Phase 11.** Nothing in the repository is blocked. ⚠️ **C-9 remains open** and blocks **three** requirement ticks (FR-6, FR-10, FR-18) — it is supervisor-dependent and **cannot be closed from this repository**, and Phase 10 established precisely why: those three have **no SRS row of either kind**, whereas the four it closed lacked only the acceptance row and had a §3.2 row to be verified against. ⚠️ **A separate question, also not a session's: FR-17.** Its only criterion is one this project wrote (C-14); whether that may tick a requirement is a project-owner ruling, and **Phase 10 deliberately did not take it — do not read Phase 10 as precedent**, since its four were verified against the supervisor's own rows. Everything else that was outstanding is settled: the FR-2 walkthrough (2026-08-07), the first live provider call (2026-08-07), C-15 (2026-08-07) |
+| **Milestone reached** | **The pre-Phase-11 audit's, 2026-08-10** — *every requirement that repository evidence can close is closed*. What remains is held by a document the supervisor must write (2), a screen (2), a wording (1) and one unwritten acceptance file (1). Before it, Phase 10's — *five requirements closed on the supervisor's own wording* |
+| **Current goal** | **Phase 11 — administrative surfaces. It has not started, and opening it is the project owner's call.** ⚠️ **Read [`docs/project-roadmap.md`](project-roadmap.md) §5's Phase 11 subsection before writing a line** — it is the handoff, verified against the code on 2026-08-10, and it corrects the one assumption that would cost the phase a day: **Phase 11 is not frontend-only.** The API has 19 endpoints and **none writes a slot, a holiday or an account**, and the instance is loaded from CSVs and cached per process. ⚠️ Increment 2 (Phases 13–14) remains *conditional on remaining time*. Natural-language constraint entry is **not undertaken** (`docs/ai-integration.md`) |
+| **Next task** | **A decision: whether to open Phase 11.** Nothing in the repository is blocked, and the phase's brief is written. ⚠️ **C-9 remains open over two requirements — FR-10 and FR-18** — and is supervisor-dependent. FR-18's is the sharper gap: **no document defines what the occupancy figure is**, and C-13 is this project's record of losing three sessions to that exact choice, so it is the one place a session must not invent. ⚠️ **One small piece of work is unscheduled and deliberately not assigned: FR-6's acceptance file.** Its criterion is SRS §6.7, quoted in `testing-strategy.md` §4; the behaviour is implemented and reachable; only the file is missing. Assigning it to a phase is the project owner's call. Everything else that was outstanding is settled: the FR-2 walkthrough (2026-08-07), the first live provider call (2026-08-07), C-15 (2026-08-07), FR-17 (2026-08-10) |
 | **External actions — what no session can do** | **One is outstanding: C-9.** The supervisor must supply the SRS §3.2 input/processing/output rows for **FR-6, FR-10 and FR-18** (and FR-10's missing Table 36 entry). Until then those three cannot be `✓` **however complete the software is** — Phase 9 is the proof, having delivered FR-10 in full and moved the count by zero. ⚠️ **It blocks no code**; do not let it stall a phase. The other two acts a person owns were **both discharged on 2026-08-07** and are not outstanding: the FR-2 walkthrough (`demonstration.md` §2, criterion reworded) and the first live provider call (§4, FR-24 `✓`). One decision is also the project owner's and is not a blocker: **whether to open increment 2** (Phases 13–14) |
 | **Other branches** | ⚠️ **One unmerged local branch exists and the next session must not be surprised by it: `claude/silly-robinson-05533b`.** One commit, *"Make the frontend lint script real, and run it in run-checks"*, **based on `0c8932f` — before Phase 9** — and **not pushed**. It was spun off from the Phase 9 finding that `npm run lint` has never worked (no ESLint config has ever been tracked). **Three things make it worth a row rather than a footnote.** It adds a **tenth** step to `run-checks.ps1`, so every "nine steps" claim in this repository — including two rows on this page — becomes stale the moment it merges. It edits `docs/dashboard.md` and `docs/status.md`, **which Phase 9 rewrote**, so the merge *will* conflict and a careless resolution would revert Phase 9's documentation. And it lives in `.claude/worktrees/`, which is **gitignored**, so `git status` on `main` stays clean and gives no hint it exists. **Merging it is the project owner's call, not a session's.** Derive its state: `git worktree list` · `git branch -vv --all` · `git log main..claude/silly-robinson-05533b` |
 | **Branch** | `main`. ⚠️ **Whether it is ahead of `origin/main` is NOT recorded here**, deliberately — and this row said *"ahead of `origin/main` by unpushed local commits"* until 2026-08-07, when everything had in fact been pushed. It is the same fault as the SHA in the row below and it has the same cause: **a push that does not touch this file cannot correct a claim stored in it.** Derive it — `git fetch`, then `git rev-list --count origin/main..HEAD` (0 means everything is pushed) |
@@ -177,31 +189,37 @@ ever disagree, that file wins and this table is the bug. **Do not silently decid
 
 | # | Open question | Blocks | Owner |
 |---|---|---|---|
-| **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification. ⚠️ **It does not block the Phase 6 acceptance suite** — neither the nine criteria nor `testing-strategy.md` §4's table names any of the four. Corrected 2026-08-05. ⚠️ **Phase 9 built FR-10's software against it and left the tick alone** — the requirement is `WIP` with working, tested, reachable code. ⚠️ **Phase 10 sharpened what "no detailed specification" costs**: these have **no SRS row of EITHER kind** — no §3.2 input/processing/output row *and* no §8.6 Table 35 acceptance row — whereas FR-4, FR-7, FR-14 and FR-16 lacked only the second and were closed against the first. **A requirement with no promise of either kind cannot be verified at all** | The `✓` of FR-6, FR-10, FR-18 | Technical lead |
+| **C-9** | ⚠️ **NARROWED 2026-08-10 to FR-10 and FR-18.** It listed four requirements as having "no detailed specification"; what was true is narrower — no **§3.2** row. **SRS Table 36 names a specifying section for three of the four, and two of those state testable behaviour**: FR-6 → §6.7 (*"ordered by decreasing score… equal scores separated by the criteria taken in the order of their weights"*), FR-17 → §6.7 and §8.4 Table 34 (*"A candidate improved on every criterion is signalled"*). Both leave C-9; **FR-17 is `✓`**. What remains for FR-10 and FR-18 is an acceptance *standard* — and for FR-18, **the definition of the occupancy figure itself**, which no document supplies and which C-13 makes consequential | The `✓` of **FR-10 and FR-18** | Technical lead · supervisor for FR-18's quantity |
 | ~~**C-15**~~ | ~~The objective weights raw violation counts of incomparable scale~~ — **RESOLVED 2026-08-07 on measurement, by refuting its own diagnosis.** The objective formulation is sound and unchanged; `teacher-favouring` now raises **S3 and S4** rather than S3 and S5, S5 being an admitted proxy (C-12) and the costliest criterion to optimise. Measured: S3 **29 → 0**, S5 103 → 95, score 79.45 → 81.10 | ~~FR-13~~ — **unblocked, FR-13 is `✓`** | ~~Technical lead~~ |
 
-⚠️ **Two documents disagree about whether C-9 blocks FR-17, and the disagreement is recorded rather
-than decided.** Found 2026-08-10, during Phase 9, and **it is not Phase 9's to settle**:
+✅ **The FR-17 disagreement between `open-questions.md` and `project-roadmap.md` is RESOLVED, and the
+authority was right.** It is recorded because *how* it was resolved matters more than the outcome.
 
-- [`docs/open-questions.md`](open-questions.md) — the stated authority — says C-9 blocks *"the `✓` of
-  FR-6, FR-10 and FR-18"*, **excluding FR-17**, because C-14's resolution reworded
-  `scoring-and-explanation.md` §Dominance and that wording *is* a criterion a test can be written
-  against. `acceptance/test_fr17` exists and passes.
-- [`docs/project-roadmap.md`](project-roadmap.md)'s coverage table lists FR-17's closing phase as
-  🔴 **C-9**, i.e. blocked, which is where its "4 wait on C-9" count comes from.
+The two files had diverged by one requirement: `open-questions.md` — the stated authority — always said
+C-9 blocks *"the `✓` of FR-6, FR-10 and FR-18"*, **excluding FR-17**; the roadmap's coverage table
+counted FR-17 under C-9. The question was framed as *"is a project-authored criterion enough to tick a
+requirement?"* and set aside as a project-owner ruling.
 
-**Both readings are defensible** — FR-17 has a criterion from *this project's* design document and still
-has no SRS row — so the question is whether a project-authored criterion is enough to tick a
-requirement. **That is a project-owner decision, not a session's**, and until it is taken FR-17 stays
-`WIP`, which is what both documents already show. Nothing is mis-stated to a reader; what is missing is
-one ruling.
+⚠️ **That framing was wrong, and the framing is what made it look undecidable.** FR-17's criterion is
+**not project-authored**. **SRS Table 36 maps FR-17 → "§6.7 and §8.4 — Test of dominance"**, and both
+sections state it in the supervisor's own words:
 
-⚠️ **Phase 10 did NOT settle it, and must not be read as precedent.** It closed four requirements
-against criteria that were missing from Table 35 — which sounds like the same situation and is not: those
-four had a **supervisor-written §3.2 row** to be verified against, and FR-17 has no supervisor-written row
-of any kind. The distinction is the whole of Phase 10's reasoning. What Phase 10 did do is stop the two
-files diverging silently: `project-roadmap.md` now marks FR-17 **undecided** and names this disagreement,
-instead of counting it under C-9 and reporting "4 wait on C-9" where the authority says three.
+- **§6.7** — *"A candidate which another candidate improves on every criterion is signalled…"*
+- **§8.4, Table 34** — *Detection of dominance*: *"A candidate improved on every criterion is
+  signalled."*
+
+**Neither says "recommended" or "top-ranked".** That clause exists only in the *summary* tables, which
+this project already records as damaged by cell-offset with Table 36 the reliable source — so C-14's
+decision to signal dominance portfolio-wide **restored the specification's own detailed wording**. And
+C-14's other decision, strict `>` → Pareto, *widens* the signal, so the implementation satisfies §8.4
+literally as well. **FR-17 is `✓` since 2026-08-10.**
+
+**The general ruling was never needed and has not been taken.** No requirement now depends on it.
+
+⚠️ **The lesson generalises and is worth more than the tick: nobody had checked Table 36.** C-9 framed
+the gap as a missing §3.2 row, and for five days every document repeated that framing instead of
+testing it. **Before calling a requirement unspecifiable, read its Table 36 row and the section it
+names.**
 
 **Resolved, do not reopen without new evidence:** C-1, C-2, C-3, C-6, C-7, C-8, C-11, C-13, **C-4,
 C-12, C-16** (2026-07-30), **C-17, C-18** (2026-08-04), **C-5, C-14** (2026-08-05), **C-19, C-20,

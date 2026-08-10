@@ -221,11 +221,28 @@ promise. Transcribed here **verbatim** in Phase 10, so no session ever needs the
 | FR-14 | Table 15 | Two candidates of the same run | Reading of the sub-scores recorded for each | Table of the criteria with the two values and their difference | ✅ `test_fr14` — 8 tests |
 | FR-16 | Table 17 | Ordered candidates of a run | Selection of the first, then verification of dominance | Candidate recommended and statement of the rule applied | ✅ `test_fr16` — 6 tests |
 
-**Verified against this project's own design document** — no SRS row of either kind:
+**Verified against SRS §6.7 and §8.4** — located through **SRS Table 36**, which names the section that
+specifies each requirement. Transcribed **verbatim** on 2026-08-10:
 
-| FR | Source | Expected result | State |
+| FR | Table 36 → | The supervisor's own words | State |
 |---|---|---|---|
-| **FR-17** | `docs/scoring-and-explanation.md` §Dominance, as C-14 reworded it | A candidate another matches everywhere and beats somewhere is signalled, **wherever it sits in the portfolio** | ✅ `test_fr17` — ⚠️ **passing, and FR-17 is still `WIP`.** Whether a project-authored criterion may tick a requirement is a **project-owner ruling that has not been taken**; `docs/dashboard.md` records it. Phase 10 did not take it |
+| **FR-6** | §6.7 · "Order by decreasing score" | *"The candidates are ordered by decreasing score. Equal scores are separated by the criteria taken in the order of their weights."* | ⚠️ **Criterion exists; no acceptance file does.** `DefaultRanker.rank()` implements both sentences and `GET /runs/{id}/candidates` returns that order, covered by `integration/test_api_runs` and `unit/test_portfolio` — but **not by `tests/acceptance/`**. FR-6 is unblocked and unfinished |
+| **FR-17** | §6.7 and §8.4 · "Test of dominance" | §6.7: *"A candidate which another candidate improves on every criterion is signalled…"* · §8.4 Table 34, *Detection of dominance*: *"A candidate improved on every criterion is signalled."* | ✅ `test_fr17` (5) + `property/test_dominance_is_detected` + `DominanceNotice.test` (8) — **FR-17 is `✓` since 2026-08-10** |
+
+⚠️ **Neither of those two rows was known to exist until 2026-08-10, and the search that found them is
+worth repeating before declaring any requirement unspecifiable.** C-9 had been read as "these
+requirements have no detailed specification"; what is true is that they have no **§3.2** row. **Table
+36 names a specifying section for three of C-9's four**, and two of those sections state testable
+behaviour. Look in Table 36 first.
+
+⚠️ **FR-17's criterion is therefore NOT project-authored, which is what the open ruling turned on.**
+`docs/scoring-and-explanation.md` §Dominance is a *transcription* of §6.7 and §8.4 with C-14's
+amendment applied, not an independent source. And the amendment — strict `>` → Pareto — **widens** the
+signal, so the implementation satisfies §8.4's literal wording as well. Nothing was made easier.
+
+⚠️ **§8.4 Table 34 is the source of §3's property table in this document.** Compare them: the five rows
+match. That is not a coincidence and should not be "tidied" into one table — §3 describes how the
+properties are tested, §4 records which requirement each discharges.
 
 ⚠️ **FR-3's row was true and its test did not fully bear it out until Phase 10.** The file re-derived
 seven of the twelve rules and **named two of them by the wrong code** — the room-type check was called
@@ -261,15 +278,27 @@ resolved on 2026-08-05** by tying the criterion to the verified reference instan
 settings and leaving `services/portfolio.py` alone. The test asserts **exactly three**, not "at least
 two" — the measurement is 3 distinct / 0 removed, and a weaker assertion would hide a regression.
 
-⚠️ **FR-6, FR-10, FR-17 and FR-18 have no criterion of EITHER kind in the specification** (C-9) — no
-Table 35 row *and* no §3.2 row. FR-17 has a testable criterion only because C-14's resolution reworded
-`docs/scoring-and-explanation.md` §Dominance, which is this project's document and not the supervisor's,
-which is why it sits in its own table above. **C-9 remains open for the other three.**
+⚠️ **C-9 was narrowed on 2026-08-10 from four requirements to two: FR-10 and FR-18.** None of the four
+has a Table 35 row or a §3.2 row — but **FR-6 and FR-17 have a Table 36 row naming a section that does
+state testable behaviour**, which is the table immediately above. `docs/open-questions.md` carries the
+full reasoning and stays the authority.
 
-⚠️ **Do not read the §3.2 table above as making C-9 smaller.** It does the reverse: it shows exactly
-what C-9's four are missing. FR-4, FR-7, FR-14 and FR-16 could be closed in Phase 10 *because* a
-supervisor-written row existed to quote; FR-6, FR-10 and FR-18 cannot be, and no amount of working
-software changes that. **The remedy for C-9 is a document, and it is not this repository's to write.**
+**What still has no criterion of any kind, and why the two differ:**
+
+| FR | Named in the specification? | What is missing |
+|---|---|---|
+| **FR-10** | ✅ Twice in the CdC — *"Printing and export of the displayed view"* — and SRS §4.1 for the print half | No statement of what a correct export **contains**. Absent from Table 35, §3.2 **and** Table 36 |
+| **FR-18** | ✅ CdC §1 — *"Any authorised user to consult the occupancy of a classroom or of a laboratory"* | ⚠️ **No document anywhere defines what the occupancy figure IS.** Occupied periods over open periods? Over the week? Two-period windows? **C-13 is this project's record of losing three sessions to exactly that choice** |
+
+⚠️ **FR-18's gap is the one place where inventing the requirement could actively mislead**, which is why
+no formula is adopted. `docs/open-questions.md` records the strongest defensible criterion for each —
+reachability and completeness for FR-18, "what leaves the screen is the displayed view" for FR-10 —
+**as project decisions, clearly labelled, taken because the supervisor did not answer.** Neither
+requirement is ticked on them.
+
+⚠️ **Do not read any of this as making the remedy optional.** FR-10 and FR-18 still need a document
+this repository cannot write. What changed is that two requirements were being held by a gap they did
+not actually have.
 
 ⚠️ **FR-10 was BUILT in Phase 9 and still has no row above, deliberately.** Its software is finished,
 reachable and covered by **28 display-layer tests** — `frontend/src/features/timetable/export.test.ts`

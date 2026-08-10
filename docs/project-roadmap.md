@@ -2,16 +2,17 @@
 
 **This is the practical tracking view.** One question, one answer: *what phase are we in?*
 
-> **Phase 11 — Administrative surfaces.** Phase 10 closed on 2026-08-10. Phase 11 has not begun, and
-> **opening it is the project owner's call, not a session's.**
+> **Phase 11 — Administrative surfaces. NOT STARTED.** Phases 1–10 are complete. Opening Phase 11 is
+> the project owner's call, not a session's — but everything it needs is written down: **§5 below is
+> the handoff**, and it is what a fresh session should read after the dashboard.
 >
-> ✅ **Phase 10 took the `✓` count from 10 to 15 of 25** — FR-3, FR-4, FR-7, FR-14 and FR-16, each now
-> carrying an acceptance test against a criterion the *supervisor* wrote.
+> ✅ **16 of 25 requirements are `✓`.** Phase 10 took the count from 10 to 15 (FR-3, FR-4, FR-7, FR-14,
+> FR-16); the **pre-Phase-11 audit of 2026-08-10 added FR-17**, on evidence nobody had looked for.
 >
-> ⚠️ **Its premise was half wrong and the correction is worth carrying.** Four of the five had no
-> acceptance criterion either: **SRS Table 35 has no row for FR-4, FR-7, FR-14 or FR-16.** What they
-> have — and what C-9's four lack — is an SRS §3.2 input/processing/output row, now transcribed
-> verbatim into `docs/testing-strategy.md` §4. **C-9 is untouched and still blocks three ticks.**
+> ⚠️ **C-9 narrowed from four requirements to two — FR-10 and FR-18.** SRS **Table 36** names a
+> specifying section for three of its four, and two of those sections state testable behaviour: FR-6 →
+> §6.7, FR-17 → §6.7 and §8.4. **Neither had ever been checked.** `docs/open-questions.md` carries the
+> reasoning and stays the authority.
 
 ⚠️ **This document does not replace anything.** `docs/dashboard.md` remains the handoff page and
 `docs/requirements-traceability.md` remains the authority on any single requirement's status. This file
@@ -54,12 +55,13 @@ Reference instance: 218 sessions · 51 groups · 44 teachers · 20 rooms · 28 o
 | **13** | Examination session | ⬜ CONDITIONAL | Exam timetabling (*was increment 2*) | FR-20 | — |
 | **14** | Weight adjustment | ⬜ CONDITIONAL | Learn weights from recorded comparisons (*was increment 2*) | FR-21 | — |
 
-🔴 **Cross-phase blocker — C-9.** FR-6, FR-10 and FR-18 have no input/processing/output row in
-SRS §3.2, and FR-10 is absent from Table 36 entirely. **They cannot be marked `✓` until the supervisor
-supplies the rows** — this blocks *ticks*, never *software*. It is a gate, not a phase. ⚠️ **FR-17 was
-counted here as a fourth until Phase 10 and is now shown separately**, because whether it belongs is
-precisely the undecided question flagged under the coverage table; `docs/open-questions.md`, the stated
-authority, has always named three.
+🔴 **Cross-phase blocker — C-9, now two requirements: FR-10 and FR-18.** Neither has an acceptance
+standard anywhere in the specification, and **FR-18's central figure — what "occupancy" means — is
+undefined in every document**. This blocks *ticks*, never *software*. It is a gate, not a phase.
+⚠️ **It listed four requirements until 2026-08-10.** SRS **Table 36** names a specifying section for
+three of them and two of those sections state testable behaviour — FR-6 → §6.7, FR-17 → §6.7 and §8.4 —
+so both left C-9. **Table 36 had never been checked**, because C-9 framed the question as a missing
+§3.2 row. `docs/open-questions.md` carries the full reasoning.
 
 ### Requirement coverage — all 25, each mapped to exactly one closing phase
 
@@ -73,19 +75,19 @@ requirement to `✓`, which is not always the phase that built it.
 | FR-3 | Generate respecting H1–H12 | ✅ | 2 | **10** | — |
 | FR-4 | Improve quality within a time limit | ✅ | 3 | **10** | — |
 | FR-5 | Several candidates, each scored | ✅ | 3 | **6** | — |
-| FR-6 | Order candidates by score | WIP | 3 | 🔴 **C-9** | no SRS row of either kind |
+| FR-6 | Order candidates by score | WIP | 3 | **unscheduled** | ✅ criterion found (SRS §6.7); **no acceptance test** |
 | FR-7 | Display by teacher, group, room | ✅ | 4 | **10** | — |
 | FR-8 | Report rules in conflict | WIP | 5 | 🔴 supervisor | statement ≠ criterion |
 | FR-9 | Configure the calendar | WIP | 5–6 | **11** | screen not built |
-| FR-10 | Print or export a view | WIP | **9** | 🔴 **C-9** | no SRS row of either kind |
+| FR-10 | Print or export a view | WIP | **9** | 🔴 **C-9** | no acceptance standard; software complete |
 | FR-11 | Authenticate and restrict by role | WIP | 5 | **11** | account management |
 | FR-12 | Verify data before solving | ✅ | 5 | **6** | — |
 | FR-13 | Candidates under distinct profiles | ✅ | 3 | **8** | — |
 | FR-14 | Compare two candidates | ✅ | 4 | **10** | — |
 | FR-15 | State each criterion's contribution | ✅ | 3 | **6** | — |
 | FR-16 | Recommend one candidate | ✅ | 3 | **10** | — |
-| FR-17 | Signal a dominated candidate | WIP | 3–6 | 🔴 **undecided** | ⚠️ see the note below — **not settled by Phase 10** |
-| FR-18 | Display room occupancy | WIP | 4 | 🔴 **C-9** | no SRS row of either kind |
+| FR-17 | Signal a dominated candidate | ✅ | 3–6 | **10 (audit)** | — |
+| FR-18 | Display room occupancy | WIP | 4 | 🔴 **C-9** | ⚠️ **the occupancy figure is undefined**; no test of any kind |
 | FR-19 | Record every run with its trace | ✅ | 5 | **6** | — |
 | FR-20 | Examination session timetable | — | — | **13** | conditional |
 | FR-21 | Adjust weights from comparisons | — | — | **14** | conditional |
@@ -94,24 +96,25 @@ requirement to `✓`, which is not always the phase that built it.
 | FR-24 | Answer a question in ordinary language | ✅ | 7 | **8** | — |
 | FR-25 | Produce a readable report | ✅ | 7 | **7** | — |
 
-**Totals: 15 ✅ · 7 WIP · 3 not started = 25.** Of the 7 WIP, **none lacks working software**: **3 wait
-on C-9** (FR-6, FR-10, FR-18), 2 need a screen over a working mechanism (FR-9, FR-11), 1 needs its
-statement reworded (FR-8), and 1 waits on a ruling nobody has taken (FR-17).
+**Totals: 16 ✅ · 6 WIP · 3 not started = 25.** Of the 6 WIP, **none lacks working software**: **2 wait
+on C-9** (FR-10, FR-18), 2 need a screen over a working mechanism (FR-9, FR-11), 1 needs its statement
+reworded (FR-8), and 1 needs only an acceptance file (FR-6).
 
-⚠️ **The "5 need an acceptance test" group is gone — Phase 10 closed it**, and the tally above is the
-first in this project where every remaining hold is **external to the code**: a document the supervisor
-must write, a screen not yet built, a sentence to reword, a decision to take. Nothing on this list is
-waiting for a test to be written.
+⚠️ **FR-6 is the only requirement in the project waiting on a test, and it is a small one.** Phase 10
+emptied that group; the pre-Phase-11 audit put one requirement back into it by *unblocking* FR-6 rather
+than by leaving it under C-9. `DefaultRanker.rank()` implements SRS §6.7's two sentences and
+`GET /runs/{id}/candidates` returns that order — covered by `integration/test_api_runs` and
+`unit/test_portfolio`, but **not** by an acceptance file. **It is unscheduled**: assigning it to a phase
+is the project owner's call.
 
-⚠️ **FR-17's row is the one open disagreement between this table and
-[`docs/open-questions.md`](open-questions.md), and Phase 10 did NOT settle it.** That file — the stated
-authority — records C-9 as blocking FR-6, FR-10 and FR-18 only, because C-14's resolution gave FR-17 a
-criterion in *this project's* design document; this table used to call FR-17 C-9-blocked, which is where
-its old "4 wait on C-9" came from. Both readings are defensible, the question is whether a
-project-authored criterion may tick a requirement, and **it is the project owner's to answer.** The row
-now says "undecided" rather than picking a side. ⚠️ **Do not read Phase 10 as precedent for it**: the
-four requirements it closed were verified against rows the *supervisor* wrote, which is the opposite
-situation.
+✅ **FR-17's row was the one open disagreement between this table and
+[`docs/open-questions.md`](open-questions.md), and it is settled.** This table called FR-17 C-9-blocked
+while the stated authority named only three requirements — a divergence of one that would have grown
+every time either file was counted. The audit of 2026-08-10 found why the authority was right: **SRS
+Table 36 maps FR-17 to §6.7 and §8.4, and both state the behaviour in the supervisor's own words**, so
+FR-17's criterion was never project-authored and the question "may a project-authored criterion tick a
+requirement?" never applied to it. **FR-17 is `✓`.** The question itself remains unasked and unanswered
+— no requirement now depends on it.
 
 ⚠️ **FR-10 moved `—` → `WIP` on 2026-08-10 and the `✓` count did not move.** That is the shape a C-9
 requirement takes when it is built: the software is finished and reachable, and the tick is held by a
@@ -269,6 +272,10 @@ supervisor. C-9's four have neither kind of row. So the §3.2 row is the promise
 at the head of each acceptance file, and all four rows were transcribed into
 `docs/testing-strategy.md` §4 so no session needs the PDF again. **C-9 is untouched.**
 
+⚠️ **That last sentence was true on the day and is now superseded** — kept because it records what
+Phase 10 believed. The **pre-Phase-11 audit of 2026-08-10** narrowed C-9 to FR-10 and FR-18 by checking
+**SRS Table 36**, which Phase 10 never opened: it names a specifying section for three of C-9's four.
+
 **Two defects found, both by writing the test rather than by reading the code:**
 
 1. **`acceptance/test_fr03` named two rules by the wrong code.** The room-type check was called H5 (it
@@ -305,23 +312,116 @@ provisioned by a seed command, which C-18 records as a development tool and not 
 mechanism). Plus the student view: the role is seeded and has no screen.
 
 ### What no phase can do
-**C-9 blocks three ticks and no software.** FR-6, FR-10 and FR-18 have no criterion of any kind, and
-Phase 9 is the proof that building the software does not move them: it delivered FR-10 in full and the
-count did not change. **The supervisor must supply the SRS rows.**
+**C-9 blocks two ticks and no software: FR-10 and FR-18.** Phase 9 is the proof that building the
+software does not move them — it delivered FR-10 in full and the count did not change. **The supervisor
+must supply an acceptance standard**, and for FR-18 something more basic: **a definition of what its
+occupancy figure is**, which no document contains. ⚠️ **This said "three ticks … FR-6, FR-10 and FR-18"
+until 2026-08-10**; FR-6 left C-9 when SRS Table 36 was finally checked and found to name §6.7.
 
 ---
 
 ## 5 · Current and future phases in detail
 
-### Phase 11 — Administrative surfaces 🔵 NEXT
-**Purpose.** Two requirements whose *mechanism* is built and tested but whose *screen* does not exist.
-**Requirements:** FR-9 (calendar administration — `Slot.is_open` works and is acceptance-tested; the
-screen is `features/admin/.gitkeep`), FR-11 (account management — C-18 records the seed command as a
-development tool, never a provisioning mechanism). Plus the **student view**: the role is seeded and has
-no screen.
-**Dependencies:** none technical.
-**COMPLETE when** an administrator can close a half-day and manage accounts through the interface, and a
-student can reach their timetable.
+### Phase 11 — Administrative surfaces 🔵 NEXT — **THE HANDOFF**
+
+**This subsection is written for a session that has just run `/clear` and knows nothing.** Read
+`docs/dashboard.md` first, then this. Everything below was verified against the code on 2026-08-10.
+
+**Mission.** Give an administrator and a student the surfaces SRS Table 2 says they have. Three
+capabilities whose *decision mechanisms* are already built and tested.
+
+⚠️ **Phase 11 is NOT frontend-only, and assuming it is would be the phase's first mistake.** Verified
+2026-08-10: the API has **19 endpoints and not one of them writes a slot, a holiday or an account.**
+The write endpoints are availability (`PUT`), sign-in, run creation, regeneration, publication and the
+assistant question — that is all. `GET /instance` is **read-only**, and `api/deps.py::get_instance`
+loads the instance **from the 13 CSVs on disk, `lru_cache`d for the process**. So an administration
+screen needs *new backend surface and a persistence story for calendar edits*, and neither exists.
+**That is the largest single unknown in this phase — size it before promising a date.**
+
+If you find yourself changing the solver, the analysis layer or the run pipeline, stop — that is not
+this phase.
+
+**Requirements: FR-9, FR-11, plus the student view.**
+
+#### What already exists — do not rebuild it
+
+| | Built and tested | Where |
+|---|---|---|
+| **FR-9 mechanism** | Closing a half-day is `Slot.is_open = 0`; H9 removes those slots from every session's domain. **Acceptance-tested against the real solver**: `acceptance/test_fr09.py` closes Wednesday afternoon by setting that flag **and nothing else**, and no placement in any candidate occupies a closed slot | `solver/constraints/domain_pruned.py` (H9), ADR-003, invariant 7 |
+| **FR-11 mechanism** | Token authentication, role checks on every request, the teacher taken **from the token**. **Tested with real tokens, no dependency override**: `integration/test_rbac.py` (19) and `acceptance/test_fr11.py` (7) | `core/security`, `api/deps`, `api/routers/auth`, `features/auth` |
+| **Accounts today** | `uv run python -m optiedt.services.seed` creates one person in charge, one administrator, one student and one account per teacher. **C-18 records this as a development tool, never a provisioning mechanism**, and it refuses to run if any account exists | `services/seed.py`, `unit/test_seed.py` (8) |
+| **The student's data path** | `GET /runs/{id}` and the candidate reads already serve a timetable; `features/timetable` renders it by teacher, group and room, and prints and exports it (FR-7 ✓, FR-10 software) | `features/timetable/` |
+
+#### What is missing — the actual work
+
+1. **An administration screen.** `frontend/src/features/admin/` contains **one file: `.gitkeep`**. There
+   is no route for it in `App.tsx`, which today routes exactly five paths: `/disponibilites`,
+   `/generation`, `/emplois-du-temps`, `/comparaison`, `/publications`.
+2. **Calendar administration (FR-9) — and the endpoint under it.** A surface that sets `Slot.is_open`,
+   holidays and the shortened-day window. ⚠️ **No endpoint writes a slot today, and the instance is
+   loaded from CSV files and cached for the process.** So this needs a decision about *where an edited
+   calendar lives*: a database table read at run assembly (the shape FR-2's declarations already use —
+   see `services/availability.apply_declarations`), or edits to the instance files. **The declarations
+   precedent is the strongest evidence in the repository**: FR-2 faced the same problem and solved it by
+   layering stored declarations over a pristine loaded instance, deliberately, "so a declaration can be
+   withdrawn" (`api/deps.py`). Follow it unless there is a reason not to.
+3. **Account management (FR-11) — and the endpoints under it.** SRS **Table 2** gives the administrator
+   *"Management of the accounts and of the calendar"* — one actor, both surfaces, which is why they are
+   one phase. There is no account endpoint beyond `POST /auth/token` and `GET /auth/me`.
+4. **A student view.** SRS Table 2 gives the student *"Read on the timetable of the group"*. The CdC
+   adds printing: *"Students to consult and print the timetable of their group"*. The role exists in
+   `UserRole`, is seeded, and **has no route and no screen**.
+
+#### Decisions a fresh session must not take alone
+
+⚠️ **Where account management belongs is genuinely contested inside this repository, and it is not a
+session's call.** **C-18** says the administrator's account-management right *"stays unimplemented and
+belongs with FR-1's data management"* — which is **Phase 12**. This roadmap puts it in Phase 11. The
+strongest reading of the evidence: **SRS Table 2 pairs accounts with the calendar under one actor**, and
+C-8 already settled that Table 2 wins where prose disagrees — so accounts belong with the administration
+screen, and C-18's sentence was a scheduling remark made under Phase 5's budget, not a scope ruling.
+**Recorded as a reading, not a decision.** Put it to the project owner when Phase 11 opens.
+
+#### Constraints — what Phase 11 must not touch
+
+- **The solver, the analysis layer, the objective and the run pipeline.** No placement is written
+  outside `solver/` (invariant 2), and the analysis layer may not import the solver (invariant 1).
+- **Invariant 7 / ADR-003.** A closed half-day is **configuration**: it sets `slot.is_open = 0` and H9
+  does the rest. **Adding a CP-SAT constraint for a holiday or a closed Saturday is a bug**, and FR-9's
+  acceptance test asserts "with no code change" by holding the catalogue to exactly H1–H12.
+- **The eleven `import-linter` contracts.** Never relax one to make a change compile.
+- **`OPTIEDT_SECRET_KEY`.** Phase 8 made production start-up refuse the published default. Do not weaken
+  that guard to make an admin screen convenient.
+- **FR-1 (department data import) is Phase 12**, not this one. An account screen must not grow into a
+  data-management screen.
+- **FR-6's acceptance file is unscheduled work, not Phase 11's.** It is small and tempting; it is also
+  not what this phase is for.
+
+#### Risks
+
+- **A calendar write path is new surface.** Changing `Slot.is_open` changes what every future run can
+  produce. ⚠️ **On this instance it is tight**: `test_fr09` records that any half-day closure takes
+  `Lab_Info` to **exactly 100.0 %** of its two-period windows — a solution exists only if a perfect
+  packing does. An administration screen that lets someone close two half-days can make the instance
+  infeasible, and the honest response is FR-12's pre-analysis, not a refusal to save.
+- **Account management touches authentication.** `integration/test_rbac.py` must keep using real tokens.
+- **`GET /runs/{id}` takes any authenticated user** — recorded at Phase 9's audit and still true. A
+  student view that reads a run inherits that. **Phase 11 is where it becomes a question worth asking**,
+  because a student is the first role that should *not* see everything.
+
+**COMPLETE when** an administrator can close a half-day and manage accounts through the interface, a
+student can reach their own group's timetable, and each is covered the way this project covers a
+requirement: an acceptance file quoting its criterion, plus display tests for what only a rendering test
+can establish.
+
+**Validation.** `scripts/run-checks.ps1` green across its nine steps; `scripts/run-acceptance.ps1` green
+(**16–22 min**, quote the range or none); new tests **verified to fire** by mutating the source before
+being relied on — the standard Phases 9 and 10 both used.
+
+**Documentation to update on completion.** `docs/dashboard.md` (state), `docs/status.md` (detail),
+`docs/requirements-traceability.md` (any status change — it is the authority),
+`docs/testing-strategy.md` §4 (any new criterion, quoted), and this file's phase table and coverage
+table.
 
 ### Phase 12 — Data management ⏳
 **Purpose.** **The largest genuine gap.** FR-1 is `—`; the only way in is 13 hand-authored CSVs. Without
@@ -378,12 +478,12 @@ Phase 11 (administrative surfaces) · Phase 12 (FR-1 data management) · the six
 findings in `status.md`.
 
 ### 🔴 Supervisor-dependent — **you cannot close these alone**
-**C-9.** FR-6, FR-10 and FR-18 have **no SRS row of either kind** — neither a §3.2 specification row nor
-a Table 35 acceptance row. Blocks **three ticks** and no software.
+**C-9, now two requirements.** **FR-10** and **FR-18** have no acceptance standard in any document, and
+**FR-18's central figure — what "occupancy" means — is defined nowhere**. Blocks **two ticks** and no
+software. ⚠️ **It listed four until 2026-08-10**; FR-6 and FR-17 left it once SRS Table 36 was checked.
 **FR-8's statement** was never reworded to match its criterion, which is why it stays `WIP`.
-**FR-17** needs a ruling rather than a document: its only criterion is one this project wrote (C-14).
-⚠️ **Phase 10 is not a precedent for FR-17** — the four it closed were verified against rows the
-*supervisor* wrote.
+⚠️ **FR-17 is no longer on this list** — SRS §6.7 and §8.4 state its behaviour in the supervisor's own
+words, so no ruling was needed and none was taken.
 
 ### ⬜ Out of scope unless time permits
 Phases 13–14. PPM defines increment 2 as **"conditional on remaining time"**, and
@@ -398,15 +498,15 @@ a solver-validation harness that does not fit the project.
 |---|---|---|
 | **Phases complete** | **10 of 14** (71 %) | 10 of 12 (83 %) excluding the two conditional phases |
 | **Acceptance criteria** | **9 of 9 (100 %)** | The specification's actual gate |
-| **Requirements `✓`** | **15 of 25 (60 %)** | ⚠️ Still understates reality — see below. **10 → 15 in Phase 10** |
+| **Requirements `✓`** | **16 of 25 (64 %)** | ⚠️ Still understates reality — see below. **10 → 15 in Phase 10, → 16 at the pre-Phase-11 audit** |
 | **Open questions** | **19 of 20 resolved** | One remains: C-9, supervisor-dependent |
 | **Tests** | **552 backend + 99 frontend** | 441 fast + 67 solver + 44 database. ⚠️ **Derive these**: `uv run pytest --collect-only -q` and `npm run test` |
 | **Mandatory work remaining** | **None** | By the nine-criteria gate |
 
-⚠️ **Why 60 % still understates it.** Of the 10 requirements not `✓`, **7 have working software** and
-3 are not started. The 7 are held by: an unwritten SRS row — C-9 (3), an unbuilt screen over a working
-mechanism (2), a statement never reworded to match its criterion (1), and a ruling nobody has taken (1).
-**None is waiting for a test**, which was not true before 2026-08-10.
+⚠️ **Why 64 % still understates it.** Of the 9 requirements not `✓`, **6 have working software** and
+3 are not started. The 6 are held by: no acceptance standard the supervisor wrote — C-9 (2: FR-10,
+FR-18), an unbuilt screen over a working mechanism (2: FR-9, FR-11), a statement never reworded to match
+its criterion (1: FR-8), and **one acceptance file that has simply not been written** (1: FR-6).
 
 ⚠️ **Phase 9 remains the clearest illustration of the gap.** It delivered a whole requirement's
 software and moved the `✓` count by **zero**. Anyone quoting a percentage should say what it measures.
