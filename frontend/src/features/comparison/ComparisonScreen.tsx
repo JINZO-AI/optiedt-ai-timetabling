@@ -30,11 +30,21 @@ import type { Candidate, ConstraintDefinition } from '@/types/domain'
  * teaches the reader it means "no problem found". What is displayed now is
  * dominance *anywhere in the portfolio*, under the standard Pareto rule.
  *
- * ⚠️ **The screen does not claim what a profile "favours".** Under **C-15** the
- * objective weights raw violation counts of incomparable scale, so
- * teacher-favouring measurably improves S5 and not S3. Naming a cause here
- * would explain the difference by something that is not the reason. The
- * measured sub-scores are shown instead, and they speak for themselves.
+ * ⚠️ **The screen does not claim what a profile "favours", and the reason
+ * changed on 2026-08-07 while the rule did not.** This comment used to cite
+ * **C-15** as open — "the objective weights raw violation counts of
+ * incomparable scale, so teacher-favouring measurably improves S5 and not S3".
+ * **C-15 was resolved by refuting exactly that diagnosis**: the objective
+ * formulation is sound and unchanged, and what was wrong was which criteria the
+ * profile raised (S5 is an admitted proxy — C-12). `teacher-favouring` now
+ * raises S3 and S4, and S3 went 29 → 0.
+ *
+ * The rule stands for a better reason. A favouring profile promises the best
+ * value of its **headline** criterion, not a win across its constituency — the
+ * teacher criteria genuinely conflict, and solving S3 alone drives S5 to 113.
+ * So a caption reading "favours teachers" would still overstate what the
+ * screen can show. The measured sub-scores are displayed instead, and they
+ * speak for themselves.
  */
 /**
  * One precision for every figure on this screen.

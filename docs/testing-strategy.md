@@ -174,22 +174,71 @@ reasons the analysis layer is isolated in the first place. Tests live in `backen
 Each requirement is verified against **the acceptance criterion written at the same time as the
 requirement itself**. Tests live in `backend/tests/acceptance/`, one per criterion, named for its FR.
 
+⚠️ **The specification states a requirement's promise in TWO places, and they cover different sets.**
+Phase 10 found this by checking rather than assuming, and it is what the table below is now organised
+around — read this before adding or moving a row:
+
+| Source | What it gives | Which requirements it covers |
+|---|---|---|
+| **SRS §8.6, Table 35 — "Acceptance tests"** | A test and an expected result, in the supervisor's own words | **13 rows over 14 requirements** — FR-2, 3, 5, 8, 9, 11, 12, 13, 15, 19, 23, 24, and one row shared by FR-22 and FR-25. **The upper table below is a transcription of it** |
+| **SRS §3.2 — "Detailed specification"** | An **input / processing / output** row per requirement | **21 requirements**, Tables 4–24. Absent for exactly FR-6, FR-10, FR-17 and FR-18 — that absence **is C-9** |
+
+The two are not nested. **FR-4, FR-7, FR-14 and FR-16 have a §3.2 row and no Table 35 row**, which is
+the opposite shape from C-9's four and needs the opposite treatment: there *is* a promise written by
+the supervisor to quote, so an acceptance file can open with it and the requirement can be verified
+against something it did not write itself. Those four are the **lower** table.
+
+> **Do not merge the two tables.** A reader must be able to tell a criterion the supervisor wrote as a
+> *test* from one derived from the supervisor's *specification of behaviour*, and both from a criterion
+> this project authored for itself (FR-17, via C-14). All three are legitimate; they are not equally
+> strong, and flattening them would hide which is which.
+
+**Verified against SRS §8.6 Table 35** — the supervisor's own acceptance tests:
+
 | FR | Test | Expected result | State |
 |---|---|---|---|
 | FR-2 | Fill in the availability grid | Completed unaided by a user who had not seen it | ⚠️ **not automatable — still true, and the criterion was REWORDED rather than automated.** Run 2026-08-07; the original wording asked for *"under 5 minutes"* and **the run measured no time**, so the clause was dropped by project-owner decision. Record and limitations: `docs/demonstration.md` §2. **A timed run with a naive participant would still be strictly better evidence** |
-| FR-3 | Generate on the reference instance | No hard-constraint violation | ✅ `test_fr03`, `solver` |
+| FR-3 | Generate on the reference instance | No hard-constraint violation | ✅ `test_fr03`, `solver` — **all twelve codes since Phase 10**; see the note below |
 | FR-5 | Read a candidate | Overall score and sub-scores displayed | ✅ `test_fr05` |
 | FR-8 | Generate on a deliberately infeasible instance | Report naming the rules in conflict by code | ✅ `test_fr08`, `solver` — ⚠️ **both shapes**, and the criterion holds on only one |
-| FR-9 | Close a half-day in configuration | Those slots disappear from every timetable, **with no code change** | ✅ 	est_fr09, solver — ticks criterion 7 |
+| FR-9 | Close a half-day in configuration | Those slots disappear from every timetable, **with no code change** | ✅ `test_fr09`, `solver` — ticks criterion 7 |
 | FR-11 | Connect with a teacher account | Access limited to own data | ✅ `test_fr11`, real tokens |
 | FR-12 | Verify an instance with insufficient rooms | The resource concerned and quantity missing are named | ✅ `test_fr12` |
 | FR-13 | Run on the reference instance | **Three distinct candidates on the reference instance at production settings** (C-5, resolved 2026-08-05) | ✅ `test_fr13`, `solver` |
 | FR-15 | Compare two candidates | Sum of contributions equals the score difference | ✅ `test_fr15` |
-| **FR-17** | Read a run's dominance verdicts | A candidate another matches everywhere and beats somewhere is signalled, **wherever it sits in the portfolio** (C-14) | ✅ `test_fr17` |
 | FR-19 | Repeat a run with the same seed and weights | Identical candidates in the same order · **and** every published timetable traces back to its run, seed and weights | ✅ `test_fr19`, `solver` |
 | FR-23 | Accept a `weight_delta` recommendation | New run created; new candidate satisfies H1–H12; linked to the recommendation | ✅ `test_fr23`, 14 tests — ten about the application, **four `solver`-marked** at production settings |
 | FR-24 | Ask a question whose answer is not in the context | The assistant says it cannot answer, and **invents no figure** | ✅ `test_fr24`, 9 tests — **both** ways it can be met: a model that declines, and a model that does not and is stopped |
 | FR-22, FR-25 | Switch the language service off in configuration | Explanations and reports fall back to computed form; **every other function unaffected** | ✅ `test_fr22` (9) + `test_fr25` (10) — and the criterion needs **no provider, no key and no network**, because off is the default |
+
+**Verified against SRS §3.2** — no Table 35 row exists, so the input/processing/output row *is* the
+promise. Transcribed here **verbatim** in Phase 10, so no session ever needs the PDF again:
+
+| FR | SRS table | Input | Processing | Output | State |
+|---|---|---|---|---|---|
+| FR-4 | Table 7 | Weights of the criteria and time limit | Minimisation of the weighted penalty within the limit | Best solution found when the limit is reached | ✅ `test_fr04` — 7 tests, **1 `solver`-marked** |
+| FR-7 | Table 9 | Published timetable and chosen filter | Selection of the sessions concerning the resource | Weekly grid of the resource | ✅ `test_fr07` + `model.test.ts` + `TimetableGrid.test.tsx` — both halves, see below |
+| FR-14 | Table 15 | Two candidates of the same run | Reading of the sub-scores recorded for each | Table of the criteria with the two values and their difference | ✅ `test_fr14` — 8 tests |
+| FR-16 | Table 17 | Ordered candidates of a run | Selection of the first, then verification of dominance | Candidate recommended and statement of the rule applied | ✅ `test_fr16` — 6 tests |
+
+**Verified against this project's own design document** — no SRS row of either kind:
+
+| FR | Source | Expected result | State |
+|---|---|---|---|
+| **FR-17** | `docs/scoring-and-explanation.md` §Dominance, as C-14 reworded it | A candidate another matches everywhere and beats somewhere is signalled, **wherever it sits in the portfolio** | ✅ `test_fr17` — ⚠️ **passing, and FR-17 is still `WIP`.** Whether a project-authored criterion may tick a requirement is a **project-owner ruling that has not been taken**; `docs/dashboard.md` records it. Phase 10 did not take it |
+
+⚠️ **FR-3's row was true and its test did not fully bear it out until Phase 10.** The file re-derived
+seven of the twelve rules and **named two of them by the wrong code** — the room-type check was called
+H5 (it is **H4**) and the availability check H7 (it is **H6**), against
+`data/instance/constraint_catalogue.csv`, which is the authority. A test that says H5 while checking H4
+cannot support a claim of the form "respecting H1–H12": a reader auditing the twelve would tick two
+rules that were never checked and miss two that were. **Every code now appears by its catalogue name**,
+and **eleven of the twelve are re-derived from the placements** — including H2 and H11, which the
+solver does not post separately (H2 is a subset of H12, H11 a consequence of H3 and H7 —
+`solver/constraints/noop.py`) and which are checked here anyway, because what the requirement promises
+is the *statement*, not the posting. **H10 alone is vacuous**: the reference instance locks no session,
+which the file **asserts rather than assumes**, and `tests/integration/test_h10_locks.py` is what
+exercises it for real.
 
 ⚠️ **Written at Phase 6's close and now half superseded — kept because the reasoning is what Phase 7
 answers.** It read: *"The four assistant and regeneration rows were out of Phase 6's scope by decision
@@ -212,9 +261,15 @@ resolved on 2026-08-05** by tying the criterion to the verified reference instan
 settings and leaving `services/portfolio.py` alone. The test asserts **exactly three**, not "at least
 two" — the measurement is 3 distinct / 0 removed, and a weaker assertion would hide a regression.
 
-⚠️ **FR-6, FR-10, FR-17 and FR-18 have no acceptance criterion in the specification** (C-9), which is
-why only FR-17 appears above: C-14's resolution reworded `docs/scoring-and-explanation.md` §Dominance,
-and that wording is a criterion a test can be written against. **C-9 remains open for the other three.**
+⚠️ **FR-6, FR-10, FR-17 and FR-18 have no criterion of EITHER kind in the specification** (C-9) — no
+Table 35 row *and* no §3.2 row. FR-17 has a testable criterion only because C-14's resolution reworded
+`docs/scoring-and-explanation.md` §Dominance, which is this project's document and not the supervisor's,
+which is why it sits in its own table above. **C-9 remains open for the other three.**
+
+⚠️ **Do not read the §3.2 table above as making C-9 smaller.** It does the reverse: it shows exactly
+what C-9's four are missing. FR-4, FR-7, FR-14 and FR-16 could be closed in Phase 10 *because* a
+supervisor-written row existed to quote; FR-6, FR-10 and FR-18 cannot be, and no amount of working
+software changes that. **The remedy for C-9 is a document, and it is not this repository's to write.**
 
 ⚠️ **FR-10 was BUILT in Phase 9 and still has no row above, deliberately.** Its software is finished,
 reachable and covered by **28 display-layer tests** — `frontend/src/features/timetable/export.test.ts`

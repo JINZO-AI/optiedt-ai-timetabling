@@ -17,9 +17,56 @@ remaining reasons the *only* ones.
 ✅ **The whole table was reviewed against evidence in one pass at M7**, as M2 promised — not row by row
 as work landed, which is how a table acquires a count nobody can reproduce.
 
-**Where the project actually is: 10 of 25 requirements are finished, 11 are under way, 4 are not
-started.** *(✓ FR-2, 5, 12, 13, 15, 19, 22, 23, 24, 25 · WIP FR-3, 4, 6, 7, 8, 9, 11, 14, 16, 17, 18 ·
-— FR-1, 10, 20, 21 — count them in the table rather than trusting this line.)*
+---
+
+## Phase 10 — five requirements closed by test, 2026-08-10
+
+**FR-3, FR-4, FR-7, FR-14 and FR-16 reached `✓`.** Each was already built, reachable and working; what
+each lacked was an acceptance test against its criterion. The count moved **10 → 15**.
+
+⚠️ **The phase's stated premise was half wrong, and finding out changed the work.** The roadmap said
+these five were held "only because no acceptance test exists against their criterion" — but **four of
+the five had no criterion either**. SRS §8.6 Table 35, which `docs/testing-strategy.md` §4's table
+transcribes, has **no row for FR-4, FR-7, FR-14 or FR-16**.
+
+**What they do have is the thing C-9's four are missing: an SRS §3.2 input/processing/output row.**
+That asymmetry is the whole of Phase 10's reasoning, and it is why the phase closed five requirements
+without touching C-9:
+
+| | Table 35 row | §3.2 row | Can a test quote a promise? |
+|---|---|---|---|
+| FR-3 | ✅ yes | ✅ yes | Yes — both, and `test_fr03` now opens with both |
+| **FR-4, FR-7, FR-14, FR-16** | ❌ **no** | ✅ **yes** | **Yes** — the §3.2 row, quoted verbatim |
+| FR-17 | ❌ no | ❌ no | Only this project's own document (C-14) — **ruling not taken** |
+| FR-6, FR-10, FR-18 | ❌ no | ❌ no | **No. This is C-9, and it is not ours to close** |
+
+The four §3.2 rows were **transcribed verbatim into `docs/testing-strategy.md` §4**, so no future
+session needs the PDF to check what these requirements promise. Nothing was invented: every criterion
+quoted in the five acceptance files is the supervisor's own wording.
+
+**What each file establishes, and what it deliberately does not:**
+
+| FR | Evidence | Held back from claiming |
+|---|---|---|
+| **FR-3** | `test_fr03` — **all twelve H codes by their catalogue number**, eleven re-derived from the placements a user obtains through the API | H10 is **vacuous here** (the instance locks nothing) and says so; `integration/test_h10_locks` exercises it |
+| **FR-4** | `test_fr04` — both Table 7 inputs are real inputs the run records, every priced criterion is measured on the solution returned, §6.4's zero-weight rule in both halves, and the search ends on its deterministic limit with a complete timetable | Nothing is built on `SolverOutput.cost` (informational, ADR-011), and **no assertion compares `deterministicTimeUsed` with the budget** — that figure is the sum across workers (C-2) |
+| **FR-7** | `test_fr07` (API half) + `model.test.ts` (the selection) + `TimetableGrid.test.tsx` (the weekly grid) | The selection is display logic and no backend test can reach it — both halves are required, as FR-15's are |
+| **FR-14** | `test_fr14` — two candidates **of the same run** (a foreign candidate is refused), the two values read from what each candidate **recorded**, a difference per criterion | The contributions-sum identity stays FR-15's; this file does not repeat it |
+| **FR-16** | `test_fr16` — the recommendation names the candidate the run ranked first, holds the highest score, states one checkable rule, and recommends nothing on an empty portfolio | ⚠️ **"Verification of dominance happened" is NOT establishable through the API**, because its outcome is provably constant. Found by deliberate mutation: deleting the `dominance()` call from `recommend()` left every acceptance test green. `unit/test_recommendation` is what establishes the machinery is real |
+
+**Every new assertion was verified to fire** by mutating the source before being relied on — eight
+backend mutations and three frontend ones. One of them is the FR-16 finding above, which is recorded in
+the test's own docstring rather than papered over with a stronger-sounding name.
+
+**Where the project actually is: 15 of 25 requirements are finished, 7 are under way, 3 are not
+started.** *(✓ FR-2, 3, 4, 5, 7, 12, 13, 14, 15, 16, 19, 22, 23, 24, 25 · WIP FR-6, 8, 9, 10, 11, 17,
+18 · — FR-1, 20, 21 — count them in the table rather than trusting this line.)*
+
+⚠️ **This line read "10 finished, 11 under way, 4 not started" until 2026-08-10, and the second and
+third figures contradicted the table in the same file.** Phase 9 moved FR-10 from `—` to `WIP` and this
+sentence was not re-derived, so it kept counting FR-10 as not started — the identical fault it already
+records against itself at M7, in the identical sentence, eleven days later. **Count the table.** The
+line is kept because a summary that has now been wrong twice is worth a warning rather than a deletion.
 
 ✅ **FR-25 is `✓` since Phase 7 M5**, and it reached `✓` before the *Necessary* FR-24 beside it for a
 reason worth keeping: FR-25's criterion is about the service being **off** — verifiable in full with
@@ -172,8 +219,10 @@ generated declaration stays distinguishable from the teacher's own — which is 
 the participant whether they noticed. **FR-7 and FR-18 joined in M4**: the four
 timetable views render a candidate by teacher, group and room, and report each room's occupancy —
 verified against the real solver, with the occupancy totals matching `verify-instance` exactly. They
-stay `WIP` because no automated test covers the views yet and there is no authentication deciding who
-may see which timetable (FR-11, Phase 5). **FR-14 joined in M5**, with the comparison screen; FR-15's
+stayed `WIP` because no automated test covered the views yet and there was no authentication deciding
+who may see which timetable (FR-11, Phase 5). ✅ **FR-7 is `✓` since Phase 10** — both halves tested,
+and the second half is a display-layer test because the *selection* is display logic. **FR-18 is not**:
+it is one of C-9's four and has no criterion of any kind. **FR-14 joined in M5**, with the comparison screen; FR-15's
 display half is now built and tested, and the acceptance criterion it serves — displayed contributions
 summing to the displayed score difference — is **met** (`docs/status.md`). ✅ **FR-15 is `✓` since
 M7**, with both halves tested: the identity by `acceptance/test_fr15`, the rendering by
@@ -206,11 +255,18 @@ statement names it and because a non-linear score or a negative weight would rev
 the Pareto rule did not revive it**, and that was checked rather than assumed: `TIE_BREAK_ORDER` covers
 all seven criteria, so even the tie Pareto newly admits resolves in the dominator's favour.
 
-**FR-3 is `WIP`, not `✓`, deliberately.** H1–H12 are implemented and demonstrated on the reference
-instance, with every hard constraint re-derived from the raw CSVs rather than trusted from CP-SAT's
-status (`backend/tests/integration/test_h1_h12.py`). What is missing is the path *to* it: no endpoint,
-no run record, no interface. ⚠️ **Written at Phase 3's close, when H10 was also registered but dormant.**
-That half is closed: Phase 7 M1 made H10 execute (C-19), so all twelve rules now run.
+✅ **FR-3 reached `✓` in Phase 10, and the paragraph it replaces is kept because its three reasons
+were closed one at a time by three different phases.** It read: *"FR-3 is `WIP`, not `✓`, deliberately.
+H1–H12 are implemented and demonstrated on the reference instance, with every hard constraint
+re-derived from the raw CSVs rather than trusted from CP-SAT's status
+(`backend/tests/integration/test_h1_h12.py`). What is missing is the path to it: no endpoint, no run
+record, no interface."*
+
+The path arrived with Phases 4 and 5. **H10's dormancy closed in Phase 7 M1 (C-19)**, so all twelve
+rules execute. **Phase 10 closed the last of the three**: `acceptance/test_fr03` now re-derives all
+twelve rules by their catalogue code from the timetable a user obtains through the API — it checked
+seven and mis-numbered two of those until then, which is a test that could not bear the claim its own
+requirement makes.
 
 **FR-4, FR-5, FR-6, FR-13, FR-15, FR-16 and FR-17 are `WIP` as of Phase 3's close (2026-07-31), for the
 same reason as FR-3** — all seven of them, which is every Phase 3 requirement. The seven soft criteria
@@ -229,10 +285,12 @@ M3's generation screen; FR-14 and FR-15 need M5's comparison screen; FR-16 and F
 FR-17 additionally needed **C-14** settled, which it was on 2026-08-05. FR-13 also still carries its own
 second reason below.
 
-**FR-16 is on that list and stays `WIP` for the ordinary reason** — no user can reach the
-recommendation yet. The ⚠️ note above is about something else: one *clause* of FR-16 describes a state
-that can never occur. Do not read that note as the reason FR-16 is unfinished, and do not let it delay
-FR-16's `✓` once the interface exists; C-14 governs the clause, not the requirement.
+**FR-16 was on that list and stayed `WIP` for the ordinary reason** — no user could reach the
+recommendation. The ⚠️ note above is about something else: one *clause* of FR-16 describes a state that
+can never occur. Do not read that note as the reason FR-16 was unfinished; C-14 governs the clause, not
+the requirement, and the instruction *"do not let it delay FR-16's `✓` once the interface exists"* was
+followed — ✅ **FR-16 is `✓` since Phase 10**, on `acceptance/test_fr16` against SRS §3.2 Table 17.
+`dominated_by` remains provably `None` and remains checked.
 
 ✅ **FR-13 reached `✓` on 2026-08-07, and the second reason it carried is worth keeping.** It read:
 *"the profiles do not yet differentiate — teacher-favouring raises S3 and S5 and measurably improves
@@ -260,20 +318,20 @@ arithmetic can deliver, since the teacher criteria genuinely conflict.
 |---|---|---|---|---|---|
 | **FR-1** | Load and manage department data | Necessary | `api`, `db`, `services` | `acceptance/test_fr01` | — |
 | **FR-2** | Teacher declares availability on a weekly grid | Necessary | `api`, `db`; `features/availability` ✓ | `unit/test_availability_api` ✓, `acceptance/test_fr02` ✓, **walkthrough** `demonstration.md` §2 ✓ | **✓** |
-| **FR-3** | Generate a timetable respecting H1–H12 | Necessary | `solver` | `integration/test_h1_h12` ✓, `acceptance/test_fr03` ✓ | **WIP** |
-| **FR-4** | Improve quality criteria within a time limit | Necessary | `solver` — objective | `integration` | **WIP** |
+| **FR-3** | Generate a timetable respecting H1–H12 | Necessary | `solver` | `integration/test_h1_h12` ✓, `acceptance/test_fr03` ✓ — **all twelve codes, Phase 10** | **✓** |
+| **FR-4** | Improve quality criteria within a time limit | Necessary | `solver` — objective ✓ | `integration/test_objective_matches_analysis` ✓, `integration/test_reproducibility` ✓, `acceptance/test_fr04` ✓ | **✓** |
 | **FR-5** | Produce several candidates, each scored out of 100 | Necessary | `analysis` — scoring ✓; `features/generation` ✓ | `acceptance/test_fr05` ✓ | **✓** |
 | **FR-6** | Order candidates by score | Necessary | `analysis` — ranking | `property` ✓ | **WIP** |
-| **FR-7** | Display the timetable by teacher, group and room | Necessary | `features/timetable` | `integration` | **WIP** |
+| **FR-7** | Display the timetable by teacher, group and room | Necessary | `features/timetable` ✓ | `acceptance/test_fr07` ✓, `frontend model.test` ✓, `frontend TimetableGrid.test` ✓ | **✓** |
 | **FR-8** | Report the rules in conflict when no timetable exists | Necessary | `preanalysis` ✓, `solver` — `diagnose()` ✓; `features/conflicts` ✓ | `unit/test_diagnosis` ✓, `integration/test_api_runs` ✓, `frontend ConflictReport.test` ✓, `acceptance/test_fr08` ✓ | **WIP** |
 | **FR-9** | Configure the calendar: holidays, closed slots, shortened day | Necessary | `db` ✓ — `Slot.is_open` + H9; `features/admin` ⬜ **not built** | `acceptance/test_fr09` ✓ | **WIP** |
 | **FR-10** | Print or export a timetable view | Expected | `features/timetable` ✓ — `export.ts`, `PrintHeader.tsx`; `styles.css` `@media print` ✓ | `frontend export.test` ✓, `frontend PrintHeader.test` ✓ | **WIP** |
 | **FR-11** | Authenticate users and restrict access by role | Necessary | `core/security` ✓; `services/users` ✓; `api/deps` + `routers/auth` ✓; `features/auth` ✓ | `integration/test_rbac` ✓, `unit/test_seed` ✓, `acceptance/test_fr11` ✓ | **WIP** |
 | **FR-12** | Verify data before solving; report structural risks | Necessary | `preanalysis` ✓; `api` — `RunOut.preAnalysis`; `features/generation` ✓ | `unit/test_preanalysis` ✓, `integration/test_preanalysis_matches_verifier` ✓, `frontend PreAnalysisReport.test` ✓, `acceptance/test_fr12` ✓ | **✓** |
 | **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs ✓; `solver` ✓ | `unit/test_portfolio` ✓, `acceptance/test_fr13` ✓ | **✓** |
-| **FR-14** | Compare two candidates criterion by criterion | Necessary | `features/comparison` | `integration` | **WIP** |
+| **FR-14** | Compare two candidates criterion by criterion | Necessary | `analysis` — decomposition ✓; `features/comparison` ✓ | `acceptance/test_fr14` ✓, `frontend ContributionsTable.test` ✓ | **✓** |
 | **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition; `features/comparison` | `property` ✓, `frontend ContributionsTable.test` ✓, `acceptance/test_fr15` ✓ | **✓** |
-| **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking | `unit/test_recommendation` ✓ | **WIP** |
+| **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking ✓; `features/comparison` ✓ | `unit/test_recommendation` ✓, `acceptance/test_fr16` ✓ | **✓** |
 | **FR-17** | Signal a candidate that another dominates, wherever it appears in the portfolio ⚠️ *statement corrected, C-14* | Expected | `analysis` — dominance ✓; `features/comparison` ✓ | `property` ✓, `unit/test_recommendation` ✓, `frontend DominanceNotice.test` ✓, `acceptance/test_fr17` ✓ | **WIP** |
 | **FR-18** | Display occupancy of each classroom and laboratory | Expected | `features/timetable` | `integration` | **WIP** |
 | **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db` ✓ — models, migrations, repositories; `services/stores` ✓; `services/publications` ✓; `features/publication` ✓ | `integration/test_store_contract` ✓, `integration/test_publication` ✓, `frontend TraceTable.test` ✓, `acceptance/test_fr19` ✓ | **✓** |
@@ -298,6 +356,8 @@ Recorded rather than silently filled. See **C-9** in `docs/open-questions.md`.
 | Gap | Detail |
 |---|---|
 | **FR-6, FR-10, FR-17, FR-18** | Listed in the summary tables, but **no input/processing/output row** in SRS §3.2. Their implementation is inferred from the summary statement alone |
+| **FR-4, FR-7, FR-14, FR-16** | ⚠️ **A different gap, found in Phase 10, and NOT part of C-9.** They have a full §3.2 row and **no row in SRS §8.6 Table 35**, the acceptance-test table. The §3.2 row is therefore what their acceptance files verify against, quoted verbatim and transcribed into `docs/testing-strategy.md` §4 so the PDF need never be opened again. **This gap is closed** — all four are `✓` — and it is recorded because the distinction is what makes C-9 unclosable by comparison: a requirement with no promise of *either* kind cannot be verified at all |
+| **FR-1** | Also absent from Table 35. Not yet relevant — FR-1 is `—` and its closing phase is 12 |
 | **FR-10** | **Missing entirely from SRS Table 36**, the traceability matrix. Its mapping above is reconstructed, not quoted. ⚠️ **Built in Phase 9 and still `WIP`, deliberately** — both halves of "print or export" are reachable and tested, and there is no criterion to verify them against. Software and tick are not the same thing, and the count must not be inflated |
 | **FR-13's acceptance test** | ⚠️ "Three distinct candidates" can fail while the system behaves correctly — see **C-5** |
 

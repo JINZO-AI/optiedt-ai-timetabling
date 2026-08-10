@@ -2,11 +2,16 @@
 
 **This is the practical tracking view.** One question, one answer: *what phase are we in?*
 
-> **Phase 10 — Requirement closure by test.** Phase 9 closed on 2026-08-10. Phase 10 has not begun.
+> **Phase 11 — Administrative surfaces.** Phase 10 closed on 2026-08-10. Phase 11 has not begun, and
+> **opening it is the project owner's call, not a session's.**
 >
-> ⚠️ **Phase 9 delivered FR-10's software and did NOT tick it.** Print and export are reachable from all
-> four timetable views and covered by 28 display tests; FR-10 stays **`WIP`** because C-9 leaves it with
-> no criterion to verify against. The `✓` count is unchanged at 10 of 25.
+> ✅ **Phase 10 took the `✓` count from 10 to 15 of 25** — FR-3, FR-4, FR-7, FR-14 and FR-16, each now
+> carrying an acceptance test against a criterion the *supervisor* wrote.
+>
+> ⚠️ **Its premise was half wrong and the correction is worth carrying.** Four of the five had no
+> acceptance criterion either: **SRS Table 35 has no row for FR-4, FR-7, FR-14 or FR-16.** What they
+> have — and what C-9's four lack — is an SRS §3.2 input/processing/output row, now transcribed
+> verbatim into `docs/testing-strategy.md` §4. **C-9 is untouched and still blocks three ticks.**
 
 ⚠️ **This document does not replace anything.** `docs/dashboard.md` remains the handoff page and
 `docs/requirements-traceability.md` remains the authority on any single requirement's status. This file
@@ -43,15 +48,18 @@ Reference instance: 218 sessions · 51 groups · 44 teachers · 20 rooms · 28 o
 | **7** | Regeneration and the assistant | ✅ COMPLETE | New run from a recommendation; explain/answer/report | FR-22 · FR-23 · FR-24 · FR-25 | `2fba7c4` … `197b702` |
 | **8** | Increment-1 closure and hardening | ✅ COMPLETE | **9/9 criteria** · C-15 resolved · production guard | FR-2 · FR-13 · FR-24 → ✓ | `faf86cc` … `fa5378c` |
 | **9** | Outputs and distribution | ✅ COMPLETE | A timetable that can leave the screen — print and CSV, all four views | FR-10 *(software; tick held by C-9)* | `004f38d` |
-| **10** | Requirement closure by test | 🔵 **CURRENT** | Close requirements that lack only an acceptance test | FR-3 · FR-4 · FR-7 · FR-14 · FR-16 | — |
-| **11** | Administrative surfaces | ⏳ PLANNED | The screens whose mechanisms already exist | FR-9 · FR-11 · student view | — |
+| **10** | Requirement closure by test | ✅ COMPLETE | Five requirements closed on the supervisor's own wording; **10 ✓ → 15 ✓** | FR-3 · FR-4 · FR-7 · FR-14 · FR-16 → ✓ | *(recorded below)* |
+| **11** | Administrative surfaces | 🔵 **NEXT — not started** | The screens whose mechanisms already exist | FR-9 · FR-11 · student view | — |
 | **12** | Data management | ⏳ PLANNED | A second institution becomes possible | FR-1 | — |
 | **13** | Examination session | ⬜ CONDITIONAL | Exam timetabling (*was increment 2*) | FR-20 | — |
 | **14** | Weight adjustment | ⬜ CONDITIONAL | Learn weights from recorded comparisons (*was increment 2*) | FR-21 | — |
 
-🔴 **Cross-phase blocker — C-9.** FR-6, FR-10, FR-17 and FR-18 have no input/processing/output row in
+🔴 **Cross-phase blocker — C-9.** FR-6, FR-10 and FR-18 have no input/processing/output row in
 SRS §3.2, and FR-10 is absent from Table 36 entirely. **They cannot be marked `✓` until the supervisor
-supplies the rows** — this blocks *ticks*, never *software*. It is a gate, not a phase.
+supplies the rows** — this blocks *ticks*, never *software*. It is a gate, not a phase. ⚠️ **FR-17 was
+counted here as a fourth until Phase 10 and is now shown separately**, because whether it belongs is
+precisely the undecided question flagged under the coverage table; `docs/open-questions.md`, the stated
+authority, has always named three.
 
 ### Requirement coverage — all 25, each mapped to exactly one closing phase
 
@@ -62,22 +70,22 @@ requirement to `✓`, which is not always the phase that built it.
 |---|---|---|---|---|---|
 | FR-1 | Load and manage department data | — | — | **12** | not started |
 | FR-2 | Teacher declares availability | ✅ | 4 | **8** | — |
-| FR-3 | Generate respecting H1–H12 | WIP | 2 | **10** | acceptance-test scope |
-| FR-4 | Improve quality within a time limit | WIP | 3 | **10** | no acceptance test |
+| FR-3 | Generate respecting H1–H12 | ✅ | 2 | **10** | — |
+| FR-4 | Improve quality within a time limit | ✅ | 3 | **10** | — |
 | FR-5 | Several candidates, each scored | ✅ | 3 | **6** | — |
-| FR-6 | Order candidates by score | WIP | 3 | 🔴 **C-9** | no SRS row |
-| FR-7 | Display by teacher, group, room | WIP | 4 | **10** | no acceptance test |
+| FR-6 | Order candidates by score | WIP | 3 | 🔴 **C-9** | no SRS row of either kind |
+| FR-7 | Display by teacher, group, room | ✅ | 4 | **10** | — |
 | FR-8 | Report rules in conflict | WIP | 5 | 🔴 supervisor | statement ≠ criterion |
 | FR-9 | Configure the calendar | WIP | 5–6 | **11** | screen not built |
-| FR-10 | Print or export a view | WIP | **9** | 🔴 **C-9** | no SRS row |
+| FR-10 | Print or export a view | WIP | **9** | 🔴 **C-9** | no SRS row of either kind |
 | FR-11 | Authenticate and restrict by role | WIP | 5 | **11** | account management |
 | FR-12 | Verify data before solving | ✅ | 5 | **6** | — |
 | FR-13 | Candidates under distinct profiles | ✅ | 3 | **8** | — |
-| FR-14 | Compare two candidates | WIP | 4 | **10** | no acceptance test |
+| FR-14 | Compare two candidates | ✅ | 4 | **10** | — |
 | FR-15 | State each criterion's contribution | ✅ | 3 | **6** | — |
-| FR-16 | Recommend one candidate | WIP | 3 | **10** | no acceptance test |
-| FR-17 | Signal a dominated candidate | WIP | 3–6 | 🔴 **C-9** | no SRS row |
-| FR-18 | Display room occupancy | WIP | 4 | 🔴 **C-9** | no SRS row |
+| FR-16 | Recommend one candidate | ✅ | 3 | **10** | — |
+| FR-17 | Signal a dominated candidate | WIP | 3–6 | 🔴 **undecided** | ⚠️ see the note below — **not settled by Phase 10** |
+| FR-18 | Display room occupancy | WIP | 4 | 🔴 **C-9** | no SRS row of either kind |
 | FR-19 | Record every run with its trace | ✅ | 5 | **6** | — |
 | FR-20 | Examination session timetable | — | — | **13** | conditional |
 | FR-21 | Adjust weights from comparisons | — | — | **14** | conditional |
@@ -86,9 +94,24 @@ requirement to `✓`, which is not always the phase that built it.
 | FR-24 | Answer a question in ordinary language | ✅ | 7 | **8** | — |
 | FR-25 | Produce a readable report | ✅ | 7 | **7** | — |
 
-**Totals: 10 ✅ · 12 WIP · 3 not started = 25.** Of the 12 WIP, **none lacks working software**: 5 need
-an acceptance test, **4 wait on C-9**, 2 need a screen over a working mechanism, 1 needs its statement
-reworded.
+**Totals: 15 ✅ · 7 WIP · 3 not started = 25.** Of the 7 WIP, **none lacks working software**: **3 wait
+on C-9** (FR-6, FR-10, FR-18), 2 need a screen over a working mechanism (FR-9, FR-11), 1 needs its
+statement reworded (FR-8), and 1 waits on a ruling nobody has taken (FR-17).
+
+⚠️ **The "5 need an acceptance test" group is gone — Phase 10 closed it**, and the tally above is the
+first in this project where every remaining hold is **external to the code**: a document the supervisor
+must write, a screen not yet built, a sentence to reword, a decision to take. Nothing on this list is
+waiting for a test to be written.
+
+⚠️ **FR-17's row is the one open disagreement between this table and
+[`docs/open-questions.md`](open-questions.md), and Phase 10 did NOT settle it.** That file — the stated
+authority — records C-9 as blocking FR-6, FR-10 and FR-18 only, because C-14's resolution gave FR-17 a
+criterion in *this project's* design document; this table used to call FR-17 C-9-blocked, which is where
+its old "4 wait on C-9" came from. Both readings are defensible, the question is whether a
+project-authored criterion may tick a requirement, and **it is the project owner's to answer.** The row
+now says "undecided" rather than picking a side. ⚠️ **Do not read Phase 10 as precedent for it**: the
+four requirements it closed were verified against rows the *supervisor* wrote, which is the opposite
+situation.
 
 ⚠️ **FR-10 moved `—` → `WIP` on 2026-08-10 and the `✓` count did not move.** That is the shape a C-9
 requirement takes when it is built: the software is finished and reachable, and the tick is held by a
@@ -227,37 +250,70 @@ run (`21887fab4ed6`, 3 candidates). **What a test suite could not establish, and
 account can read any run — **a Phase 4/5 property, unchanged by Phase 9**, and not FR-10's to fix. The
 export makes taking the data away *easier*; it does not make it *permitted*.
 
+### Phase 10 — Requirement closure by test ✅ *(2026-08-10)*
+
+**FR-3, FR-4, FR-7, FR-14 and FR-16 reached `✓`. The count went 10 → 15 of 25.** No product behaviour
+was changed: the phase added 35 backend tests and 18 frontend ones, and touched one source file — a
+comment.
+
+**Research result — the phase's premise was wrong, and checking it is what made the work correct.**
+The brief said these five were held "only because no acceptance test exists against their criterion".
+Four of them had **no criterion**: SRS §8.6 Table 35, which `docs/testing-strategy.md` §4 transcribes,
+has no row for FR-4, FR-7, FR-14 or FR-16. Writing tests without noticing would have meant this project
+inventing the promises it then declared itself to have met — the exact failure Phase 9 refused for
+FR-10.
+
+**What made them closable anyway is an asymmetry with C-9 that nobody had written down.** FR-4, FR-7,
+FR-14 and FR-16 each have a **detailed SRS §3.2 input/processing/output row** written by the
+supervisor. C-9's four have neither kind of row. So the §3.2 row is the promise, it was quoted verbatim
+at the head of each acceptance file, and all four rows were transcribed into
+`docs/testing-strategy.md` §4 so no session needs the PDF again. **C-9 is untouched.**
+
+**Two defects found, both by writing the test rather than by reading the code:**
+
+1. **`acceptance/test_fr03` named two rules by the wrong code.** The room-type check was called H5 (it
+   is **H4**) and the availability check H7 (it is **H6**), against `constraint_catalogue.csv`. It also
+   covered seven of twelve rules while carrying a claim about all twelve — a reader auditing the twelve
+   would have ticked rules that were never checked. It now re-derives **eleven of twelve** from the
+   placements, including H2 and H11 which the solver posts for neither; H10 is vacuous on this instance
+   and **asserts that it is** rather than assuming it.
+2. **`ComparisonScreen.tsx` still described C-15 as open**, three days after C-15 was resolved *by
+   refuting that very diagnosis*. A stale comment on the screen FR-14 was being closed against.
+
+⚠️ **One test was found unable to fire, and it is recorded rather than renamed.** FR-16's Table 17 says
+"selection of the first, **then verification of dominance**" — and deleting the `dominance()` call from
+`recommend()` left every acceptance test green. That gap **cannot** be closed at the API: the verdict
+for a top-ranked candidate is provably always null, so no run distinguishes a performed check from a
+skipped one. `unit/test_recommendation` is what establishes the machinery, and the acceptance test's
+docstring says so plainly instead of claiming more than it proves.
+
+**Every new assertion was verified to fire** by mutating the source first — eight backend mutations,
+three frontend. The FR-3 additions were exercised against deliberately broken timetables, since a
+mutation there would have cost a 150-second solve each.
+
 ---
 
-## 4 · Current phase — Phase 10, Requirement closure by test
+## 4 · Current phase — Phase 11, Administrative surfaces
 
-**Status: 🔵 CURRENT — not started.** Phase 9 closed on 2026-08-10.
+**Status: 🔵 NEXT — not started, and opening it needs the project owner's approval.** Phase 10 closed
+on 2026-08-10.
 
 ### Why this phase is next
-Five requirements are built, reachable and working, and are held at `WIP` only because no acceptance
-test exists against their criterion. It is the cheapest remaining move on the `✓` count — pure
-evidence, no new software.
+Two requirements have a working, tested *mechanism* and no *screen*: FR-9 (a closed half-day already
+takes effect through `Slot.is_open`, and `acceptance/test_fr09` proves it) and FR-11 (accounts are
+provisioned by a seed command, which C-18 records as a development tool and not a provisioning
+mechanism). Plus the student view: the role is seeded and has no screen.
 
-### What Claude should do next
-One acceptance file per requirement — FR-3, FR-4, FR-7, FR-14, FR-16 — driven through the HTTP API,
-each opening with the criterion it verifies, in the established `tests/acceptance/` pattern.
+### What no phase can do
+**C-9 blocks three ticks and no software.** FR-6, FR-10 and FR-18 have no criterion of any kind, and
+Phase 9 is the proof that building the software does not move them: it delivered FR-10 in full and the
+count did not change. **The supervisor must supply the SRS rows.**
 
 ---
 
 ## 5 · Current and future phases in detail
 
-### Phase 10 — Requirement closure by test 🔵 CURRENT
-**Purpose.** Five requirements are built, reachable and working, and are held at `WIP` only because no
-acceptance test exists against their criterion.
-**Requirements:** FR-3 (acceptance-test scope), FR-4, FR-7, FR-14, FR-16.
-**Dependencies:** Phase 9 for nothing; **C-15 had to be resolved first** — FR-4 is about the objective,
-and testing it before Phase 8 would have pinned the old behaviour.
-**Tasks.** One acceptance file per requirement, driven through the HTTP API, each opening with the
-criterion it verifies — the established pattern.
-**Validation.** `run-acceptance.ps1` green; new tests fail before the assertion is satisfied.
-**COMPLETE when** all five carry an acceptance test and are `✓`. **Would take the count to 15 of 25.**
-
-### Phase 11 — Administrative surfaces ⏳
+### Phase 11 — Administrative surfaces 🔵 NEXT
 **Purpose.** Two requirements whose *mechanism* is built and tested but whose *screen* does not exist.
 **Requirements:** FR-9 (calendar administration — `Slot.is_open` works and is acceptance-tested; the
 screen is `features/admin/.gitkeep`), FR-11 (account management — C-18 records the seed command as a
@@ -304,7 +360,7 @@ Taken from the project's own documents, not from the size of the repository.
 
 ### ✅ Required — and **already delivered**
 The specification's acceptance gate is **nine acceptance criteria** (`docs/status.md`). **All nine are
-met.** ADR-010 commits the assistant to increment 1 and it is built. Phases 1–9 are complete.
+met.** ADR-010 commits the assistant to increment 1 and it is built. Phases 1–10 are complete.
 
 > **By the project's own stated gate, the mandatory work is done.**
 
@@ -312,15 +368,22 @@ met.** ADR-010 commits the assistant to increment 1 and it is built. Phases 1–
 | Item | Phase | Why |
 |---|---|---|
 | ~~**FR-10 export/print**~~ | 9 | ✅ **DELIVERED 2026-08-10.** Print and CSV on all four views. ⚠️ The requirement is still `WIP` — C-9 holds the tick, not the software |
-| **Acceptance tests for 5 requirements** | 10 | Moves 10 `✓` → 15 `✓`; pure evidence, no new software |
+| ~~**Acceptance tests for 5 requirements**~~ | 10 | ✅ **DELIVERED 2026-08-10.** 10 `✓` → 15 `✓`, and no new software. Four of the five were verified against their **SRS §3.2** row, Table 35 having no row for them |
+
+**Nothing remains on this list.** Every hold on a requirement is now external to the code — see §2's
+coverage table.
 
 ### 🔵 Optional — improves the product, not required by the gate
 Phase 11 (administrative surfaces) · Phase 12 (FR-1 data management) · the six unscheduled usability
 findings in `status.md`.
 
 ### 🔴 Supervisor-dependent — **you cannot close these alone**
-**C-9.** FR-6, FR-10, FR-17, FR-18 have no SRS specification row. Blocks **four ticks** and no software.
+**C-9.** FR-6, FR-10 and FR-18 have **no SRS row of either kind** — neither a §3.2 specification row nor
+a Table 35 acceptance row. Blocks **three ticks** and no software.
 **FR-8's statement** was never reworded to match its criterion, which is why it stays `WIP`.
+**FR-17** needs a ruling rather than a document: its only criterion is one this project wrote (C-14).
+⚠️ **Phase 10 is not a precedent for FR-17** — the four it closed were verified against rows the
+*supervisor* wrote.
 
 ### ⬜ Out of scope unless time permits
 Phases 13–14. PPM defines increment 2 as **"conditional on remaining time"**, and
@@ -333,28 +396,29 @@ a solver-validation harness that does not fit the project.
 
 | Measure | Value | Note |
 |---|---|---|
-| **Phases complete** | **9 of 14** (64 %) | 9 of 12 (75 %) excluding the two conditional phases |
+| **Phases complete** | **10 of 14** (71 %) | 10 of 12 (83 %) excluding the two conditional phases |
 | **Acceptance criteria** | **9 of 9 (100 %)** | The specification's actual gate |
-| **Requirements `✓`** | **10 of 25 (40 %)** | ⚠️ Understates reality badly — see below. **Unchanged by Phase 9**, deliberately |
+| **Requirements `✓`** | **15 of 25 (60 %)** | ⚠️ Still understates reality — see below. **10 → 15 in Phase 10** |
 | **Open questions** | **19 of 20 resolved** | One remains: C-9, supervisor-dependent |
-| **Tests** | **517 backend + 81 frontend** | 411 fast + 62 solver + 44 database; frontend 53 → 81 in Phase 9 |
+| **Tests** | **552 backend + 99 frontend** | 441 fast + 67 solver + 44 database. ⚠️ **Derive these**: `uv run pytest --collect-only -q` and `npm run test` |
 | **Mandatory work remaining** | **None** | By the nine-criteria gate |
 
-⚠️ **Why 40 % is the most misleading number here.** Of the 12 `WIP` requirements, **none lacks working
-software**. They are held by: no acceptance test (5), an unwritten SRS row — C-9 (4), an unbuilt screen
-over a working mechanism (2), and a requirement statement never reworded to match its criterion (1).
+⚠️ **Why 60 % still understates it.** Of the 10 requirements not `✓`, **7 have working software** and
+3 are not started. The 7 are held by: an unwritten SRS row — C-9 (3), an unbuilt screen over a working
+mechanism (2), a statement never reworded to match its criterion (1), and a ruling nobody has taken (1).
+**None is waiting for a test**, which was not true before 2026-08-10.
 
-⚠️ **Phase 9 is the clearest illustration of that gap.** It delivered a whole requirement's software
-and moved the `✓` count by **zero**. Anyone quoting 40 % as progress should say what it measures.
+⚠️ **Phase 9 remains the clearest illustration of the gap.** It delivered a whole requirement's
+software and moved the `✓` count by **zero**. Anyone quoting a percentage should say what it measures.
 
 **If a single figure is wanted, use this one and say how it is computed:**
 
-> **~88 % of the project as scoped.** = Phases 1–9 complete (9/12 non-conditional phases = 75 %),
-> weighted by the fact that the **acceptance gate is 100 % met** and the three remaining non-conditional
+> **~91 % of the project as scoped.** = Phases 1–10 complete (10/12 non-conditional phases = 83 %),
+> weighted by the fact that the **acceptance gate is 100 % met** and the two remaining non-conditional
 > phases are refinement rather than core capability. Phases 13–14 are excluded as conditional by PPM.
 
-**Realistic remaining effort:** Phase 10 ≈ 1 day · Phase 11 ≈ 2 days · Phase 12 ≈ 3–5 days ·
-Phases 13–14 ≈ 7 days if undertaken.
+**Realistic remaining effort:** Phase 11 ≈ 2 days · Phase 12 ≈ 3–5 days · Phases 13–14 ≈ 7 days if
+undertaken. *(Phase 10 was estimated at ≈ 1 day and took one session.)*
 
 ---
 
