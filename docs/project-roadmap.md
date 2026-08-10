@@ -209,6 +209,24 @@ brief said not to assume.
 verify against. The tests are therefore display-layer tests and **not** an acceptance file: there was no
 promise to quote at the top of one, and inventing a criterion would be worse than having none.
 
+#### Independently verified at closure, 2026-08-10
+
+A separate audit session re-ran everything and drove the running application against the real reference
+run (`21887fab4ed6`, 3 candidates). **What a test suite could not establish, and this did:**
+
+| Check | Result |
+|---|---|
+| **The file matches the screen** | Rendered grid cells parsed out of the DOM and compared with the exported rows, as sets: **6 = 6, identical, nothing on only one side** |
+| **A two-period session is not double-counted** | On a TP subgroup: **16 file rows = 16 rendered session cells**, while the `Périodes` column sums to **20 = 16 + 4 continuation cells**. One row per session, and the true occupancy still recoverable |
+| **Print actually inverts** | The `@media print` rules lifted into screen media and computed styles read back: nav, controls, outputs bar and view tabs `flex/block → none`; the print header `none → block`; the grid survives as `table` |
+| **Provenance follows the selection** | Switching to candidate 2 moved the header to `…-cand-3`, `teacher-favouring`, `80,58 / 100` — matching the dropdown exactly |
+| **All four views** | Correct print title, filename, header row, run id, seed and all **7** weights on each |
+| **No new attack surface** | **19 endpoints before and after**; `export.ts` imports only `model` and `types/domain` and performs **no I/O**. The export re-serialises what the user was already served, so it inherits the view's permissions exactly and grants nothing new |
+
+⚠️ **What that last row does *not* say.** `GET /runs/{id}` takes any authenticated user, so any signed-in
+account can read any run — **a Phase 4/5 property, unchanged by Phase 9**, and not FR-10's to fix. The
+export makes taking the data away *easier*; it does not make it *permitted*.
+
 ---
 
 ## 4 · Current phase — Phase 10, Requirement closure by test
