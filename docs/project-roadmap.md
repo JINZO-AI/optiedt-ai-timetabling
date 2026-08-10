@@ -42,7 +42,7 @@ Reference instance: 218 sessions · 51 groups · 44 teachers · 20 rooms · 28 o
 | **6** | Acceptance suite, generator, demo | ✅ COMPLETE | One test per requirement; 8 of 9 criteria met | FR-9 · promotes FR-5, FR-12, FR-15, FR-19 → ✓ | `3c210a7` … `ab98390` |
 | **7** | Regeneration and the assistant | ✅ COMPLETE | New run from a recommendation; explain/answer/report | FR-22 · FR-23 · FR-24 · FR-25 | `2fba7c4` … `197b702` |
 | **8** | Increment-1 closure and hardening | ✅ COMPLETE | **9/9 criteria** · C-15 resolved · production guard | FR-2 · FR-13 · FR-24 → ✓ | `faf86cc` … `fa5378c` |
-| **9** | Outputs and distribution | ✅ COMPLETE | A timetable that can leave the screen — print and CSV, all four views | FR-10 *(software; tick held by C-9)* | `004f38d` … |
+| **9** | Outputs and distribution | ✅ COMPLETE | A timetable that can leave the screen — print and CSV, all four views | FR-10 *(software; tick held by C-9)* | `004f38d` |
 | **10** | Requirement closure by test | 🔵 **CURRENT** | Close requirements that lack only an acceptance test | FR-3 · FR-4 · FR-7 · FR-14 · FR-16 | — |
 | **11** | Administrative surfaces | ⏳ PLANNED | The screens whose mechanisms already exist | FR-9 · FR-11 · student view | — |
 | **12** | Data management | ⏳ PLANNED | A second institution becomes possible | FR-1 | — |
