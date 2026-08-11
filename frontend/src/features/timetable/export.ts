@@ -139,7 +139,13 @@ export function timetableRows(placements: Placement[], lookups: Lookups): string
     })
 }
 
-const OCCUPANCY_HEADER = ['Salle', 'Type', 'Périodes occupées', 'Créneaux ouverts', 'Taux (%)']
+const OCCUPANCY_HEADER = [
+  'Salle',
+  'Type',
+  'Périodes occupées',
+  'Créneaux ouverts',
+  "Taux d'occupation (périodes occupées / créneaux ouverts, %)",
+]
 
 /**
  * FR-18's table, exported.
@@ -162,8 +168,25 @@ export function occupancyRows(rows: RoomOccupancy[]): string[][] {
 }
 
 export const OCCUPANCY_CAVEAT =
-  'Taux calculé en périodes. Pour les laboratoires, la borne qui contraint ' +
-  'réellement est le nombre de fenêtres de deux périodes consécutives (C-13).'
+  "Taux d'occupation = périodes occupées / créneaux ouverts de la semaine. " +
+  "Il mesure le TEMPS d'utilisation, pas le remplissage en places : dans la " +
+  "terminologie internationale de gestion des espaces (cadre UFO) c'est un taux " +
+  "de fréquence, et « occupancy » y désigne le remplissage en places. " +
+  'Pour les laboratoires, la borne qui contraint réellement est le nombre de ' +
+  'fenêtres de deux périodes consécutives (C-13).'
+/**
+ * ⚠️ **The caveat names what the rate measures, and that is not decoration.**
+ *
+ * The figure is `occupied periods / open periods` — C-4's `utilisation(r,k)`,
+ * the same quantity `analysis/criteria.py` scores S6 against. In the SMG "UFO"
+ * vocabulary used across UK/US/AU higher-education space management, that is a
+ * **frequency** rate, and the word *occupancy* is reserved for seats
+ * (occupants / capacity). A spreadsheet leaves this application and is read by
+ * people who may know that vocabulary, so an unqualified "Taux" would invite
+ * exactly the wrong reading. See C-9's resolution in `docs/open-questions.md`
+ * for why the time-based reading is the right one for FR-18 — and for the
+ * measurement showing the two readings *invert* on this instance.
+ */
 
 function withProvenance(provenance: [string, string][], table: string[][]): string {
   return toCsv([...provenance.map(([label, value]) => [label, value]), [], ...table])

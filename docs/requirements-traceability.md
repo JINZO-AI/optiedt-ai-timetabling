@@ -20,6 +20,66 @@ as work landed, which is how a table acquires a count nobody can reproduce.
 
 ---
 
+## C-9 closed — FR-6, FR-10 and FR-18 reach `✓`, 2026-08-11
+
+> **Project decision — determined from repository evidence and engineering research because supervisor
+> clarification was unavailable.** Full reasoning, alternatives and the reversal condition:
+> **C-9's RESOLVED subsection** in [`docs/open-questions.md`](open-questions.md), which stays the
+> authority. Nothing is attributed to the supervisor that the supervisor did not write.
+
+**The count moved 18 → 21 of 25.** ⚠️ **The three did not close for the same reason, and the difference
+is what a reader needs**, because their criteria are not of equal standing:
+
+| FR | Criterion source | Class | What was missing until now |
+|---|---|---|---|
+| **FR-6** | **SRS §6.7, quoted verbatim** — "The candidates are ordered by decreasing score. Equal scores are separated by the criteria taken in the order of their weights." | ✅ **Supervisor-written** — the strongest class the project has | Only the acceptance file. Found unblocked on 2026-08-10 |
+| **FR-10** | *"A timetable view can be printed or exported, and what leaves the screen is the displayed view."* | ⚠️ **Project decision** (adopted 2026-08-10 from CdC §3, the CdC module list and SRS §4.1) | Only the acceptance file |
+| **FR-18** | *"An authorised user can consult, for each classroom and each laboratory, the share of the week's open periods it occupies on a given candidate."* | ⚠️ **Project decision** (2026-08-11) | The **quantity**, and every test — `roomOccupancy` had none of any kind |
+
+**⚠️ FR-18's blocker was a false premise, and one search falsified it.** C-9 said *"no document anywhere
+defines what the occupancy figure IS"*. It was defined in **C-4, in the same file**, under a different
+name — `utilisation(r,k)` = occupied periods / open slots — adopted 2026-07-30, **implemented twice**
+(`analysis/criteria.py` and `solver/objective.py`, held together by
+`integration/test_objective_matches_analysis`), and computed identically by
+`frontend/model.ts::roomOccupancy`, which is the figure FR-18's screen has been displaying all along.
+C-9 was searching §3.2 for a row; the definition was never in §3.2.
+
+**⚠️ The rejected alternative is recorded because it is genuinely strong.** External research — the SMG
+**UFO** framework, standard in UK/US/AU higher-education space management — defines *frequency* = hours
+used / hours available, *occupancy* = occupants / seats, *utilisation* = F × O. **In that vocabulary the
+project's figure is a frequency rate and "occupancy" means seats**, and on the reference instance the two
+readings **invert**: Salle is emptiest by time (41.8 %) and fullest by seats (92.9 %). It was rejected
+because **SRS Table 36 maps FR-18 → §4.1 and §5.1, "Views by classroom and by laboratory"** — FR-18 is a
+*view*, and views show when a resource is busy — and because a per-room seat figure would need a new
+aggregation rule, which is a business requirement rather than an interpretation. What the research did
+oblige is **naming**: the screen and the CSV now state that the rate measures time, not seats.
+
+**⚠️ FR-10's evidence is the project's first FRONTEND acceptance file**, and that is deliberate rather
+than convenient: Phase 9 delivered print and export **without touching a backend file**, because
+`docs/architecture.md` puts "display, filter, print" in the presentation layer. A requirement whose
+whole surface is the rendered DOM must be verified there, or its status would be decided by a directory
+layout. `printAndExport.acceptance.test.tsx` renders the grid, exports the same view and compares them as
+sets — automating the check Phase 9's audit had performed by hand.
+
+**⚠️ FR-6 was closed WITHOUT changing the product, and the near-miss is worth recording.** Writing its
+tie-break test surfaced that two candidates equal in decimal arithmetic can differ as floats by 7.1e-15,
+so the score comparison decides before §6.7's tie-break is consulted. Three fixes were considered;
+**exact rational arithmetic was refuted by measurement** (the inexactness is in the inputs — `0.4 + 0.2
+!= 0.6` as floats — so `Fraction` still gives unequal scores), and a tolerance was rejected as an
+invented threshold the specification does not state. `analysis/ranking.py` is **unchanged**; the
+behaviour is pinned by a test that states it, and the trigger for revisiting is recorded.
+
+⚠️ **Mutation testing found four of these tests passing for the wrong reason**, three of them because
+the candidate ids happened to sort the way the tie-break did. All four were hardened and now fail when
+the behaviour is removed. **19 of 19 mutations detected.**
+
+**FR-8 remains `WIP`, and was deliberately not swept up with the others.** Its criterion would have to
+be narrowed to accommodate what the software cannot do — on the C-13 contiguity shape CP-SAT proves no
+infeasibility, so no rules can be named — and this project refuses that direction. Promoting it would
+move a goalpost toward the implementation, which is the exact opposite of what FR-17's promotion did.
+
+---
+
 ## Phase 11 — two requirements closed by building their screens, 2026-08-11
 
 **FR-9 and FR-11 reached `✓`.** The count moved **16 → 18 of 25**. Unlike Phase 10, this phase closed
@@ -107,9 +167,9 @@ quoted in the five acceptance files is the supervisor's own wording.
 backend mutations and three frontend ones. One of them is the FR-16 finding above, which is recorded in
 the test's own docstring rather than papered over with a stronger-sounding name.
 
-**Where the project actually is: 18 of 25 requirements are finished, 4 are under way, 3 are not
-started.** *(✓ FR-2, 3, 4, 5, 7, 9, 11, 12, 13, 14, 15, 16, 17, 19, 22, 23, 24, 25 · WIP FR-6, 8, 10,
-18 · — FR-1, 20, 21 — count them in the table rather than trusting this line.)*
+**Where the project actually is: 21 of 25 requirements are finished, 1 is under way, 3 are not
+started.** *(✓ FR-2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25 ·
+WIP FR-8 · — FR-1, 20, 21 — count them in the table rather than trusting this line.)*
 
 ⚠️ **This line has been wrong twice and is therefore kept with its warning.** It read "10 finished, 11
 under way, 4 not started" until 2026-08-10, and the second and third figures contradicted the table in
@@ -439,11 +499,11 @@ arithmetic can deliver, since the teacher criteria genuinely conflict.
 | **FR-3** | Generate a timetable respecting H1–H12 | Necessary | `solver` | `integration/test_h1_h12` ✓, `acceptance/test_fr03` ✓ — **all twelve codes, Phase 10** | **✓** |
 | **FR-4** | Improve quality criteria within a time limit | Necessary | `solver` — objective ✓ | `integration/test_objective_matches_analysis` ✓, `integration/test_reproducibility` ✓, `acceptance/test_fr04` ✓ | **✓** |
 | **FR-5** | Produce several candidates, each scored out of 100 | Necessary | `analysis` — scoring ✓; `features/generation` ✓ | `acceptance/test_fr05` ✓ | **✓** |
-| **FR-6** | Order candidates by score | Necessary | `analysis` — ranking | `property` ✓ | **WIP** |
+| **FR-6** | Order candidates by score | Necessary | `analysis` — ranking ✓ | `property` ✓, `acceptance/test_fr06` ✓ (8) | **✓** |
 | **FR-7** | Display the timetable by teacher, group and room | Necessary | `features/timetable` ✓ | `acceptance/test_fr07` ✓, `frontend model.test` ✓, `frontend TimetableGrid.test` ✓ | **✓** |
 | **FR-8** | Report the rules in conflict when no timetable exists | Necessary | `preanalysis` ✓, `solver` — `diagnose()` ✓; `features/conflicts` ✓ | `unit/test_diagnosis` ✓, `integration/test_api_runs` ✓, `frontend ConflictReport.test` ✓, `acceptance/test_fr08` ✓ | **WIP** |
 | **FR-9** | Configure the calendar: holidays, closed slots, shortened day | Necessary | `db` ✓ — `Slot.is_open` + H9; `services/calendar` ✓; `api/routers/calendar` ✓; `features/admin` ✓ | `acceptance/test_fr09` ✓ (15), `unit/test_calendar` ✓ (16), `integration/test_store_contract` ✓, `frontend CalendarEditor.test` ✓ | **✓** |
-| **FR-10** | Print or export a timetable view | Expected | `features/timetable` ✓ — `export.ts`, `PrintHeader.tsx`; `styles.css` `@media print` ✓ | `frontend export.test` ✓, `frontend PrintHeader.test` ✓ | **WIP** |
+| **FR-10** | Print or export a timetable view | Expected | `features/timetable` ✓ — `export.ts`, `PrintHeader.tsx`; `styles.css` `@media print` ✓ | `frontend printAndExport.acceptance.test` ✓ (7), `frontend export.test` ✓, `frontend PrintHeader.test` ✓ | **✓** ⚠️ *criterion is a project decision* |
 | **FR-11** | Authenticate users and restrict access by role | Necessary | `core/security` ✓; `services/users` ✓; `api/deps` + `routers/auth` ✓; `routers/accounts` ✓; `routers/student` ✓; `features/auth` ✓; `features/admin` ✓; `features/student` ✓ | `integration/test_rbac` ✓, `unit/test_seed` ✓, `acceptance/test_fr11` ✓ (20), `acceptance/test_student_view` ✓ (12), `frontend AccountsPanel.test` ✓ | **✓** |
 | **FR-12** | Verify data before solving; report structural risks | Necessary | `preanalysis` ✓; `api` — `RunOut.preAnalysis`; `features/generation` ✓ | `unit/test_preanalysis` ✓, `integration/test_preanalysis_matches_verifier` ✓, `frontend PreAnalysisReport.test` ✓, `acceptance/test_fr12` ✓ | **✓** |
 | **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs ✓; `solver` ✓ | `unit/test_portfolio` ✓, `acceptance/test_fr13` ✓ | **✓** |
@@ -451,7 +511,7 @@ arithmetic can deliver, since the teacher criteria genuinely conflict.
 | **FR-15** | State each criterion's contribution to the difference | Necessary | `analysis` — decomposition; `features/comparison` | `property` ✓, `frontend ContributionsTable.test` ✓, `acceptance/test_fr15` ✓ | **✓** |
 | **FR-16** | Recommend one candidate and state the rule | Expected | `analysis` — ranking ✓; `features/comparison` ✓ | `unit/test_recommendation` ✓, `acceptance/test_fr16` ✓ | **✓** |
 | **FR-17** | Signal a candidate that another dominates, wherever it appears in the portfolio ⚠️ *statement corrected, C-14* | Expected | `analysis` — dominance ✓; `features/comparison` ✓ | `property` ✓ (SRS §8.4 Table 34), `unit/test_recommendation` ✓, `frontend DominanceNotice.test` ✓, `acceptance/test_fr17` ✓ | **✓** |
-| **FR-18** | Display occupancy of each classroom and laboratory | Expected | `features/timetable` | `integration` | **WIP** |
+| **FR-18** | Display occupancy of each classroom and laboratory | Expected | `features/timetable` ✓ — `OccupancyView.tsx`, `model.roomOccupancy` | `acceptance/test_fr18` ✓ (7), `frontend OccupancyView.test` ✓ (10) | **✓** ⚠️ *criterion is a project decision* |
 | **FR-19** | Record every run with its data, seed, weights, results | Necessary | `db` ✓ — models, migrations, repositories; `services/stores` ✓; `services/publications` ✓; `features/publication` ✓ | `integration/test_store_contract` ✓, `integration/test_publication` ✓, `frontend TraceTable.test` ✓, `acceptance/test_fr19` ✓ | **✓** |
 | **FR-22** | Explain a candidate's quality from computed figures | Necessary | `assistant` ✓ — adapter, context builder, verifier, computed forms; `api/routers/assistant` ✓; `features/assistant` ✓ | `unit/test_assistant` ✓, `frontend Answer.test` ✓, `acceptance/test_fr22` ✓ | **✓** |
 | **FR-23** | Regenerate from an accepted recommendation, preserving H1–H12 | Necessary | `recommendations` ✓; `services/regeneration` ✓; `api/routers/runs` ✓; `features/comparison/RegenerationPanel` ✓ | `unit/test_recommendations` ✓, `unit/test_regeneration` ✓, `frontend RegenerationPanel.test` ✓, `acceptance/test_fr23` ✓ | **✓** |

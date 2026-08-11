@@ -88,6 +88,15 @@ asked why, that is the whole answer — and it is a specification gap, not unfin
 **Stop here for a 15-minute slot.** Steps 16–17 are the part that distinguishes this system from one
 that merely produces a timetable, and they need their own time.
 
+#### Room occupancy, and what the figure means — FR-18
+
+| # | Do | Expect |
+|---|---|---|
+| O1 | On **Emplois du temps**, choose the **Occupation des salles** view | Every one of the 20 rooms, grouped by type — **including any room no session was placed in, at 0 %**. That row is the most actionable one in the table |
+| O2 | Read the note above the table | It states the figure: **périodes occupées / créneaux ouverts**. ⚠️ **Say this out loud**: it measures *time*, not seat fill. In the international space-management vocabulary this is a *frequency* rate; a room can be lightly booked and full every session |
+| O3 | Compare `Lab_Info` with `Salle` | The laboratories run far tighter. ⚠️ **And the note's second half is the C-13 lesson**: for the laboratories the bound that really binds is two-period *windows*, not periods |
+| O4 | Export the CSV | The header names the quantity in full, and the caveat travels with the file — a rate arriving in a spreadsheet without the sentence that qualifies it is how the wrong bound gets quoted in a meeting |
+
 #### The administrator configures the calendar — FR-9
 
 ⚠️ **Do this AFTER publishing, not before.** Closing a half-day changes what every later run can

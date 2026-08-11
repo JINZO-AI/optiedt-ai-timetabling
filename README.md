@@ -157,7 +157,7 @@ the conflict report and published timetables with their trace. **Phase 9 added t
 screen** (FR-10): every timetable view prints as an identified sheet and downloads as a spreadsheet,
 both carrying the run, seed and full weight vector that produced them. **Phase 10 closed five
 requirements by evidence rather than by code** (FR-3, FR-4, FR-7, FR-14, FR-16), taking the count from
-10 `✓` to 15 of 25. **Phase 11 added the administrative surfaces** (FR-9, FR-11 → 18 of 25): an
+10 `✓` to 15 of 25. **Phase 11 added the administrative surfaces** (FR-9, FR-11 → 18 of 25, and 21 once C-9 closed): an
 administrator configures the calendar — closed half-days, holidays and the shortened-day window — and
 manages the accounts, and a student reaches the published timetable of their own group and nothing
 else.
@@ -187,12 +187,17 @@ That record is a dated observation, not automation: a green build is still no ev
 this repository. The eleven `import-linter` contracts are real and do fire — but nothing runs them
 automatically, so a violation is caught when someone runs the script, not when they push.
 
-⚠️ **18 of 25 requirements are `✓`, and that number still understates the software.** Of the 4 marked
-`WIP`, none lacks working code: **two** wait on an acceptance standard nobody in this repository can
-write (**C-9** — FR-10 and FR-18), one needs its statement reworded to match its own criterion, and one
-needs an acceptance file that has simply not been written (FR-6). **FR-10 is still the clearest case** —
-Phase 9 delivered print and export in full and the `✓` count did not move. Quote the measure with the
-number.
+⚠️ **21 of 25 requirements are `✓`, and the last open question is closed.** The single remaining `WIP`
+is **FR-8**, and it is a decision rather than an omission: promoting it would need its criterion
+narrowed to match what the software cannot do, which this project refuses. The other three are not
+started — FR-1 (Phase 12) and FR-20/FR-21 (conditional).
+
+⚠️ **C-9 closed on 2026-08-11 as a project decision from repository evidence, because the supervisor
+never answered** — the project owner granted that authority. FR-6's criterion turned out to be
+supervisor-written all along (SRS §6.7). **FR-10's and FR-18's are project-authored, labelled as such
+wherever cited, and therefore reversible**; a Table 35 row is still absent for both and none was
+invented. ⚠️ **FR-18's figure was not missing but mislaid**: C-4 had defined it in 2026-07-30 as
+occupied periods over open slots, and the screen had been showing exactly that.
 
 ⚠️ **One limitation of Phase 11 is recorded rather than absorbed.** ADR-003 gives the shortened-day
 window one effect — *displayed and printed hours*. The window is configurable, persisted and previewed

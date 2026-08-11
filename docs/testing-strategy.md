@@ -226,8 +226,24 @@ specifies each requirement. Transcribed **verbatim** on 2026-08-10:
 
 | FR | Table 36 → | The supervisor's own words | State |
 |---|---|---|---|
-| **FR-6** | §6.7 · "Order by decreasing score" | *"The candidates are ordered by decreasing score. Equal scores are separated by the criteria taken in the order of their weights."* | ⚠️ **Criterion exists; no acceptance file does.** `DefaultRanker.rank()` implements both sentences and `GET /runs/{id}/candidates` returns that order, covered by `integration/test_api_runs` and `unit/test_portfolio` — but **not by `tests/acceptance/`**. FR-6 is unblocked and unfinished |
+| **FR-6** | §6.7 · "Order by decreasing score" | *"The candidates are ordered by decreasing score. Equal scores are separated by the criteria taken in the order of their weights."* | ✅ `test_fr06` (8) — **FR-6 is `✓` since 2026-08-11.** Both sentences: the first through the API, the second against a **bit-exact** tie, since two candidates equal in decimal arithmetic are usually not equal as floats |
 | **FR-17** | §6.7 and §8.4 · "Test of dominance" | §6.7: *"A candidate which another candidate improves on every criterion is signalled…"* · §8.4 Table 34, *Detection of dominance*: *"A candidate improved on every criterion is signalled."* | ✅ `test_fr17` (5) + `property/test_dominance_is_detected` + `DominanceNotice.test` (8) — **FR-17 is `✓` since 2026-08-10** |
+
+**Verified against a PROJECT-AUTHORED criterion** — ⚠️ **the weakest of the four classes, and the
+table is separate for that reason.** Added 2026-08-11 when **C-9 closed**. Neither requirement has a
+Table 35 row or a §3.2 row, and **none was invented**: each criterion is derived from specification text
+quoted in `docs/open-questions.md`, and each is labelled *project decision* wherever it is cited, so the
+tick stays reversible if the supervisor ever answers differently.
+
+| FR | Criterion — **project decision, derived from the quoted specification text** | State |
+|---|---|---|
+| **FR-10** | *"A timetable view can be printed or exported, and what leaves the screen is **the displayed view**."* — from CdC §3 ("Printing and export of the displayed view"), the CdC module list, and SRS §4.1 ("with printing of the displayed view") | ✅ `printAndExport.acceptance.test.tsx` (7) — ⚠️ **the project's first FRONTEND acceptance file**, because Phase 9 delivered FR-10 without touching a backend file |
+| **FR-18** | *"An authorised user can consult, for **each** classroom and **each** laboratory, the share of the week's open periods it occupies on a given candidate."* — from CdC §1 ("consult the occupancy of a classroom or of a laboratory") + **C-4's `utilisation(r,k)`** for the quantity | ✅ `test_fr18` (7) + `OccupancyView.test.tsx` (10) — both halves, as FR-7 |
+
+> ⚠️ **FR-18's figure measures TIME, not seats.** In the SMG "UFO" vocabulary standard in
+> higher-education space management it is a *frequency* rate and "occupancy" means occupants over
+> capacity — and the two readings **invert** on this instance. SRS Table 36 placing FR-18 among the
+> *views* is what settles it; the screen and the CSV now say which is meant. Full reasoning in C-9.
 
 **Verified against SRS Table 2** — a table of **rights**, not of tests. Added 2026-08-11:
 
@@ -304,18 +320,24 @@ has a Table 35 row or a §3.2 row — but **FR-6 and FR-17 have a Table 36 row n
 state testable behaviour**, which is the table immediately above. `docs/open-questions.md` carries the
 full reasoning and stays the authority.
 
-**What still has no criterion of any kind, and why the two differ:**
+**~~What still has no criterion of any kind~~ — RESOLVED 2026-08-11, and the table is kept because the
+reasoning is what the resolution had to answer:**
 
-| FR | Named in the specification? | What is missing |
+| FR | Named in the specification? | What was missing |
 |---|---|---|
 | **FR-10** | ✅ Twice in the CdC — *"Printing and export of the displayed view"* — and SRS §4.1 for the print half | No statement of what a correct export **contains**. Absent from Table 35, §3.2 **and** Table 36 |
-| **FR-18** | ✅ CdC §1 — *"Any authorised user to consult the occupancy of a classroom or of a laboratory"* | ⚠️ **No document anywhere defines what the occupancy figure IS.** Occupied periods over open periods? Over the week? Two-period windows? **C-13 is this project's record of losing three sessions to exactly that choice** |
+| **FR-18** | ✅ CdC §1 — *"Any authorised user to consult the occupancy of a classroom or of a laboratory"* | ⚠️ **"No document anywhere defines what the occupancy figure IS."** Occupied periods over open periods? Over the week? Two-period windows? |
 
-⚠️ **FR-18's gap is the one place where inventing the requirement could actively mislead**, which is why
-no formula is adopted. `docs/open-questions.md` records the strongest defensible criterion for each —
-reachability and completeness for FR-18, "what leaves the screen is the displayed view" for FR-10 —
-**as project decisions, clearly labelled, taken because the supervisor did not answer.** Neither
-requirement is ticked on them.
+✅ **Both now have a criterion, and both are `✓` — see the project-authored table above.** ⚠️ **The
+FR-18 sentence in that second row was FALSE, and finding out is the whole of the resolution**: the
+figure was defined in **C-4** as `utilisation(r,k)` = occupied periods / open slots, adopted
+2026-07-30, implemented in `analysis/criteria.py` and `solver/objective.py`, and already displayed by
+`model.ts::roomOccupancy`. C-9 had searched §3.2 for a row; the definition was never in §3.2.
+
+⚠️ **C-13's warning is honoured rather than overridden.** That record is about a *feasibility* judgement
+on an instance **before** solving — "will 218 sessions fit?" — where the two-period-window bound is what
+binds. FR-18 describes a candidate in which every session is already placed, so a packing bound is not
+the question; and the screen and the exported file both carry the caveat anyway.
 
 ⚠️ **Do not read any of this as making the remedy optional.** FR-10 and FR-18 still need a document
 this repository cannot write. What changed is that two requirements were being held by a gap they did

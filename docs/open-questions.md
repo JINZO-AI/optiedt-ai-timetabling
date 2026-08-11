@@ -17,12 +17,25 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 
 ## Index — what is actually still open
 
-**One.** Everything else on this page is resolved and kept for its reasoning. **C-15 was resolved on
-2026-08-07** — on measurement, and by refuting its own recorded diagnosis.
+✅ **NONE. All twenty are resolved**, the last of them — **C-9** — on 2026-08-11. Everything on this
+page is kept for its reasoning.
 
-| # | Still open | Blocks | Owner |
+⚠️ **"Resolved" is not "answered by the supervisor", and the difference is recorded on every entry that
+needs it.** Four were settled as **project decisions from repository evidence** because supervisor
+clarification was unavailable: C-5 and C-14 (2026-08-05), C-19/C-20/C-21 (2026-08-06), FR-17 and the
+C-9 narrowing (2026-08-10), and C-9's closure (2026-08-11). Each says so in its own words, quotes the
+specification text it rests on, and states what would reverse it. **A future session must not read a
+green index as "the specification answered everything."**
+
+**The last two to fall are worth one line each, because both were closed by falsifying their own
+premise rather than by new information.** **C-15** (2026-08-07) was resolved *against* its recorded
+diagnosis — the objective formulation was sound all along. **C-9** (2026-08-11) claimed FR-18's
+occupancy figure was defined nowhere; it was defined in **C-4, on this page**, under the name
+`utilisation(r,k)`, and had been implemented twice and displayed for weeks.
+
+| # | Was open | Blocks | Owner |
 |---|---|---|---|
-| **C-9** | FR-6, FR-10, FR-17, FR-18 have no detailed specification | ⚠️ **Not the Phase 6 acceptance suite** — see the correction in C-9's own section | Technical lead |
+| ~~**C-9**~~ | ~~FR-6, FR-10, FR-17, FR-18 have no detailed specification~~ — **RESOLVED 2026-08-11.** Narrowed to two on 2026-08-10 when SRS Table 36 was finally read, then closed when **FR-18's figure was found already defined in C-4** (`utilisation(r,k)`) rather than missing. ⚠️ **A Table 35 row is still absent for FR-10 and FR-18 and none was invented** — both criteria are labelled *project decision* | ~~The `✓` of FR-10 and FR-18~~ — unblocked | ~~Technical lead · supervisor~~ |
 | ~~**C-15**~~ | ~~The objective weights raw violation counts of incomparable scale~~ — **RESOLVED 2026-08-07 on measurement.** The diagnosis was wrong: the objective formulation is sound and is unchanged. `teacher-favouring` now raises **S3 and S4** rather than S3 and S5, because S5 is an admitted proxy (C-12) and the most expensive criterion to optimise. A profile's promise is reworded to its **headline** criterion, the only reading the arithmetic can deliver | ~~FR-13~~ — unblocked | ~~Technical lead~~ |
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
@@ -917,7 +930,7 @@ instead.
 
 **Resolved:** the channelling, and now the auxiliaries. **Nothing of C-7 remains open.**
 
-### C-9 — Four requirements have no detailed specification · **NARROWED 2026-08-10 → two remain: FR-10 and FR-18**
+### C-9 — Four requirements have no detailed specification · **NARROWED 2026-08-10, then RESOLVED 2026-08-11**
 
 ⚠️ **Read the NARROWED subsection at the foot of this entry before acting on anything above it.** The
 heading states the original scope; **FR-6 and FR-17 have since been shown to have supervisor-written
@@ -1047,6 +1060,105 @@ reversible if the supervisor ever answers differently.
 its central figure, which is the part no repository evidence supplies. **No longer blocks:** FR-6 (a
 criterion exists; an acceptance test does not) or FR-17 (closed). **Owner:** technical lead; the
 supervisor is still the only source for FR-18's quantity and for a Table 35 row.
+
+#### RESOLVED 2026-08-11 → FR-18's figure is `utilisation(r,k)`; **C-9 is closed**
+
+> **Project decision — determined from repository evidence and engineering research because supervisor
+> clarification was unavailable.** The project owner granted decision authority for ambiguous
+> requirements and directed that they be settled from the material to hand rather than deferred again.
+> Nothing here is attributed to the supervisor that the supervisor did not write.
+
+⚠️ **The sentence above — "no document anywhere defines what the occupancy figure IS" — is FALSE, and
+one cross-document search falsifies it.** It is the same shape as this entry's own earlier error and as
+`status.md` item 3: **a plausible blocker nobody tried to falsify.** C-9 was searching for a §3.2 row.
+The definition was never in §3.2; it is in **C-4, in this file**, under a different name:
+
+> **C-4, S6 Room efficiency (resolved 2026-07-30):** `utilisation(r,k)` = `r`'s **occupied periods in
+> `k` / 28**, where 28 is the open slot count.
+
+That is not a passing remark. It is an adopted, resolved project decision, **implemented twice** —
+`analysis/criteria.py` (`occupied_by_room[room] / view.open_slot_count`) and `solver/objective.py` as
+CP-SAT expressions — and held together by `integration/test_objective_matches_analysis.py`. And
+`frontend/src/features/timetable/model.ts::roomOccupancy`, **which is the figure FR-18's screen already
+displays**, computes exactly it. The project has been showing a defined quantity and recording it as
+undefined.
+
+**Decision: FR-18's occupancy of a room, on a candidate, is `occupied periods ÷ open periods`.** No
+formula changes. What was missing was the *statement* that this is the figure, and the tests.
+
+**Why this reading and not another — three alternatives, each weighed and rejected.**
+
+⚠️ **The argument found on re-audit, and the strongest of them: FR-18 must add something FR-7 does not.**
+FR-7 is *"Display the timetable by teacher, group and room"* and is `✓`; its room view already shows
+**when one room is busy**. If FR-18 meant the same thing it would be a requirement with no content. What
+distinguishes it is its own wording — *"occupancy of **each** classroom and **each** laboratory"* — a
+view **across all rooms** rather than one at a time. That is exactly `OccupancyView`, and it is why the
+quantity has to be a per-room figure comparable between rooms.
+
+**(a) Seat occupancy — `students ÷ capacity` — the international standard, and the strongest objection
+to the decision.** External research (SMG's **UFO** framework, standard in UK, US and Australian higher
+education) defines three distinct measures: **frequency** = hours used / hours available, **occupancy**
+= occupants / seats, **utilisation** = frequency × occupancy. ⚠️ **In that vocabulary the figure this
+project displays is a FREQUENCY rate, and "occupancy" means seats.** The objection is real and is
+recorded rather than dismissed.
+
+Measured on the reference instance, the two readings do not merely differ — **they invert**:
+
+| Room type | Time-use (implemented) | Seat occupancy (rejected reading) |
+|---|---|---|
+| Amphi | 57.1 % | 48.6 % |
+| Lab_Info | **71.4 % — busiest** | 73.1 % |
+| Lab_Sciences | 57.1 % | 54.7 % |
+| **Salle** | **41.8 % — emptiest** | **92.9 % — fullest** |
+
+**Rejected on three grounds that survive the inversion.** (i) **SRS Table 36 maps FR-18 → §4.1 and §5.1
+→ "Views by classroom and by laboratory"**, and the CdC's module list puts it in the **Display module**
+beside "views by teacher, by group" — those views show *when a resource is busy*, and FR-18 is that view
+for the third resource. (ii) A per-**room** seat figure is not well defined without a new aggregation
+rule — mean over sessions, duration-weighted, or worst case — and choosing one would be **inventing a
+business requirement**, which §9 of the decision framework forbids. Time-use needs no such choice.
+(iii) It would additionally assume every enrolled student attends; no attendance data exists, only
+`Group.size`.
+
+⚠️ **What the research DOES oblige, and what has been done about it: the figure must be named.** An
+unqualified "Taux" on a periods figure invites a reader who knows the UFO vocabulary to read a seat
+statistic. `OccupancyView.tsx` and the CSV export now state what the rate measures.
+
+**(b) The two-period-window figure (C-13's bound). Rejected.** That bound answers *"will 218 sessions
+fit?"* about an instance **before** solving. FR-18 describes a candidate in which every session is
+already placed — there is nothing left to pack, so a packing bound is not the question being asked.
+⚠️ **The two are also about different objects**: pre-analysis measures demand **per room TYPE** against
+capacity; FR-18 measures **one ROOM's realised use**. C-13's warning is not thereby ignored — it is
+displayed, on the occupancy screen and in the exported file, which is the honest treatment.
+
+**(c) Denominator = all 30 slots rather than the 28 open ones. Rejected** on invariant 7: a closed slot
+is configuration, so counting it as unused capacity would make every room look emptier the moment a
+half-day is closed. ⚠️ **Since Phase 11 the calendar is editable, so this denominator now MOVES** — an
+administrator who closes Wednesday afternoon leaves 26 open slots and every room's rate rises. That is
+correct, and it is tested.
+
+**The adversarial check, and the one thing it could not reach.** The decision would be overturned by an
+SRS section defining occupancy in seat terms. `docs/` transcribes **Table 36's label** for §4.1 and §5.1
+("Views by classroom and by laboratory") but **not §5.1's body**, and CLAUDE.md forbids opening the
+PDFs. So this decision rests on Table 36's label, §4.1's quoted sentence, the CdC module list and C-4 —
+and **it is reversible**: if §5.1 is ever transcribed and states a seat percentage, the quantity changes
+and this subsection is the record of what to change and why. Nothing else in the product depends on it;
+S6 would be unaffected, since S6's own reading is fixed by C-4 independently.
+
+**Criteria adopted — both project-authored, and labelled as such wherever they are cited:**
+
+| FR | Criterion | Source class |
+|---|---|---|
+| **FR-10** | *A timetable view can be printed or exported, and what leaves the screen is **the displayed view**.* | Project decision, from CdC §3 / SRS §4.1 quoted above (adopted 2026-08-10, unchanged) |
+| **FR-18** | *An authorised user can consult, for **each** classroom and **each** laboratory, the share of the week's open periods it occupies on a given candidate.* | Project decision, from CdC §1's quoted need + **C-4's `utilisation(r,k)`** |
+
+**C-9 is CLOSED.** Both requirements now have a criterion and a fixed quantity; what remained after this
+decision was ordinary work — acceptance files and display tests — and it was done the same day.
+⚠️ **A Table 35 row is still absent for both, and no such row has been invented.** Their criteria are
+labelled *project decision* wherever they appear, so the ticks stay reversible if the supervisor ever
+answers differently. **This is a weaker source class than FR-3's or FR-9's**, whose criteria the
+supervisor wrote, and `docs/testing-strategy.md` §4 keeps them in separate tables so a reader can tell
+which is which.
 
 ### C-11 — The generated instance · **RESOLVED — it exists and it verifies**
 

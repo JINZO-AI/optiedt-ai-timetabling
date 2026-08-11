@@ -140,9 +140,26 @@ export interface RoomOccupancy {
 /**
  * FR-18 — how heavily each room is used on one candidate.
  *
+ * ⚠️ **This formula is not local to the display layer, and changing it here
+ * alone would be a defect.** It is `utilisation(r,k)` exactly as **C-4**
+ * defined it on 2026-07-30 — occupied periods over open slots — the same
+ * quantity `analysis/criteria.py` measures S6's deviation against and
+ * `solver/objective.py` encodes for CP-SAT. Three implementations of one
+ * definition; C-4 records what the last divergence between two of them cost
+ * (S6 priced 28× too high, caught by review rather than by a test).
+ *
  * Counted against **open** slots only: a closed half-day is configuration
  * (`slot.is_open`, ADR-003), and counting it as unused capacity would make
- * every room look emptier than it is.
+ * every room look emptier than it is. ⚠️ Since Phase 11 an administrator can
+ * close a half-day through the interface, so this denominator **moves** — that
+ * is correct, and `model.test.ts` pins it.
+ *
+ * ⚠️ It measures **time**, not seats. In the SMG "UFO" vocabulary standard in
+ * higher-education space management this is a *frequency* rate, and
+ * "occupancy" means occupants over capacity — two readings that **invert** on
+ * this instance. C-9's resolution records why the time reading is FR-18's:
+ * SRS Table 36 puts FR-18 among the *views*, beside the teacher and group
+ * views, which show when a resource is busy.
  *
  * ⚠️ This is the *period* figure. For the laboratories it is the reassuring
  * one — the bound that actually binds is two-period windows, and reading the
