@@ -139,10 +139,10 @@ catalogued in `docs/open-questions.md` rather than resolved silently.
 
 ## Status
 
-**Increment 1 · COMPLETE. Phases 1–10 delivered. Phase 11 of 14 is next and has not started.**
+**Increment 1 · COMPLETE. Phases 1–11 delivered. Phase 12 of 14 is next and has not started.**
 
 📍 **A fresh session should read [`docs/dashboard.md`](docs/dashboard.md), then
-[`docs/project-roadmap.md`](docs/project-roadmap.md) §5's Phase 11 subsection — that is the handoff.**
+[`docs/project-roadmap.md`](docs/project-roadmap.md) §5's Phase 12 subsection — that is the handoff.**
 
 📍 **[`docs/project-roadmap.md`](docs/project-roadmap.md) is the phase view** — the whole project as one
 continuous sequence, with what the specification calls increment 1 and increment 2 mapped into it.
@@ -157,7 +157,10 @@ the conflict report and published timetables with their trace. **Phase 9 added t
 screen** (FR-10): every timetable view prints as an identified sheet and downloads as a spreadsheet,
 both carrying the run, seed and full weight vector that produced them. **Phase 10 closed five
 requirements by evidence rather than by code** (FR-3, FR-4, FR-7, FR-14, FR-16), taking the count from
-10 `✓` to 15 of 25.
+10 `✓` to 15 of 25. **Phase 11 added the administrative surfaces** (FR-9, FR-11 → 18 of 25): an
+administrator configures the calendar — closed half-days, holidays and the shortened-day window — and
+manages the accounts, and a student reaches the published timetable of their own group and nothing
+else.
 
 Phase 5 added the five pre-solve checks inside the application, a diagnosis run that names the rules
 in conflict, the run record in PostgreSQL, authentication with rights, and publication. Phase 6 added
@@ -184,12 +187,18 @@ That record is a dated observation, not automation: a green build is still no ev
 this repository. The eleven `import-linter` contracts are real and do fire — but nothing runs them
 automatically, so a violation is caught when someone runs the script, not when they push.
 
-⚠️ **16 of 25 requirements are `✓`, and that number still understates the software.** Of the 6 marked
+⚠️ **18 of 25 requirements are `✓`, and that number still understates the software.** Of the 4 marked
 `WIP`, none lacks working code: **two** wait on an acceptance standard nobody in this repository can
-write (**C-9** — FR-10 and FR-18), two need a screen over a mechanism that already works, one needs its
-statement reworded to match its own criterion, and one needs an acceptance file that has simply not been
-written (FR-6). **FR-10 is still the clearest case** — Phase 9 delivered print and export in full and
-the `✓` count did not move. Quote the measure with the number.
+write (**C-9** — FR-10 and FR-18), one needs its statement reworded to match its own criterion, and one
+needs an acceptance file that has simply not been written (FR-6). **FR-10 is still the clearest case** —
+Phase 9 delivered print and export in full and the `✓` count did not move. Quote the measure with the
+number.
+
+⚠️ **One limitation of Phase 11 is recorded rather than absorbed.** ADR-003 gives the shortened-day
+window one effect — *displayed and printed hours*. The window is configurable, persisted and previewed
+on the administration screen; **the timetable views and the CSV export still print the ordinary hours.**
+FR-9's acceptance criterion is exclusively about closing a half-day, so its `✓` stands on evidence — but
+a department that sets a Ramadan window and prints a timetable will see 08:30.
 
 ⚠️ **Phase 10 found that four of its own five requirements had no acceptance criterion either**, and
 closed them honestly rather than inventing one: SRS Table 35 has no row for FR-4, FR-7, FR-14 or FR-16,

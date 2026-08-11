@@ -169,10 +169,16 @@ def wire_application(
         deps.get_settings,
         deps.get_instance,
         deps.get_availability_store,
+        deps.get_calendar_store,
         deps.get_run_store,
         deps.get_executor,
     ):
         cached.cache_clear()
+    # ⚠️ `get_calendar_store` belongs in that list and its absence would be a
+    # cross-test leak with teeth: the store is `lru_cache`d per process, so a
+    # half-day closed by FR-9's acceptance test would still be closed for every
+    # module that ran after it - and the symptom would be a *different* file
+    # failing on a timetable with two fewer slots than its instance has.
 
     store = InMemoryRunStore()
     executor = RunExecutor(

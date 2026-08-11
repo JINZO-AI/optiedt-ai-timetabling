@@ -31,10 +31,12 @@ from optiedt.domain.instance import Instance
 from optiedt.instance.loader import load_instance
 from optiedt.instance.loader import resolve_instance_path as loader_instance_path
 from optiedt.services.availability import AvailabilityStore, apply_declarations
+from optiedt.services.calendar import CalendarStore, apply_calendar
 from optiedt.services.publications import PublicationStore
 from optiedt.services.runs import RunStore
 from optiedt.services.stores import (
     build_availability_store,
+    build_calendar_store,
     build_publication_store,
     build_run_store,
     build_user_store,
@@ -90,14 +92,41 @@ def get_run_store() -> RunStore:
     return build_run_store(get_settings())
 
 
+@lru_cache(maxsize=1)
+def get_calendar_store() -> CalendarStore:
+    """The administrator's calendar — FR-9. Database-backed by default."""
+    return build_calendar_store(get_settings())
+
+
+def effective_instance() -> Instance:
+    """The loaded instance with the administrator's calendar applied (FR-9).
+
+    ⚠️ **Not cached, and `get_instance()` is left pristine.** Layering rather
+    than editing is what lets a closed half-day be withdrawn — the same reason
+    FR-2's declarations are layered — and caching this would mean a calendar
+    saved through the interface took effect only after a restart.
+
+    This is what every screen reads, so a slot the administrator closed shows
+    as closed on the availability grid and in every timetable view, and it is
+    what the pre-analysis measures its occupancy against.
+    """
+    return apply_calendar(get_instance(), get_calendar_store())
+
+
 def solve_instance() -> Instance:
-    """The instance a run actually solves: the loaded one plus declarations.
+    """The instance a run actually solves: the calendar, plus declarations.
 
     This is where FR-2 meets FR-13 — the reason the availability grid is not a
-    screen that writes to nothing. Resolved per run rather than cached, so a
-    declaration made between two runs is picked up by the second.
+    screen that writes to nothing — and, since Phase 11, where FR-9 meets them
+    both. Resolved per run rather than cached, so a declaration or a closure
+    made between two runs is picked up by the second.
+
+    ⚠️ **Order matters and is not arbitrary.** The calendar is applied first so
+    that declarations are laid over the week as the institution actually has
+    it; the reverse would be indistinguishable here (they touch different
+    fields) and would stop being so the day a rule reads both.
     """
-    return apply_declarations(get_instance(), get_availability_store())
+    return apply_declarations(effective_instance(), get_availability_store())
 
 
 @lru_cache(maxsize=1)
@@ -223,8 +252,23 @@ def require_role(*roles: UserRole) -> Callable[[User], User]:
 
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
-InstanceDep = Annotated[Instance, Depends(get_instance)]
+InstanceDep = Annotated[Instance, Depends(effective_instance)]
+"""The instance as the administrator's calendar leaves it (FR-9).
+
+⚠️ **`effective_instance`, not `get_instance`.** Every router that renders or
+validates against the week must see the calendar in force; a screen reading the
+pristine CSVs would show a half-day the administrator closed as open, and a
+teacher could declare availability on it. `get_instance()` stays pristine and
+is reached only through the layering functions, which is what keeps a closure
+withdrawable.
+"""
+
+PristineInstanceDep = Annotated[Instance, Depends(get_instance)]
+"""The 13 CSVs as loaded, before any calendar edit — for the administration
+screen, which must show what it is editing away from."""
+
 AvailabilityStoreDep = Annotated[AvailabilityStore, Depends(get_availability_store)]
+CalendarStoreDep = Annotated[CalendarStore, Depends(get_calendar_store)]
 RunStoreDep = Annotated[RunStore, Depends(get_run_store)]
 UserStoreDep = Annotated[UserStore, Depends(get_user_store)]
 PublicationStoreDep = Annotated[PublicationStore, Depends(get_publication_store)]
@@ -235,7 +279,33 @@ CurrentUserDep = Annotated[User, Depends(current_user)]
 PersonInChargeDep = Annotated[User, Depends(require_role(UserRole.PERSON_IN_CHARGE))]
 """Read and write on ALL data; launch runs; compare; publish (SRS Table 2)."""
 
-ManagesDataDep = Annotated[
-    User, Depends(require_role(UserRole.PERSON_IN_CHARGE, UserRole.ADMINISTRATOR))
+AdministratorDep = Annotated[User, Depends(require_role(UserRole.ADMINISTRATOR))]
+"""Management of the accounts and of the calendar (SRS Table 2) — FR-9, FR-11.
+
+⚠️ **The administrator alone, and not the person in charge.** Table 2 gives
+these two surfaces to one actor and C-8 already settled that Table 2 wins where
+the prose disagrees. Widening it to "whoever has the most rights elsewhere"
+would be this layer deciding a right the specification assigns.
+"""
+
+StudentDep = Annotated[User, Depends(require_role(UserRole.STUDENT))]
+"""Read the timetable of their group (SRS Table 2), and nothing else."""
+
+WorksOnTimetablesDep = Annotated[
+    User,
+    Depends(require_role(UserRole.PERSON_IN_CHARGE, UserRole.TEACHER, UserRole.ADMINISTRATOR)),
 ]
-"""The two roles that may see the whole instance rather than their own slice."""
+"""Everyone whose work is the timetable itself — every role except the student.
+
+⚠️ **This is the first right in the project stated by exclusion, and the reason
+is in SRS Table 2.** The student's row is *"read the timetable of their group"*:
+a run carries every group's draft timetables, so an account that could read one
+would be reading forty-nine groups' weeks and every candidate that was never
+published. Phase 9's audit recorded that `GET /runs/{id}` took any authenticated
+caller; that was harmless while every role worked on timetables, and the student
+is the role for which it stopped being so.
+
+**It is not a substitute for the narrower checks.** A teacher still reaches only
+their own availability (`routers/availability._require_own_grid`) and only the
+person in charge may launch a run or publish.
+"""

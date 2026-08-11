@@ -110,11 +110,25 @@ def test_the_token_never_carries_a_credential(client: TestClient) -> None:
 
 
 def test_me_reports_the_account_without_a_credential(client: TestClient) -> None:
+    """⚠️ Compared for EQUALITY, not for the absence of a password field.
+
+    Asserting `"password" not in body` would pass for any field nobody thought
+    to name; equality fails the moment the account payload grows anything at
+    all, which is what makes this a leak test rather than a spelling test. It
+    did fail when Phase 11 added `group`, and the field was added here rather
+    than the assertion weakened.
+    """
     token = token_for(client, "prof1")
     assert token is not None
     body = client.get("/api/auth/me", headers=auth(token)).json()
 
-    assert body == {"id": "u2", "username": "prof1", "role": "TEACHER", "teacher": "T001"}
+    assert body == {
+        "id": "u2",
+        "username": "prof1",
+        "role": "TEACHER",
+        "teacher": "T001",
+        "group": None,
+    }
 
 
 # ── no token, bad token ────────────────────────────────────────────────

@@ -4,6 +4,14 @@
 grid is one statement about a week: a slot the teacher left blank must be able
 to clear a generated row that said otherwise. A patch endpoint would make a
 `SYNTHETIC` declaration impossible to withdraw.
+
+⚠️ **Both endpoints take `WorksOnTimetablesDep` since Phase 11, and that is not
+redundant with `_require_own_grid` below.** That helper returns early for any
+role that is not a TEACHER - which was right while every remaining role had
+read/write on all data, and became a hole the moment a STUDENT could sign in:
+Table 2 gives the student a timetable to read and no availability at all, so a
+student token would have walked past the early return into every teacher's
+week. The role dependency refuses it before the helper is reached.
 """
 
 from __future__ import annotations
@@ -12,7 +20,7 @@ from collections import Counter
 
 from fastapi import APIRouter, HTTPException, status
 
-from optiedt.api.deps import AvailabilityStoreDep, CurrentUserDep, InstanceDep
+from optiedt.api.deps import AvailabilityStoreDep, InstanceDep, WorksOnTimetablesDep
 from optiedt.api.schemas import AvailabilityIn, AvailabilityOut
 from optiedt.domain.entities import TeacherId, User
 from optiedt.domain.enums import UserRole
@@ -61,7 +69,7 @@ def _require_own_grid(user: User, teacher_id: TeacherId) -> None:
 def read_availability(
     instance: InstanceDep,
     store: AvailabilityStoreDep,
-    user: CurrentUserDep,
+    user: WorksOnTimetablesDep,
     teacher_id: TeacherId,
 ) -> list[AvailabilityOut]:
     _require_teacher(instance, teacher_id)
@@ -78,7 +86,7 @@ def read_availability(
 def declare_availability(
     instance: InstanceDep,
     store: AvailabilityStoreDep,
-    user: CurrentUserDep,
+    user: WorksOnTimetablesDep,
     teacher_id: TeacherId,
     payload: AvailabilityIn,
 ) -> list[AvailabilityOut]:

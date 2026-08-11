@@ -71,9 +71,17 @@ def signed_in():
     from optiedt.domain.entities import User
     from optiedt.domain.enums import UserRole
 
-    def sign_in(role: str = "PERSON_IN_CHARGE", teacher: str | None = None) -> None:
+    def sign_in(
+        role: str = "PERSON_IN_CHARGE",
+        teacher: str | None = None,
+        group: str | None = None,
+    ) -> None:
         app.dependency_overrides[deps.current_user] = lambda: User(
-            id="test-user", username="test", role=UserRole(role), teacher=teacher
+            id="test-user",
+            username="test",
+            role=UserRole(role),
+            teacher=teacher,
+            group=group,
         )
 
     yield sign_in

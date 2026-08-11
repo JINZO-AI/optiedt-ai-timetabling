@@ -13,11 +13,21 @@ date with it.
 - a **teacher** reaches only their own availability, and which teacher they
   are comes from the TOKEN rather than the path — the line Phase 4 explicitly
   left for this milestone;
-- reading the instance, runs and candidates needs only a valid account.
+- managing the accounts and the calendar is the **administrator** (Phase 11);
+- a **student** reads the published timetable of their own group and nothing
+  else — `GET /me/timetable`. ⚠️ The run and candidate reads take
+  `WorksOnTimetablesDep` for that reason: a run carries every group's drafts,
+  so "reading the instance, runs and candidates needs only a valid account" —
+  which this paragraph said until Phase 11 — stopped being safe the moment a
+  role existed that must see one group's published week and no more;
+- reading the instance needs only a valid account, deliberately: every screen
+  needs the slot grid and the group hierarchy to render anything at all.
 
-⚠️ **Accounts come from a seed command**, not a registration screen — C-18.
-Account management through the interface is NOT delivered by Phase 5; the
-administrator's right to it from SRS Table 2 stays unimplemented.
+✅ **Accounts are managed through the interface since Phase 11** — SRS Table 2
+gives that to the administrator and **C-18** recorded it as owed. The seed
+command still creates the FIRST accounts and still refuses to run on a
+populated system: a management screen cannot create the account that reaches
+it.
 
 ⚠️ **`secret_key` still defaults to `change-me-in-env`**, deliberately, so the
 suite and a local demonstration need no configuration at all. A deployment that
@@ -40,13 +50,16 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from optiedt.api.routers import (
+    accounts,
     assistant,
     auth,
     availability,
+    calendar,
     candidates,
     instance,
     publications,
     runs,
+    student,
 )
 from optiedt.core.config import Settings
 
@@ -97,6 +110,11 @@ _api.include_router(availability.router)
 _api.include_router(runs.router)
 _api.include_router(candidates.router)
 _api.include_router(publications.router)
+# The administrator's two surfaces, and the student's one — SRS Table 2, and
+# the requirements that had a mechanism and no screen until Phase 11.
+_api.include_router(calendar.router)
+_api.include_router(accounts.router)
+_api.include_router(student.router)
 # ⚠️ Registered unconditionally, even though the service is off by default.
 # Gating the routes on `assistant_enabled` would make the interface 404 rather
 # than fall back, and the fallback IS the specified behaviour: only text

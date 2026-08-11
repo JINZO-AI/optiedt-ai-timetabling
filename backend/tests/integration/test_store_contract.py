@@ -26,7 +26,7 @@ from __future__ import annotations
 import os
 from collections.abc import Iterator
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 import pytest
 import sqlalchemy
@@ -37,16 +37,20 @@ from optiedt.core.config import Settings
 from optiedt.domain.entities import (
     Candidate,
     DiagnosisResult,
+    Holiday,
     Placement,
     RunOrigin,
     RunOverrides,
     SubScore,
+    User,
 )
-from optiedt.domain.enums import AvailabilityState, DeclarationSource, RunState
+from optiedt.domain.enums import AvailabilityState, DeclarationSource, RunState, UserRole
 from optiedt.preanalysis.checks import CheckResult
 from optiedt.services.availability import InMemoryAvailabilityStore, build_declaration
+from optiedt.services.calendar import CalendarOverrides, InMemoryCalendarStore, ShortenedDay
 from optiedt.services.publications import InMemoryPublicationStore, new_publication
 from optiedt.services.runs import InMemoryRunStore, RunRequest, RunStore, new_run_record
+from optiedt.services.users import InMemoryUserStore
 
 pytestmark = pytest.mark.database
 
@@ -141,7 +145,10 @@ def clean(session_factory: sessionmaker[Session]) -> None:
     """
     with session_factory() as session, session.begin():
         session.execute(
-            text("truncate runs, availability_declarations, publications restart identity cascade")
+            text(
+                "truncate runs, availability_declarations, publications, "
+                "calendar_overrides, users restart identity cascade"
+            )
         )
 
 
@@ -170,6 +177,32 @@ def availability_store(request: pytest.FixtureRequest, session_factory: sessionm
     from optiedt.db.repositories import SqlAvailabilityStore
 
     return SqlAvailabilityStore(session_factory)
+
+
+@pytest.fixture(params=["memory", "database"])
+def calendar_store(request: pytest.FixtureRequest, session_factory: sessionmaker[Session]):
+    """FR-9's store, under the same contract as the other four.
+
+    ⚠️ Worth running over both for the reason this whole module exists: the
+    in-memory one holds a frozen dataclass and the SQL one round-trips it
+    through JSON, so `None` versus `()` — the distinction that lets an
+    administrator say "there are no holidays this year" — is exactly the kind
+    of thing one of them could quietly lose.
+    """
+    if request.param == "memory":
+        return InMemoryCalendarStore()
+    from optiedt.db.repositories import SqlCalendarStore
+
+    return SqlCalendarStore(session_factory)
+
+
+@pytest.fixture(params=["memory", "database"])
+def user_store(request: pytest.FixtureRequest, session_factory: sessionmaker[Session]):
+    if request.param == "memory":
+        return InMemoryUserStore()
+    from optiedt.db.repositories import SqlUserStore
+
+    return SqlUserStore(session_factory)
 
 
 def candidate(cid: str, score: float, slot: int = 0) -> Candidate:
@@ -566,3 +599,131 @@ def test_publications_come_back_newest_first(publication_store, candidates_exist
     publication_store.publish(new_publication("c2", "r1", "responsable"))
 
     assert [p.candidate for p in publication_store.all()] == ["c2", "c1"]
+
+
+# ── The administrator's calendar — FR-9 ────────────────────────────────
+
+
+def test_an_unsaved_calendar_is_empty_and_governs_nothing(calendar_store) -> None:
+    """The state every installation starts in.
+
+    ⚠️ `is_empty` is what `apply_calendar` short-circuits on, so a store that
+    returned a non-empty document here would make every run rebuild an instance
+    identical to the one it was given.
+    """
+    assert calendar_store.overrides().is_empty
+    assert calendar_store.last_edit() is None
+
+
+def test_a_calendar_round_trips_with_its_three_parts(calendar_store) -> None:
+    saved = CalendarOverrides(
+        slot_open=((13, False), (14, False)),
+        holidays=(
+            Holiday(
+                date=date(2026, 3, 20), label="Aid", lunar=True, approximate=True, blocking=True
+            ),
+        ),
+        shortened_day=ShortenedDay(
+            start=date(2026, 2, 18), end=date(2026, 3, 19), shift_minutes=60
+        ),
+    )
+
+    calendar_store.save(saved, author="administrateur")
+
+    assert calendar_store.overrides() == saved
+
+
+def test_a_stated_empty_holiday_list_is_not_an_unstated_one(calendar_store) -> None:
+    """⚠️ The distinction the whole document shape exists to keep.
+
+    `None` means the loaded `holidays.csv` stands; `()` means the administrator
+    stated that there are none. A store that collapsed them would make "no
+    holidays this year" impossible to say, exactly as an availability store
+    without its marker row cannot tell "free all week" from "never asked".
+    """
+    calendar_store.save(CalendarOverrides(holidays=()), author="administrateur")
+    assert calendar_store.overrides().holidays == ()
+
+    calendar_store.save(CalendarOverrides(holidays=None), author="administrateur")
+    assert calendar_store.overrides().holidays is None
+
+
+def test_saving_replaces_wholesale_rather_than_merging(calendar_store) -> None:
+    """A calendar is one statement, like a teacher's grid.
+
+    A store that merged would leave a closure nobody could withdraw without a
+    second, opposite call.
+    """
+    calendar_store.save(CalendarOverrides(slot_open=((13, False), (14, False))), author="a")
+
+    calendar_store.save(CalendarOverrides(slot_open=((13, True),)), author="a")
+
+    assert calendar_store.overrides().slot_open == ((13, True),)
+
+
+def test_the_author_and_the_moment_are_recorded(calendar_store) -> None:
+    """Closing a half-day changes what every future run can produce."""
+    before = datetime.now(UTC)
+
+    calendar_store.save(CalendarOverrides(slot_open=((13, False),)), author="administrateur")
+
+    edit = calendar_store.last_edit()
+    assert edit is not None
+    assert edit.by == "administrateur"
+    assert edit.at >= before.replace(microsecond=0)
+
+
+def test_resetting_restores_the_absence_of_a_statement(calendar_store) -> None:
+    """Not "the previous save" — the loaded CSVs, which is the only state this
+    application can restore without keeping a history nobody asked for."""
+    calendar_store.save(CalendarOverrides(slot_open=((13, False),)), author="a")
+
+    calendar_store.reset()
+
+    assert calendar_store.overrides().is_empty
+    assert calendar_store.last_edit() is None
+
+
+# ── Accounts — FR-11 ───────────────────────────────────────────────────
+
+
+def test_an_account_round_trips_with_the_link_its_role_carries(user_store) -> None:
+    user_store.create(
+        User(id="e1", username="etudiant", role=UserRole.STUDENT, group="3"), "a-long-password"
+    )
+    user_store.create(
+        User(id="t1", username="t001", role=UserRole.TEACHER, teacher="T001"), "a-long-password"
+    )
+
+    student = user_store.by_username("etudiant")
+    teacher = user_store.by_username("t001")
+    assert student is not None and teacher is not None
+    assert (student.group, student.teacher) == ("3", None)
+    assert (teacher.teacher, teacher.group) == ("T001", None)
+
+
+def test_deleting_an_account_removes_it_and_reports_whether_it_existed(user_store) -> None:
+    """⚠️ The return value is what tells "removed" from "never there".
+
+    `api/deps.current_user` re-reads the store on every request precisely so a
+    removal takes effect before the token expires; a store that reported
+    success for an absent account would let a typo read as a completed removal.
+    """
+    user_store.create(
+        User(id="u1", username="partant", role=UserRole.TEACHER, teacher="T001"), "a-long-password"
+    )
+
+    assert user_store.delete("partant") is True
+    assert user_store.by_username("partant") is None
+    assert user_store.delete("partant") is False
+
+
+def test_a_deleted_account_can_no_longer_authenticate(user_store) -> None:
+    user_store.create(
+        User(id="u1", username="partant", role=UserRole.ADMINISTRATOR), "a-long-password"
+    )
+    assert user_store.authenticate("partant", "a-long-password") is not None
+
+    user_store.delete("partant")
+
+    assert user_store.authenticate("partant", "a-long-password") is None

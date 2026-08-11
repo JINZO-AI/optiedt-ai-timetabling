@@ -255,6 +255,10 @@ class UserRow(Base):
     `teachers.csv`. It is what makes "a teacher account obtains only its own
     availability and timetable" enforceable from the token rather than from the
     request path.
+
+    `group` is the same for a STUDENT, added in Phase 11: SRS Table 2 gives the
+    student "read the timetable of their group", and the account is the only
+    place that can say which group that is.
     """
 
     __tablename__ = "users"
@@ -264,6 +268,43 @@ class UserRow(Base):
     password_hash: Mapped[str] = mapped_column(String(128))
     role: Mapped[str] = mapped_column(String(24))
     teacher: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    group: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+
+
+class CalendarOverrideRow(Base):
+    """The calendar an administrator stated — FR-9.
+
+    ⚠️ **One row, and the row is the whole calendar.** `id` is a fixed key
+    because an installation has one calendar; a table that admitted several
+    would leave "which one is in force?" for a later reader to guess.
+
+    ⚠️ **The loaded `slots.csv`, `holidays.csv` and `calendar_config.csv` are
+    NOT copied in here.** This row carries only what was stated through the
+    application and is layered over the pristine instance at run assembly
+    (`services/calendar.apply_calendar`), exactly as FR-2's declarations are.
+    Copying the loaded calendar in would make the edit impossible to withdraw
+    and would give the same fact two homes free to disagree.
+
+    JSON columns for the same reason `RunRow.overrides` uses one: each is a
+    short list read whole at run assembly and never queried into, and three
+    tables would add three joins to answer a question nobody asks.
+
+    `slot_open` is `{"index": bool}` for the slots actually stated — a slot
+    absent from it keeps whatever `slots.csv` says. `holidays` is NULL when no
+    holiday list was ever stated, which is deliberately different from an empty
+    list meaning "there are none".
+    """
+
+    __tablename__ = "calendar_overrides"
+
+    id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    slot_open: Mapped[dict[str, bool]] = mapped_column(JSON, default=dict)
+    holidays: Mapped[list[dict[str, object]] | None] = mapped_column(JSON, nullable=True)
+    shortened_day: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_by: Mapped[str] = mapped_column(String(64))
+    """The username. Closing a half-day changes what every future run can
+    produce, so it is recorded with an author, like a publication."""
 
 
 class AvailabilityRow(Base):

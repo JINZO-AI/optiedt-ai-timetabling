@@ -2,17 +2,18 @@
 
 **This is the practical tracking view.** One question, one answer: *what phase are we in?*
 
-> **Phase 11 — Administrative surfaces. NOT STARTED.** Phases 1–10 are complete. Opening Phase 11 is
-> the project owner's call, not a session's — but everything it needs is written down: **§5 below is
-> the handoff**, and it is what a fresh session should read after the dashboard.
+> **Phase 11 — Administrative surfaces. ✅ COMPLETE 2026-08-11.** Phases 1–11 are complete; **Phase 12
+> of 14 is next and has not begun**, and opening it is the project owner's call, not a session's.
 >
-> ✅ **16 of 25 requirements are `✓`.** Phase 10 took the count from 10 to 15 (FR-3, FR-4, FR-7, FR-14,
-> FR-16); the **pre-Phase-11 audit of 2026-08-10 added FR-17**, on evidence nobody had looked for.
+> ✅ **18 of 25 requirements are `✓`.** Phase 10 took the count from 10 to 15 (FR-3, FR-4, FR-7, FR-14,
+> FR-16); the **pre-Phase-11 audit of 2026-08-10 added FR-17**, on evidence nobody had looked for; and
+> **Phase 11 added FR-9 and FR-11** by building the two surfaces whose mechanisms already existed.
 >
 > ⚠️ **C-9 narrowed from four requirements to two — FR-10 and FR-18.** SRS **Table 36** names a
 > specifying section for three of its four, and two of those sections state testable behaviour: FR-6 →
 > §6.7, FR-17 → §6.7 and §8.4. **Neither had ever been checked.** `docs/open-questions.md` carries the
-> reasoning and stays the authority.
+> reasoning and stays the authority. **C-9 is untouched by Phase 11** and still blocks two ticks and no
+> software.
 
 ⚠️ **This document does not replace anything.** `docs/dashboard.md` remains the handoff page and
 `docs/requirements-traceability.md` remains the authority on any single requirement's status. This file
@@ -50,8 +51,8 @@ Reference instance: 218 sessions · 51 groups · 44 teachers · 20 rooms · 28 o
 | **8** | Increment-1 closure and hardening | ✅ COMPLETE | **9/9 criteria** · C-15 resolved · production guard | FR-2 · FR-13 · FR-24 → ✓ | `faf86cc` … `fa5378c` |
 | **9** | Outputs and distribution | ✅ COMPLETE | A timetable that can leave the screen — print and CSV, all four views | FR-10 *(software; tick held by C-9)* | `004f38d` |
 | **10** | Requirement closure by test | ✅ COMPLETE | Five requirements closed on the supervisor's own wording; **10 ✓ → 15 ✓** | FR-3 · FR-4 · FR-7 · FR-14 · FR-16 → ✓ | `375c220` |
-| **11** | Administrative surfaces | 🔵 **NEXT — not started** | The screens whose mechanisms already exist | FR-9 · FR-11 · student view | — |
-| **12** | Data management | ⏳ PLANNED | A second institution becomes possible | FR-1 | — |
+| **11** | Administrative surfaces | ✅ COMPLETE | The screens whose mechanisms already existed, and the endpoints under them; **16 ✓ → 18 ✓** | FR-9 · FR-11 → ✓ · student view | *derive it: `git log --oneline`* |
+| **12** | Data management | 🔵 **NEXT — not started** | A second institution becomes possible | FR-1 | — |
 | **13** | Examination session | ⬜ CONDITIONAL | Exam timetabling (*was increment 2*) | FR-20 | — |
 | **14** | Weight adjustment | ⬜ CONDITIONAL | Learn weights from recorded comparisons (*was increment 2*) | FR-21 | — |
 
@@ -78,9 +79,9 @@ requirement to `✓`, which is not always the phase that built it.
 | FR-6 | Order candidates by score | WIP | 3 | **unscheduled** | ✅ criterion found (SRS §6.7); **no acceptance test** |
 | FR-7 | Display by teacher, group, room | ✅ | 4 | **10** | — |
 | FR-8 | Report rules in conflict | WIP | 5 | 🔴 supervisor | statement ≠ criterion |
-| FR-9 | Configure the calendar | WIP | 5–6 | **11** | screen not built |
+| FR-9 | Configure the calendar | ✅ | 5–6 | **11** | — ⚠️ *shortened-day shift not carried into the timetable views; see §5* |
 | FR-10 | Print or export a view | WIP | **9** | 🔴 **C-9** | no acceptance standard; software complete |
-| FR-11 | Authenticate and restrict by role | WIP | 5 | **11** | account management |
+| FR-11 | Authenticate and restrict by role | ✅ | 5 | **11** | — |
 | FR-12 | Verify data before solving | ✅ | 5 | **6** | — |
 | FR-13 | Candidates under distinct profiles | ✅ | 3 | **8** | — |
 | FR-14 | Compare two candidates | ✅ | 4 | **10** | — |
@@ -96,9 +97,9 @@ requirement to `✓`, which is not always the phase that built it.
 | FR-24 | Answer a question in ordinary language | ✅ | 7 | **8** | — |
 | FR-25 | Produce a readable report | ✅ | 7 | **7** | — |
 
-**Totals: 16 ✅ · 6 WIP · 3 not started = 25.** Of the 6 WIP, **none lacks working software**: **2 wait
-on C-9** (FR-10, FR-18), 2 need a screen over a working mechanism (FR-9, FR-11), 1 needs its statement
-reworded (FR-8), and 1 needs only an acceptance file (FR-6).
+**Totals: 18 ✅ · 4 WIP · 3 not started = 25.** Of the 4 WIP, **none lacks working software**: **2 wait
+on C-9** (FR-10, FR-18), 1 needs its statement reworded (FR-8), and 1 needs only an acceptance file
+(FR-6). ⚠️ **The "needs a screen" pair left this list on 2026-08-11** — Phase 11 built both.
 
 ⚠️ **FR-6 is the only requirement in the project waiting on a test, and it is a small one.** Phase 10
 emptied that group; the pre-Phase-11 audit put one requirement back into it by *unblocking* FR-6 rather
@@ -300,16 +301,16 @@ mutation there would have cost a 150-second solve each.
 
 ---
 
-## 4 · Current phase — Phase 11, Administrative surfaces
+## 4 · Current phase — Phase 12, Data management
 
-**Status: 🔵 NEXT — not started, and opening it needs the project owner's approval.** Phase 10 closed
-on 2026-08-10.
+**Status: 🔵 NEXT — not started, and opening it needs the project owner's approval.** Phase 11 closed
+on 2026-08-11.
 
 ### Why this phase is next
-Two requirements have a working, tested *mechanism* and no *screen*: FR-9 (a closed half-day already
-takes effect through `Slot.is_open`, and `acceptance/test_fr09` proves it) and FR-11 (accounts are
-provisioned by a seed command, which C-18 records as a development tool and not a provisioning
-mechanism). Plus the student view: the role is seeded and has no screen.
+**FR-1 is the largest genuine gap and the only requirement left with no software at all** outside the
+two conditional phases. The only way into the application is 13 hand-authored CSVs, so no second
+institution can use it. Phases 10 and 11 were the right order before it: the model and the surfaces
+around it are now stable, so an import path is being built on something that has stopped moving.
 
 ### What no phase can do
 **C-9 blocks two ticks and no software: FR-10 and FR-18.** Phase 9 is the proof that building the
@@ -322,106 +323,72 @@ until 2026-08-10**; FR-6 left C-9 when SRS Table 36 was finally checked and foun
 
 ## 5 · Current and future phases in detail
 
-### Phase 11 — Administrative surfaces 🔵 NEXT — **THE HANDOFF**
+### Phase 11 — Administrative surfaces ✅ **COMPLETE 2026-08-11**
 
-**This subsection is written for a session that has just run `/clear` and knows nothing.** Read
-`docs/dashboard.md` first, then this. Everything below was verified against the code on 2026-08-10.
+**Mission, as it was written.** Give an administrator and a student the surfaces SRS Table 2 says they
+have — three capabilities whose *decision mechanisms* were already built and tested. **Delivered:**
+FR-9 and FR-11 are `✓`, and the student has a screen.
 
-**Mission.** Give an administrator and a student the surfaces SRS Table 2 says they have. Three
-capabilities whose *decision mechanisms* are already built and tested.
+⚠️ **The handoff's central warning was right, and it is what shaped the phase: this was NOT
+frontend-only.** At its opening the API had **19 endpoints and not one wrote a slot, a holiday or an
+account**, and `api/deps.py::get_instance` loaded the instance from the 13 CSVs, `lru_cache`d for the
+process. Phase 11 added **six endpoints** and a persistence story for calendar edits.
 
-⚠️ **Phase 11 is NOT frontend-only, and assuming it is would be the phase's first mistake.** Verified
-2026-08-10: the API has **19 endpoints and not one of them writes a slot, a holiday or an account.**
-The write endpoints are availability (`PUT`), sign-in, run creation, regeneration, publication and the
-assistant question — that is all. `GET /instance` is **read-only**, and `api/deps.py::get_instance`
-loads the instance **from the 13 CSVs on disk, `lru_cache`d for the process**. So an administration
-screen needs *new backend surface and a persistence story for calendar edits*, and neither exists.
-**That is the largest single unknown in this phase — size it before promising a date.**
+#### What was delivered
 
-If you find yourself changing the solver, the analysis layer or the run pipeline, stop — that is not
-this phase.
-
-**Requirements: FR-9, FR-11, plus the student view.**
-
-#### What already exists — do not rebuild it
-
-| | Built and tested | Where |
+| | Delivered | Where |
 |---|---|---|
-| **FR-9 mechanism** | Closing a half-day is `Slot.is_open = 0`; H9 removes those slots from every session's domain. **Acceptance-tested against the real solver**: `acceptance/test_fr09.py` closes Wednesday afternoon by setting that flag **and nothing else**, and no placement in any candidate occupies a closed slot | `solver/constraints/domain_pruned.py` (H9), ADR-003, invariant 7 |
-| **FR-11 mechanism** | Token authentication, role checks on every request, the teacher taken **from the token**. **Tested with real tokens, no dependency override**: `integration/test_rbac.py` (19) and `acceptance/test_fr11.py` (7) | `core/security`, `api/deps`, `api/routers/auth`, `features/auth` |
-| **Accounts today** | `uv run python -m optiedt.services.seed` creates one person in charge, one administrator, one student and one account per teacher. **C-18 records this as a development tool, never a provisioning mechanism**, and it refuses to run if any account exists | `services/seed.py`, `unit/test_seed.py` (8) |
-| **The student's data path** | `GET /runs/{id}` and the candidate reads already serve a timetable; `features/timetable` renders it by teacher, group and room, and prints and exports it (FR-7 ✓, FR-10 software) | `features/timetable/` |
+| **Calendar administration (FR-9)** | `GET`/`PUT`/`DELETE /api/calendar`, administrator only. Closures, the holiday list and the shortened-day window, **layered over the pristine instance** and applied at run assembly | `services/calendar.py`, `api/routers/calendar.py`, `features/admin/CalendarEditor.tsx` |
+| **Account management (FR-11)** | `GET`/`POST`/`DELETE /api/accounts`, administrator only — **what C-18 recorded as owed** | `api/routers/accounts.py`, `features/admin/AccountsPanel.tsx` |
+| **The student's surface** | `GET /api/me/timetable` — the **published** timetable of the account's own group, filtered on the server, with print and CSV reused from FR-10 | `services/timetables.py`, `api/routers/student.py`, `features/student/` |
+| **Persistence** | `calendar_overrides` (one row, the whole calendar) and `users.group`; one migration, `SqlCalendarStore` under the same store contract as the other four | `db/models.py`, `db/repositories.py`, `migrations/versions/e62aaacddedf_*` |
+| **Authorisation** | The run, candidate, comparison, assistant and availability endpoints admit the three roles that work on timetables and **refuse the student** | `api/deps.WorksOnTimetablesDep` |
 
-#### What is missing — the actual work
+#### The decisions taken, and by whom
 
-1. **An administration screen.** `frontend/src/features/admin/` contains **one file: `.gitkeep`**. There
-   is no route for it in `App.tsx`, which today routes exactly five paths: `/disponibilites`,
-   `/generation`, `/emplois-du-temps`, `/comparaison`, `/publications`.
-2. **Calendar administration (FR-9) — and the endpoint under it.** A surface that sets `Slot.is_open`,
-   holidays and the shortened-day window. ⚠️ **No endpoint writes a slot today, and the instance is
-   loaded from CSV files and cached for the process.** So this needs a decision about *where an edited
-   calendar lives*: a database table read at run assembly (the shape FR-2's declarations already use —
-   see `services/availability.apply_declarations`), or edits to the instance files. **The declarations
-   precedent is the strongest evidence in the repository**: FR-2 faced the same problem and solved it by
-   layering stored declarations over a pristine loaded instance, deliberately, "so a declaration can be
-   withdrawn" (`api/deps.py`). Follow it unless there is a reason not to.
-3. **Account management (FR-11) — and the endpoints under it.** SRS **Table 2** gives the administrator
-   *"Management of the accounts and of the calendar"* — one actor, both surfaces, which is why they are
-   one phase. There is no account endpoint beyond `POST /auth/token` and `GET /auth/me`.
-4. **A student view.** SRS Table 2 gives the student *"Read on the timetable of the group"*. The CdC
-   adds printing: *"Students to consult and print the timetable of their group"*. The role exists in
-   `UserRole`, is seeded, and **has no route and no screen**.
+- ⚠️ **Where account management belongs was contested inside this repository, and the project owner
+  settled it.** **C-18** said the administrator's account-management right *"stays unimplemented and
+  belongs with FR-1's data management"* — Phase 12 — while this roadmap put it in Phase 11. **The
+  project owner opened Phase 11 naming FR-11 among its requirements**, which is the ruling the handoff
+  asked for. The reading the handoff recorded holds: **SRS Table 2 pairs accounts with the calendar
+  under one actor**, C-8 already settled that Table 2 wins where prose disagrees, and C-18's sentence
+  was a scheduling remark made under Phase 5's budget rather than a scope ruling.
+- **Where an edited calendar lives: a database table, layered over a pristine instance** — the shape
+  FR-2's declarations already use, which the handoff named as the strongest evidence in the repository.
+  It was followed for the reason `services/availability.py` gives: an edit that is layered can be
+  withdrawn, and `DELETE /api/calendar` is that withdrawal.
+- **A calendar that leaves no room for a timetable is saved, not refused.** The handoff's risk note
+  said the honest response is FR-12's pre-analysis, not a refusal to save; refusing would also put a
+  feasibility judgement outside the solver. `test_the_pre_analysis_measures_the_week_the_administrator_left`
+  is that decision as a test.
 
-#### Decisions a fresh session must not take alone
+#### ⚠️ The one limitation, recorded rather than absorbed
 
-⚠️ **Where account management belongs is genuinely contested inside this repository, and it is not a
-session's call.** **C-18** says the administrator's account-management right *"stays unimplemented and
-belongs with FR-1's data management"* — which is **Phase 12**. This roadmap puts it in Phase 11. The
-strongest reading of the evidence: **SRS Table 2 pairs accounts with the calendar under one actor**, and
-C-8 already settled that Table 2 wins where prose disagrees — so accounts belong with the administration
-screen, and C-18's sentence was a scheduling remark made under Phase 5's budget, not a scope ruling.
-**Recorded as a reading, not a decision.** Put it to the project owner when Phase 11 opens.
+**ADR-003 gives the shortened-day window one effect — displayed and printed hours — and Phase 11
+delivers the configuration but not that effect everywhere.** The window is stated, validated, persisted
+and served, and the administration screen shows the hours it produces; **the timetable views and the CSV
+export still print the ordinary hours.** Nothing in Table 35 or §3.2 asks for more, and FR-9's criterion
+is exclusively about closing a half-day — but a department that sets a Ramadan window and prints a
+timetable will see 08:30. **Carrying the shift into the timetable views is unscheduled work and the
+project owner's call**; it is listed in `docs/status.md` rather than left to be discovered.
 
-#### Constraints — what Phase 11 must not touch
+#### What the phase did not touch
 
-- **The solver, the analysis layer, the objective and the run pipeline.** No placement is written
-  outside `solver/` (invariant 2), and the analysis layer may not import the solver (invariant 1).
-- **Invariant 7 / ADR-003.** A closed half-day is **configuration**: it sets `slot.is_open = 0` and H9
-  does the rest. **Adding a CP-SAT constraint for a holiday or a closed Saturday is a bug**, and FR-9's
-  acceptance test asserts "with no code change" by holding the catalogue to exactly H1–H12.
-- **The eleven `import-linter` contracts.** Never relax one to make a change compile.
-- **`OPTIEDT_SECRET_KEY`.** Phase 8 made production start-up refuse the published default. Do not weaken
-  that guard to make an admin screen convenient.
-- **FR-1 (department data import) is Phase 12**, not this one. An account screen must not grow into a
-  data-management screen.
-- **FR-6's acceptance file is unscheduled work, not Phase 11's.** It is small and tempting; it is also
-  not what this phase is for.
+The solver, the analysis layer, the objective and the run pipeline; the eleven `import-linter`
+contracts (**11/11 kept throughout**); ADR-003's mechanism — the constraint catalogue still holds
+exactly H1–H12 and `test_fr09` asserts it; `OPTIEDT_SECRET_KEY`'s production guard; FR-1, which is
+Phase 12. **FR-6's acceptance file remains unwritten and unscheduled**, as the handoff instructed.
 
-#### Risks
+#### Evidence
 
-- **A calendar write path is new surface.** Changing `Slot.is_open` changes what every future run can
-  produce. ⚠️ **On this instance it is tight**: `test_fr09` records that any half-day closure takes
-  `Lab_Info` to **exactly 100.0 %** of its two-period windows — a solution exists only if a perfect
-  packing does. An administration screen that lets someone close two half-days can make the instance
-  infeasible, and the honest response is FR-12's pre-analysis, not a refusal to save.
-- **Account management touches authentication.** `integration/test_rbac.py` must keep using real tokens.
-- **`GET /runs/{id}` takes any authenticated user** — recorded at Phase 9's audit and still true. A
-  student view that reads a run inherits that. **Phase 11 is where it becomes a question worth asking**,
-  because a student is the first role that should *not* see everything.
-
-**COMPLETE when** an administrator can close a half-day and manage accounts through the interface, a
-student can reach their own group's timetable, and each is covered the way this project covers a
-requirement: an acceptance file quoting its criterion, plus display tests for what only a rendering test
-can establish.
-
-**Validation.** `scripts/run-checks.ps1` green across its nine steps; `scripts/run-acceptance.ps1` green
-(**16–22 min**, quote the range or none); new tests **verified to fire** by mutating the source before
-being relied on — the standard Phases 9 and 10 both used.
-
-**Documentation to update on completion.** `docs/dashboard.md` (state), `docs/status.md` (detail),
-`docs/requirements-traceability.md` (any status change — it is the authority),
-`docs/testing-strategy.md` §4 (any new criterion, quoted), and this file's phase table and coverage
-table.
+`acceptance/test_fr09.py` (15: 4 `solver`-marked, 11 through the administration API) ·
+`acceptance/test_fr11.py` (20) · `acceptance/test_student_view.py` (12) · `unit/test_calendar.py` (16) ·
+`unit/test_timetables.py` (11) · 18 store-contract tests over **both** stores ·
+`CalendarEditor.test.tsx` (12) · `AccountsPanel.test.tsx` (8) · `StudentTimetable.test.tsx` (6).
+**80 backend tests and 26 frontend.** ⚠️ **Every new assertion was verified to fire** — 11 backend
+mutations and 6 frontend — and **two mutations survived on the first pass, both revealing a defective
+test rather than defective code**: a holiday-withdrawal test with nothing to withdraw, and a
+"never mutated" test comparing a dict to itself. Both were repaired and the mutations then failed them.
 
 ### Phase 12 — Data management ⏳
 **Purpose.** **The largest genuine gap.** FR-1 is `—`; the only way in is 13 hand-authored CSVs. Without
@@ -474,8 +441,10 @@ met.** ADR-010 commits the assistant to increment 1 and it is built. Phases 1–
 coverage table.
 
 ### 🔵 Optional — improves the product, not required by the gate
-Phase 11 (administrative surfaces) · Phase 12 (FR-1 data management) · the six unscheduled usability
-findings in `status.md`.
+~~Phase 11 (administrative surfaces)~~ ✅ **DELIVERED 2026-08-11**, and unlike Phase 9 it moved the
+count: FR-9 and FR-11 are `✓`. · Phase 12 (FR-1 data management) · the six unscheduled usability
+findings in `status.md` · **the shortened-day shift in the timetable views** (Phase 11's recorded
+limitation).
 
 ### 🔴 Supervisor-dependent — **you cannot close these alone**
 **C-9, now two requirements.** **FR-10** and **FR-18** have no acceptance standard in any document, and
@@ -496,29 +465,32 @@ a solver-validation harness that does not fit the project.
 
 | Measure | Value | Note |
 |---|---|---|
-| **Phases complete** | **10 of 14** (71 %) | 10 of 12 (83 %) excluding the two conditional phases |
+| **Phases complete** | **11 of 14** (79 %) | 11 of 12 (92 %) excluding the two conditional phases |
 | **Acceptance criteria** | **9 of 9 (100 %)** | The specification's actual gate |
-| **Requirements `✓`** | **16 of 25 (64 %)** | ⚠️ Still understates reality — see below. **10 → 15 in Phase 10, → 16 at the pre-Phase-11 audit** |
+| **Requirements `✓`** | **18 of 25 (72 %)** | ⚠️ Still understates reality — see below. **10 → 15 in Phase 10, → 16 at the pre-Phase-11 audit, → 18 in Phase 11** |
 | **Open questions** | **19 of 20 resolved** | One remains: C-9, supervisor-dependent |
-| **Tests** | **552 backend + 99 frontend** | 441 fast + 67 solver + 44 database. ⚠️ **Derive these**: `uv run pytest --collect-only -q` and `npm run test` |
+| **Tests** | **632 backend + 125 frontend** | 504 fast + 66 solver + 62 database. ⚠️ **Derive these**: `uv run pytest --collect-only -q` and `npm run test` |
 | **Mandatory work remaining** | **None** | By the nine-criteria gate |
 
-⚠️ **Why 64 % still understates it.** Of the 9 requirements not `✓`, **6 have working software** and
-3 are not started. The 6 are held by: no acceptance standard the supervisor wrote — C-9 (2: FR-10,
-FR-18), an unbuilt screen over a working mechanism (2: FR-9, FR-11), a statement never reworded to match
-its criterion (1: FR-8), and **one acceptance file that has simply not been written** (1: FR-6).
+⚠️ **Why 72 % still understates it.** Of the 7 requirements not `✓`, **4 have working software** and
+3 are not started. The 4 are held by: no acceptance standard the supervisor wrote — C-9 (2: FR-10,
+FR-18), a statement never reworded to match its criterion (1: FR-8), and **one acceptance file that has
+simply not been written** (1: FR-6). ⚠️ **The "unbuilt screen" pair is gone**: Phase 11 built both, and
+FR-9 and FR-11 are `✓`.
 
 ⚠️ **Phase 9 remains the clearest illustration of the gap.** It delivered a whole requirement's
 software and moved the `✓` count by **zero**. Anyone quoting a percentage should say what it measures.
 
 **If a single figure is wanted, use this one and say how it is computed:**
 
-> **~91 % of the project as scoped.** = Phases 1–10 complete (10/12 non-conditional phases = 83 %),
-> weighted by the fact that the **acceptance gate is 100 % met** and the two remaining non-conditional
-> phases are refinement rather than core capability. Phases 13–14 are excluded as conditional by PPM.
+> **~95 % of the project as scoped.** = Phases 1–11 complete (11/12 non-conditional phases = 92 %),
+> weighted by the fact that the **acceptance gate is 100 % met** and the one remaining non-conditional
+> phase — FR-1's data management — is a capability the delivered product does not need to be
+> demonstrated. Phases 13–14 are excluded as conditional by PPM.
 
-**Realistic remaining effort:** Phase 11 ≈ 2 days · Phase 12 ≈ 3–5 days · Phases 13–14 ≈ 7 days if
-undertaken. *(Phase 10 was estimated at ≈ 1 day and took one session.)*
+**Realistic remaining effort:** Phase 12 ≈ 3–5 days · Phases 13–14 ≈ 7 days if undertaken.
+*(Phase 10 was estimated at ≈ 1 day and took one session; **Phase 11 was estimated at ≈ 2 days and took
+one session**, the estimate having correctly warned that it was not frontend-only.)*
 
 ---
 

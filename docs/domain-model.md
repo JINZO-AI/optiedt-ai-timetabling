@@ -196,13 +196,25 @@ evidence.
 teacher — the `teacher_id` their account owns. `api/deps.py` declares the rights per endpoint rather
 than centrally, so a router that must name who may call it cannot acquire a caller by accident.
 
-⚠️ **The administrator's account-management right is NOT implemented.** Accounts come from a seed
-command (C-18) because no requirement describes registration and the instance carries no user data.
-That is recorded rather than quietly dropped; it belongs with FR-1's data management.
+✅ **The administrator's two Table 2 surfaces are implemented since Phase 11 (2026-08-11)** —
+`api/routers/calendar.py` and `api/routers/accounts.py`. ⚠️ **The seed command remains and is still how
+the FIRST accounts exist** (C-18): a management screen cannot create the account that reaches it, and
+the seed still refuses to run on a populated system. This paragraph previously read *"the
+administrator's account-management right is NOT implemented … it belongs with FR-1's data management"*;
+the first half is now false and the second was a scheduling remark the project owner superseded when
+Phase 11 opened — see C-18 in `docs/open-questions.md`.
 
 ⚠️ **A teacher account with no `teacher` link is refused every grid**, rather than defaulted to one.
 An account that cannot say whose week it owns has no business editing one, and a default would hand
-it somebody else's.
+it somebody else's. **A student account with no `group` is refused its timetable for the same reason**
+(`api/routers/student.py`), and since Phase 11 both links are **required at creation** rather than at
+first use — an account that cannot do its job should not be creatable.
+
+⚠️ **A student sees the PUBLISHED timetable of their group and no run.** A run carries three ranked
+drafts of every group's week; publication is the act by which the department says which one people
+follow. `GET /api/me/timetable` filters to the group **on the server** — a payload carrying every
+group's placements with the browser hiding the rest would be granting the student every group's week and
+calling the difference presentation.
 
 **Resolved contradiction.** The Cahier des Charges §4.3 and SRS §3.3 both describe *the administrator*
 loading the department data, while SRS Table 2 gives that right to the person in charge and limits the

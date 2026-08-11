@@ -75,21 +75,32 @@ export async function apiGet<T>(path: string): Promise<T> {
   return (await response.json()) as T
 }
 
+/**
+ * A request that changes something.
+ *
+ * ⚠️ **`DELETE` sends no body and may answer with none.** `DELETE /accounts/x`
+ * answers 204, and calling `response.json()` on an empty body throws a parse
+ * error that would surface as "the removal failed" on a removal that
+ * succeeded. `DELETE /calendar` does return the calendar it restored, so the
+ * body is read when there is one rather than assumed either way.
+ */
 export async function apiSend<T>(
-  method: 'POST' | 'PUT',
+  method: 'POST' | 'PUT' | 'DELETE',
   path: string,
-  body: unknown,
+  body?: unknown,
 ): Promise<T> {
+  const sendsBody = method !== 'DELETE' && body !== undefined
   const response = await fetch(`${BASE}${path}`, {
     method,
     headers: {
-      'Content-Type': 'application/json',
+      ...(sendsBody ? { 'Content-Type': 'application/json' } : {}),
       Accept: 'application/json',
       ...authHeaders(),
     },
-    body: JSON.stringify(body),
+    ...(sendsBody ? { body: JSON.stringify(body) } : {}),
   })
   if (!response.ok) await parseError(response)
+  if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
 

@@ -11,16 +11,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiGet, apiSend } from '@/api/client'
 import type {
+  Account,
   AssistantAnswer,
   Availability,
   AvailabilityState,
+  CalendarData,
   Decomposition,
   DominanceVerdict,
+  Holiday,
   InstanceData,
   RecommendedCandidate,
   Run,
   RunState,
   RunSummary,
+  ShortenedDay,
+  StudentTimetable,
+  UserRole,
 } from '@/types/domain'
 import type { CurrentUser, PublishedTimetable } from '@/types/domain'
 
@@ -229,6 +235,112 @@ export function usePublishCandidate(runId: string | null) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['publications'] })
     },
+  })
+}
+
+/**
+ * The administrator's calendar — FR-9.
+ *
+ * ⚠️ Administrator only; a 403 for anyone else is an answer rather than a
+ * transient failure, so it is not retried — the same judgement
+ * `usePublications` makes.
+ */
+export function useCalendar(enabled: boolean) {
+  return useQuery({
+    queryKey: ['calendar'],
+    queryFn: () => apiGet<CalendarData>('/calendar'),
+    enabled,
+    retry: false,
+  })
+}
+
+/**
+ * State the calendar — one statement about a year, sent whole.
+ *
+ * ⚠️ On success the INSTANCE cache is invalidated too, and that is not
+ * housekeeping: `GET /instance` serves the effective calendar, so a closure
+ * that did not invalidate it would leave every other screen — the availability
+ * grid, every timetable view — drawing a half-day the department has closed.
+ * `useInstance` holds it with `staleTime: Infinity`, so nothing else would ever
+ * refetch it.
+ */
+export function useSaveCalendar() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: {
+      slots: { slot: number; isOpen: boolean }[]
+      holidays?: Holiday[] | null
+      shortenedDay?: ShortenedDay | null
+    }) => apiSend<CalendarData>('PUT', '/calendar', body),
+    onSuccess: (calendar) => {
+      queryClient.setQueryData(['calendar'], calendar)
+      void queryClient.invalidateQueries({ queryKey: ['instance'] })
+    },
+  })
+}
+
+/** Withdraw every calendar edit; the loaded CSVs govern again. */
+export function useResetCalendar() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => apiSend<CalendarData>('DELETE', '/calendar'),
+    onSuccess: (calendar) => {
+      queryClient.setQueryData(['calendar'], calendar)
+      void queryClient.invalidateQueries({ queryKey: ['instance'] })
+    },
+  })
+}
+
+/** Accounts — FR-11, the administrator's other Table 2 surface. */
+export function useAccounts(enabled: boolean) {
+  return useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => apiGet<Account[]>('/accounts'),
+    enabled,
+    retry: false,
+  })
+}
+
+export function useCreateAccount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: {
+      username: string
+      password: string
+      role: UserRole
+      teacher?: string | null
+      group?: string | null
+    }) => apiSend<Account>('POST', '/accounts', body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['accounts'] })
+    },
+  })
+}
+
+export function useDeleteAccount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (username: string) =>
+      apiSend<void>('DELETE', `/accounts/${encodeURIComponent(username)}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['accounts'] })
+    },
+  })
+}
+
+/**
+ * The student's own timetable — SRS Table 2.
+ *
+ * ⚠️ No group is passed, deliberately: the account decides which group this
+ * is, exactly as a teacher's grid is decided by the token. A parameter here
+ * would be a parameter the API had to refuse.
+ */
+export function useMyTimetable(enabled: boolean) {
+  return useQuery({
+    queryKey: ['me', 'timetable'],
+    queryFn: () => apiGet<StudentTimetable>('/me/timetable'),
+    enabled,
+    retry: false,
   })
 }
 

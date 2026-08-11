@@ -294,3 +294,28 @@ server — container healthy, mapping shown, nothing wrong at the Docker layer. 
 is the factory, so `optiedt.api` never imports `optiedt.db` — the tenth contract. A store that fell
 back to memory when the database was unreachable would lose every run while the application looked
 healthy, which is the precise opposite of what FR-19 asks for.
+
+### The instance a run is assembled from — layers, not edits
+
+The 13 CSVs are read **once per process** and cached (`api/deps.get_instance`), and **nothing edits that
+copy**. What a run solves is built by layering, in one place:
+
+```
+get_instance()            the 13 CSVs, cached, pristine — never mutated
+      │
+      ├─ apply_calendar()      the administrator's closures, holidays and         FR-9
+      │                        shortened-day window                    ← Phase 11
+      │        = effective_instance()   ── what every SCREEN reads
+      │
+      └─ apply_declarations()  each declaring teacher's own week                  FR-2
+               = solve_instance()       ── what every RUN solves
+```
+
+⚠️ **Layering rather than editing is what makes a change withdrawable**, and both layers were built for
+that reason: `services/availability.py` says an unmerged teacher grid can clear a generated row, and
+`services/calendar.py` says the same of a closure — `DELETE /api/calendar` restores `slots.csv` because
+the CSVs were never touched. An implementation that wrote the edit into the cached instance would also
+corrupt every later request in the process, since that copy is shared.
+
+⚠️ **`effective_instance` is deliberately NOT cached.** Caching it would mean a half-day closed through
+the interface took effect only after a restart.

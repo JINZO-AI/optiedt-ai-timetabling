@@ -494,7 +494,7 @@ under one vector. No import contract moves.
 **Blocked:** nothing. **FR-13's `✓` is unblocked.** **Resolved by:** lead engineer, 2026-08-07, on
 measurement.
 
-### C-18 — Nothing says where the first account comes from · **RESOLVED 2026-08-04 → a seed command**
+### C-18 — Nothing says where the first account comes from · **RESOLVED 2026-08-04 → a seed command** · ⚠️ **its scheduling clause superseded 2026-08-11**
 
 SRS Table 2 gives the **administrator** account management, and C-8 already settled that Table 2 is
 authoritative where the flow prose disagrees. But no requirement describes **registration**, no screen
@@ -522,6 +522,24 @@ and Phase 5 has two budgeted days for four requirements.
 Phase 5. FR-11 is "authenticate users and restrict access by role", and that is what M4 builds; the
 administrator's account-management right from Table 2 stays unimplemented and belongs with FR-1's data
 management. Do not read a green FR-11 as covering it.
+
+✅ **DELIVERED 2026-08-11 by Phase 11 — and the sentence above about *where* it belongs was superseded
+rather than fulfilled.** `api/routers/accounts.py` gives the administrator list, create and remove;
+`acceptance/test_fr11.py` covers them end to end and **FR-11 is `✓`**.
+
+⚠️ **The scheduling clause — "belongs with FR-1's data management" — was a remark made under Phase 5's
+budget, not a scope ruling, and the repository disagreed with itself about it for a week.**
+`docs/project-roadmap.md` put account management in Phase 11; this entry put it in Phase 12. **The
+project owner opened Phase 11 naming FR-11 among its requirements**, which settles it. The reading that
+supports that decision was already recorded in the roadmap's handoff: **SRS Table 2 pairs accounts with
+the calendar under one actor**, and **C-8** had already settled that Table 2 wins where the flow prose
+disagrees — so accounts belong beside the calendar screen, and FR-1 remains Phase 12's alone.
+
+⚠️ **What has NOT changed: the seed command is still how the first accounts exist**, and it still
+refuses to run on a populated system. A management screen cannot create the account that reaches it —
+which is the very objection this entry raised against an admin-managed CRUD in 2026-08-04 ("it needs the
+first administrator to exist anyway, so it does not answer this question — it moves it"). **Both are
+needed, and both are present.**
 
 ⚠️ **The seed is a development and demonstration tool, not a deployment mechanism.** It creates
 accounts with known roles on a machine that has no authentication until it runs. It must never be run

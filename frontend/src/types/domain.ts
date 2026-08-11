@@ -355,6 +355,83 @@ export interface CurrentUser {
   username: string
   role: UserRole
   teacher: string | null
+  /** Set only for a STUDENT — SRS Table 2's "timetable of their group". */
+  group: string | null
+}
+
+/** One entry of the academic calendar — FR-9.
+ *
+ * ⚠️ A holiday does not close a slot by itself. ADR-003 gives the calendar two
+ * effects and a holiday reaches the model through the first: an administrator
+ * closes the slots concerned, and H9 does the rest. The weekly grid is a
+ * repeating template with no dates on it.
+ */
+export interface Holiday {
+  date: string
+  label: string
+  lunar: boolean
+  approximate: boolean
+  blocking: boolean
+}
+
+/** ⚠️ Displayed hours only (ADR-003). The slot index does not move. */
+export interface ShortenedDay {
+  start: string
+  end: string
+  shiftMinutes: number
+}
+
+export interface ShiftedHour {
+  slot: number
+  startHour: string
+  endHour: string
+}
+
+/**
+ * The calendar in force, and what it was edited away from — FR-9.
+ *
+ * `slots` already carry the administrator's closures; `loadedOpenSlots` is what
+ * the 13 CSVs supply, so the screen can show a closure as a *change* rather
+ * than as a state, and "réinitialiser" is a visible act.
+ */
+export interface CalendarData {
+  slots: Slot[]
+  loadedOpenSlots: number[]
+  holidays: Holiday[]
+  /** ⚠️ False means nobody has stated a list, so the instance's own stands —
+   * deliberately different from an empty list, which states there are none. */
+  holidaysStated: boolean
+  shortenedDay: ShortenedDay | null
+  shiftedHours: ShiftedHour[]
+  openSlotCount: number
+  editedAt: string | null
+  editedBy: string | null
+}
+
+/** An account as the administration screen sees it. Carries no credential. */
+export interface Account {
+  id: string
+  username: string
+  role: UserRole
+  teacher: string | null
+  group: string | null
+}
+
+/**
+ * The published timetable of the signed-in student's group — SRS Table 2.
+ *
+ * ⚠️ `placements` is filtered **on the server**. A payload carrying every
+ * group's week with the browser hiding the rest would be granting the student
+ * every group's week and calling the difference presentation.
+ */
+export interface StudentTimetable {
+  group: string
+  groupLabel: string
+  placements: Placement[]
+  publishedAt: string | null
+  publishedBy: string | null
+  run: string | null
+  candidate: string | null
 }
 
 /**

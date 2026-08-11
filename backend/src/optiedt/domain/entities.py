@@ -403,12 +403,20 @@ class User:
     *a teacher account obtains only its own availability and timetable* — and
     it comes from the token rather than from the path, which is the line
     Phase 5 moves (`api/main.py` said so from Phase 4 onwards).
+
+    `group` is the same idea for the other role Table 2 scopes to its own
+    slice: it links an account to a row of `groups.csv` and is set **only for a
+    STUDENT**. SRS Table 2 gives the student *"read the timetable of their
+    group"*, and without this field the application cannot say whose group that
+    is — so a student account would have to be shown every group's timetable or
+    none, and both would be a different requirement from the one written.
     """
 
     id: str
     username: str
     role: UserRole
     teacher: TeacherId | None = None
+    group: GroupId | None = None
 
 
 @dataclass(frozen=True, slots=True)

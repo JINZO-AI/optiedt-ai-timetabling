@@ -18,12 +18,12 @@ import uuid
 from fastapi import APIRouter, HTTPException, status
 
 from optiedt.api.deps import (
-    CurrentUserDep,
     ExecutorDep,
     InstanceDep,
     PersonInChargeDep,
     RunStoreDep,
     SettingsDep,
+    WorksOnTimetablesDep,
 )
 from optiedt.api.schemas import (
     RegenerateIn,
@@ -139,10 +139,10 @@ def regenerate_run(
 
 
 @router.get("/runs", response_model=list[RunSummaryOut], summary="Runs, newest first")
-def list_runs(store: RunStoreDep, _user: CurrentUserDep) -> list[RunSummaryOut]:
+def list_runs(store: RunStoreDep, _user: WorksOnTimetablesDep) -> list[RunSummaryOut]:
     return [RunSummaryOut.of(r) for r in store.all()]
 
 
 @router.get("/runs/{run_id}", response_model=RunOut, summary="One run, polled")
-def read_run(store: RunStoreDep, _user: CurrentUserDep, run_id: str) -> RunOut:
+def read_run(store: RunStoreDep, _user: WorksOnTimetablesDep, run_id: str) -> RunOut:
     return RunOut.of(_require_run(store, run_id))

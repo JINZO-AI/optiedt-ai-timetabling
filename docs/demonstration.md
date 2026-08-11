@@ -88,6 +88,37 @@ asked why, that is the whole answer — and it is a specification gap, not unfin
 **Stop here for a 15-minute slot.** Steps 16–17 are the part that distinguishes this system from one
 that merely produces a timetable, and they need their own time.
 
+#### The administrator configures the calendar — FR-9
+
+⚠️ **Do this AFTER publishing, not before.** Closing a half-day changes what every later run can
+produce, and on this instance it takes `Lab_Info` to exactly 100.0 % of its two-period windows.
+
+| # | Do | Expect |
+|---|---|---|
+| A1 | Sign out; sign in as **`administrateur`** | The navigation offers **Administration** and nothing else it should not — no Génération, no Publications |
+| A2 | Open **Administration → Calendrier** | The whole week, each slot marked **Ouvert** or **Fermé**. Saturday afternoon already reads **Fermé** — that comes from `slots.csv`, and it carries no *modifié* tag, because it is the institution's decision rather than this administrator's |
+| A3 | Close Wednesday afternoon (two cells) | Both cells flip and gain a **`modifié`** tag. **The open-slot count drops from 28 to 26 before you save** — the margin you are spending, shown while you spend it |
+| A4 | Save, then open **Génération** as `responsable` and launch a run | The pre-analysis now reports **`80/80 2-period windows = 100.0%`** for `Lab_Info`. ⚠️ **Say this out loud:** the next closure has nowhere to come from. The run still completes and every session is still placed |
+| A5 | Open any timetable view | Wednesday afternoon is drawn **fermé** and holds nothing, in every candidate. **No code changed** — the constraint catalogue still holds exactly H1–H12 |
+| A6 | Back in **Administration**, press **Réinitialiser** | The week returns to the one the 13 CSVs describe. The edit was layered, never written into the instance, which is what makes withdrawal possible at all |
+
+#### The administrator manages accounts — FR-11
+
+| # | Do | Expect |
+|---|---|---|
+| A7 | Open **Administration → Comptes** | Every account with its role and its link. **No password is shown for any of them** — the account payload has no field that could carry one |
+| A8 | Create a **STUDENT** account, choosing a group | The form asks for a group only for a student, and for a teacher only for a teacher. Creating one without its link is refused **by the API**, and the refusal is displayed as the API worded it |
+| A9 | Try to remove your own account | Refused. Nothing else could then manage the accounts or the calendar, and no screen creates an administrator |
+
+#### A student sees their own week, and only that — SRS Table 2
+
+| # | Do | Expect |
+|---|---|---|
+| A10 | Sign in as **`etudiant`** | **One** navigation entry: *Mon emploi du temps*. Landing goes straight there |
+| A11 | Read the timetable | The published week of their group, **including the promotion's CM sessions** — a subgroup's week is not only the sessions addressed to it. It names when it was published and by whom |
+| A12 | Print it, or export the CSV | The same print sheet and spreadsheet FR-10 gives every other view, carrying the group and the publication |
+| A13 | Try `/api/runs`, `/api/publications` or another teacher's grid | **403** on each. A run carries every group's *drafts*; Table 2 gives the student the published timetable of **their** group and nothing more |
+
 #### An instance with no solution — FR-8
 
 | # | Do | Expect |

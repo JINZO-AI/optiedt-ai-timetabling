@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from optiedt.core.config import Settings
 from optiedt.services.availability import AvailabilityStore, InMemoryAvailabilityStore
+from optiedt.services.calendar import CalendarStore, InMemoryCalendarStore
 from optiedt.services.publications import InMemoryPublicationStore, PublicationStore
 from optiedt.services.runs import InMemoryRunStore, RunStore
 from optiedt.services.users import InMemoryUserStore, UserStore
@@ -46,6 +47,18 @@ def build_publication_store(settings: Settings) -> PublicationStore:
     if settings.persistence == MEMORY:
         return InMemoryPublicationStore()
     return _sql_publication_store(settings)
+
+
+def build_calendar_store(settings: Settings) -> CalendarStore:
+    """The administrator's calendar — FR-9.
+
+    ⚠️ `memory` here means a closed half-day is forgotten on restart, which is
+    the same trade every other store makes and for the same reason: the choice
+    is configuration, never detection.
+    """
+    if settings.persistence == MEMORY:
+        return InMemoryCalendarStore()
+    return _sql_calendar_store(settings)
 
 
 # Imported inside the functions, not at module level: `optiedt.db` pulls in
@@ -80,3 +93,10 @@ def _sql_publication_store(settings: Settings) -> PublicationStore:
     from optiedt.db.session import get_session_factory
 
     return SqlPublicationStore(get_session_factory(settings.database_url))
+
+
+def _sql_calendar_store(settings: Settings) -> CalendarStore:
+    from optiedt.db.repositories import SqlCalendarStore
+    from optiedt.db.session import get_session_factory
+
+    return SqlCalendarStore(get_session_factory(settings.database_url))

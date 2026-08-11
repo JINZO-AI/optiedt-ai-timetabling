@@ -6,10 +6,13 @@ schema, log line or assistant payload can hold one by accident. That is why
 there is no `get_hash()` here and why `domain.User` has no hash field: the
 safest place for a secret is one nobody can reach.
 
-Provisioning is a **seed command**, not a registration screen — no requirement
-describes one, and the instance carries no user data. Recorded as **C-18** in
-`docs/open-questions.md`, with what it costs: account management through the
-interface is not delivered by Phase 5.
+The **first** accounts come from a seed command rather than a registration
+screen — no requirement describes registration, and the instance carries no
+user data (**C-18**). ✅ **Since Phase 11 the administrator manages accounts
+through the interface**, which is SRS Table 2's own grant and what C-18 said
+the seed command stood in for; the seed still exists, and still refuses to run
+on a populated system, because a management screen needs somebody able to sign
+in before it can be reached.
 """
 
 from __future__ import annotations
@@ -37,6 +40,18 @@ class UserStore(Protocol):
         ...
 
     def create(self, user: User, password: str) -> None: ...
+
+    def delete(self, username: str) -> bool:
+        """Remove an account. True if it existed, False if it never did.
+
+        ⚠️ **Removal is why `api/deps.current_user` re-reads the store on every
+        request** rather than trusting the token's claims: a token stays valid
+        until it expires, so a deleted account would otherwise keep its rights
+        for the rest of that token's life.
+        `integration/test_rbac.py::test_a_token_for_a_deleted_account_stops_working`
+        is the test that holds it.
+        """
+        ...
 
     def all(self) -> tuple[User, ...]: ...
 
@@ -81,6 +96,10 @@ class InMemoryUserStore:
             if user.username in self._users:
                 raise KeyError(f"user {user.username} already exists")
             self._users[user.username] = (user, hash_password(password))
+
+    def delete(self, username: str) -> bool:
+        with self._lock:
+            return self._users.pop(username, None) is not None
 
     def all(self) -> tuple[User, ...]:
         with self._lock:

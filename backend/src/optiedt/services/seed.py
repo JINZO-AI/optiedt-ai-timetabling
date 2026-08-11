@@ -8,10 +8,11 @@ until it runs, so it **refuses outright if any account already exists** rather
 than adding to a populated system. Re-provisioning a live installation is not
 something a convenience script should be able to do by accident.
 
-⚠️ **Account management through the interface is NOT delivered by Phase 5.**
-SRS Table 2 gives the administrator that right; C-18 records why this command
-exists instead and what it leaves owed. Do not read a working sign-in as
-covering it.
+⚠️ **This command creates the FIRST accounts; it is not how accounts are
+managed.** SRS Table 2 gives the administrator that right, C-18 recorded it as
+owed by Phase 5, and ✅ **Phase 11 delivered it** — `api/routers/accounts.py`.
+This command remains because a management screen cannot create the account that
+reaches it.
 
 Lives in `services/`, not in `db/`: it needs the instance loader and the store
 factory, and `db` depends on `domain` alone. C-18 originally named
@@ -28,7 +29,8 @@ from dataclasses import dataclass
 
 from optiedt.core.config import Settings
 from optiedt.domain.entities import User
-from optiedt.domain.enums import UserRole
+from optiedt.domain.enums import GroupLevel, UserRole
+from optiedt.domain.instance import Instance
 from optiedt.instance.loader import load_instance, resolve_instance_path
 from optiedt.services.stores import build_user_store
 from optiedt.services.users import UserStore
@@ -46,6 +48,7 @@ class Created:
     role: UserRole
     password: str
     teacher: str | None = None
+    group: str | None = None
 
 
 def _password() -> tuple[str, bool]:
@@ -65,6 +68,7 @@ def seed(
     store: UserStore,
     teacher_ids: tuple[str, ...],
     password: str | None = None,
+    student_group: str | None = None,
 ) -> list[Created]:
     """Create the accounts. Raises if any account already exists.
 
@@ -100,8 +104,14 @@ def seed(
         (ADMINISTRATOR, UserRole.ADMINISTRATOR),
         (STUDENT, UserRole.STUDENT),
     ):
-        store.create(User(id=username, username=username, role=role), password)
-        created.append(Created(username=username, role=role, password=password))
+        # ⚠️ The student is given a GROUP, and only the student. SRS Table 2
+        # grants that role "the timetable of their group", and
+        # `routers/student` refuses an account that cannot say which group it
+        # belongs to - a seeded student with no link would create exactly the
+        # account the demonstration cannot use.
+        group = student_group if role is UserRole.STUDENT else None
+        store.create(User(id=username, username=username, role=role, group=group), password)
+        created.append(Created(username=username, role=role, password=password, group=group))
 
     # One account per teacher in the instance. The link is what makes "a
     # teacher account obtains only its own availability" expressible at all -
@@ -136,6 +146,29 @@ def _teacher_ids(settings: Settings) -> tuple[str, ...]:
     return tuple(t.id for t in instance.teachers)
 
 
+def smallest_group(instance: Instance) -> str | None:
+    """The finest group a student can belong to, chosen deterministically.
+
+    A student belongs to a laboratory subgroup, which is the bottom of the
+    promotion -> tutorial group -> subgroup chain; the timetable shown for it
+    already includes its ancestors' sessions, so the finest link is also the
+    most complete week (`services/timetables.py`).
+
+    ⚠️ **Deterministic, not arbitrary**: the first TP group by id, so two seeds
+    of the same instance produce the same account. Returns None on an instance
+    with no subgroups rather than inventing one - the seed then creates a
+    student with no group, which `routers/student` refuses in the open, instead
+    of silently attaching it to a promotion.
+    """
+    subgroups = sorted(g.id for g in instance.groups if g.level is GroupLevel.TP)
+    return subgroups[0] if subgroups else None
+
+
+def _student_group(settings: Settings) -> str | None:
+    instance = load_instance(resolve_instance_path(settings.instance_path))
+    return smallest_group(instance)
+
+
 def main() -> int:  # pragma: no cover - the console entry point
     settings = Settings()
     password, generated = _password()
@@ -145,7 +178,12 @@ def main() -> int:  # pragma: no cover - the console entry point
         # ⚠️ The password derived above is PASSED IN, not re-derived. Letting
         # `seed()` call `_password()` again meant it stored a different token
         # from the one printed here whenever OPTIEDT_SEED_PASSWORD was unset.
-        created = seed(build_user_store(settings), _teacher_ids(settings), password=password)
+        created = seed(
+            build_user_store(settings),
+            _teacher_ids(settings),
+            password=password,
+            student_group=_student_group(settings),
+        )
     except RuntimeError as exc:
         print(f"\nRefused: {exc}", file=sys.stderr)
         return 1

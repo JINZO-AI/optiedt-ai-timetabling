@@ -25,10 +25,10 @@ from fastapi import APIRouter, HTTPException, status
 from optiedt.analysis.interfaces import Decomposition
 from optiedt.api.deps import (
     AssistantDep,
-    CurrentUserDep,
     InstanceDep,
     PublicationStoreDep,
     RunStoreDep,
+    WorksOnTimetablesDep,
 )
 from optiedt.api.schemas import AssistantAnswerOut, AssistantQuestionIn
 from optiedt.assistant.interfaces import RunFacts
@@ -84,7 +84,7 @@ def explain_candidate(
     store: RunStoreDep,
     instance: InstanceDep,
     assistant: AssistantDep,
-    _user: CurrentUserDep,
+    _user: WorksOnTimetablesDep,
     run_id: str,
     candidate_id: str,
 ) -> AssistantAnswerOut:
@@ -105,7 +105,7 @@ def answer_question(
     store: RunStoreDep,
     instance: InstanceDep,
     assistant: AssistantDep,
-    _user: CurrentUserDep,
+    _user: WorksOnTimetablesDep,
     run_id: str,
     payload: AssistantQuestionIn,
 ) -> AssistantAnswerOut:
@@ -126,7 +126,7 @@ def produce_report(
     publications: PublicationStoreDep,
     instance: InstanceDep,
     assistant: AssistantDep,
-    _user: CurrentUserDep,
+    _user: WorksOnTimetablesDep,
     run_id: str,
 ) -> AssistantAnswerOut:
     """FR-25, and the one that is cut first under time pressure (PPM §8.3).

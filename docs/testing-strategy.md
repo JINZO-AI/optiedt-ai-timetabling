@@ -201,8 +201,8 @@ against something it did not write itself. Those four are the **lower** table.
 | FR-3 | Generate on the reference instance | No hard-constraint violation | ✅ `test_fr03`, `solver` — **all twelve codes since Phase 10**; see the note below |
 | FR-5 | Read a candidate | Overall score and sub-scores displayed | ✅ `test_fr05` |
 | FR-8 | Generate on a deliberately infeasible instance | Report naming the rules in conflict by code | ✅ `test_fr08`, `solver` — ⚠️ **both shapes**, and the criterion holds on only one |
-| FR-9 | Close a half-day in configuration | Those slots disappear from every timetable, **with no code change** | ✅ `test_fr09`, `solver` — ticks criterion 7 |
-| FR-11 | Connect with a teacher account | Access limited to own data | ✅ `test_fr11`, real tokens |
+| FR-9 | Close a half-day in configuration | Those slots disappear from every timetable, **with no code change** | ✅ `test_fr09` — ticks criterion 7. **15 tests since Phase 11**: 4 `solver`-marked for the engine's half, 11 through the administration API for the application's. See the note below |
+| FR-11 | Connect with a teacher account | Access limited to own data | ✅ `test_fr11`, real tokens — **20 tests since Phase 11**, account management included |
 | FR-12 | Verify an instance with insufficient rooms | The resource concerned and quantity missing are named | ✅ `test_fr12` |
 | FR-13 | Run on the reference instance | **Three distinct candidates on the reference instance at production settings** (C-5, resolved 2026-08-05) | ✅ `test_fr13`, `solver` |
 | FR-15 | Compare two candidates | Sum of contributions equals the score difference | ✅ `test_fr15` |
@@ -228,6 +228,27 @@ specifies each requirement. Transcribed **verbatim** on 2026-08-10:
 |---|---|---|---|
 | **FR-6** | §6.7 · "Order by decreasing score" | *"The candidates are ordered by decreasing score. Equal scores are separated by the criteria taken in the order of their weights."* | ⚠️ **Criterion exists; no acceptance file does.** `DefaultRanker.rank()` implements both sentences and `GET /runs/{id}/candidates` returns that order, covered by `integration/test_api_runs` and `unit/test_portfolio` — but **not by `tests/acceptance/`**. FR-6 is unblocked and unfinished |
 | **FR-17** | §6.7 and §8.4 · "Test of dominance" | §6.7: *"A candidate which another candidate improves on every criterion is signalled…"* · §8.4 Table 34, *Detection of dominance*: *"A candidate improved on every criterion is signalled."* | ✅ `test_fr17` (5) + `property/test_dominance_is_detected` + `DominanceNotice.test` (8) — **FR-17 is `✓` since 2026-08-10** |
+
+**Verified against SRS Table 2** — a table of **rights**, not of tests. Added 2026-08-11:
+
+| Actor | The right, as `docs/domain-model.md` transcribes it | State |
+|---|---|---|
+| **Student** | *"Read the timetable of their group"* — the CdC adds *"consult and print"* | ✅ `acceptance/test_student_view` (12) + `StudentTimetable.test.tsx` (6) |
+
+> ⚠️ **This is a weaker source than the two tables above and the file says so at its own head.** Table 2
+> assigns rights; it prescribes no test and no expected result, so a file quoting it cannot claim the
+> standing of one quoting Table 35. **The student surface has no requirement code**: its evidence counts
+> under **FR-11**, whose statement is *restrict access by role*. Do not promote this row into the upper
+> tables — the whole point of keeping three is that a reader can tell a criterion the supervisor wrote
+> as a *test* from one derived from a *right*.
+
+⚠️ **FR-9's criterion is met through the administration screen since Phase 11, and the file splits the
+two questions rather than blurring them.** Whether H9 removes a closed slot from every session's domain
+is about the **engine**: 4 `solver`-marked tests at production settings, occupancy checked rather than
+the start index. Whether an administrator's save reaches the instance a run is assembled from is about
+the **application**: 11 tests through the API against the fake solver. ⚠️ **The fake places by start
+index and models neither H8 nor H9**, so the application-level tests assert on the START slot and say
+so; strengthening them to occupancy would be asserting H9 against something that does not implement it.
 
 ⚠️ **Neither of those two rows was known to exist until 2026-08-10, and the search that found them is
 worth repeating before declaring any requirement unspecifiable.** C-9 had been read as "these

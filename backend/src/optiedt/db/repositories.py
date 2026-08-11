@@ -21,12 +21,15 @@ checks, diagnosis and candidates only the first time they appear.
 
 from __future__ import annotations
 
+from datetime import UTC, date, datetime
+
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from optiedt.core.security import hash_password, verify_password
 from optiedt.db.models import (
     AvailabilityRow,
+    CalendarOverrideRow,
     CandidateRow,
     DiagnosisRow,
     PlacementRow,
@@ -42,6 +45,7 @@ from optiedt.domain.entities import (
     Candidate,
     CandidateId,
     DiagnosisResult,
+    Holiday,
     Placement,
     Publication,
     Run,
@@ -54,6 +58,7 @@ from optiedt.domain.entities import (
 )
 from optiedt.domain.enums import AvailabilityState, DeclarationSource, RunState, UserRole
 from optiedt.preanalysis.checks import CheckResult
+from optiedt.services.calendar import EMPTY, CalendarEdit, CalendarOverrides, ShortenedDay
 from optiedt.services.runs import RunRecord
 
 # ── domain <- rows ─────────────────────────────────────────────────────
@@ -447,8 +452,25 @@ class SqlUserStore:
                     password_hash=hash_password(password),
                     role=user.role.value,
                     teacher=user.teacher,
+                    group=user.group,
                 )
             )
+
+    def delete(self, username: str) -> bool:
+        """Remove an account. No cascade reaches anything else, by design.
+
+        A publication records `published_by` as a **username string**, never a
+        foreign key, so removing the account that published a timetable leaves
+        the record of who published it intact. That is the honest outcome: the
+        act happened, and the department's evidence of it must not depend on
+        the author still having access.
+        """
+        with self._sessions() as session, session.begin():
+            row = session.scalar(select(UserRow).where(UserRow.username == username))
+            if row is None:
+                return False
+            session.delete(row)
+            return True
 
     def all(self) -> tuple[User, ...]:
         with self._sessions() as session:
@@ -462,6 +484,116 @@ def _to_user(row: UserRow) -> User:
         username=row.username,
         role=UserRole(row.role),
         teacher=row.teacher,
+        group=row.group,
+    )
+
+
+# ── The calendar an administrator stated — FR-9 ────────────────────────
+
+_CALENDAR_KEY = "current"
+"""One installation, one calendar. See `CalendarOverrideRow`."""
+
+
+class SqlCalendarStore:
+    """The calendar overrides in PostgreSQL — FR-9.
+
+    ⚠️ **It stores the administrator's statement, never the loaded calendar.**
+    `services/calendar.apply_calendar` layers what is here over the pristine
+    instance at run assembly, so `reset()` genuinely restores `slots.csv` —
+    which it could not do if this table had ever been seeded from it.
+    """
+
+    def __init__(self, session_factory: sessionmaker[Session]) -> None:
+        self._sessions = session_factory
+
+    def overrides(self) -> CalendarOverrides:
+        with self._sessions() as session:
+            row = session.get(CalendarOverrideRow, _CALENDAR_KEY)
+            return EMPTY if row is None else _to_overrides_calendar(row)
+
+    def save(self, overrides: CalendarOverrides, author: str) -> None:
+        with self._sessions() as session, session.begin():
+            row = session.get(CalendarOverrideRow, _CALENDAR_KEY)
+            if row is None:
+                row = CalendarOverrideRow(id=_CALENDAR_KEY)
+                session.add(row)
+            row.slot_open = {str(index): value for index, value in overrides.slot_open}
+            row.holidays = (
+                None
+                if overrides.holidays is None
+                else [_holiday_json(h) for h in overrides.holidays]
+            )
+            row.shortened_day = (
+                None
+                if overrides.shortened_day is None
+                else _shortened_json(overrides.shortened_day)
+            )
+            row.updated_at = datetime.now(UTC)
+            row.updated_by = author
+
+    def last_edit(self) -> CalendarEdit | None:
+        with self._sessions() as session:
+            row = session.get(CalendarOverrideRow, _CALENDAR_KEY)
+            return None if row is None else CalendarEdit(at=row.updated_at, by=row.updated_by)
+
+    def reset(self) -> None:
+        """Delete the row rather than blanking its columns.
+
+        A row of nulls and an absent row would both mean "no edit", and two
+        representations of one state is how a later reader ends up asking which
+        of them is the real one.
+        """
+        with self._sessions() as session, session.begin():
+            session.execute(
+                delete(CalendarOverrideRow).where(CalendarOverrideRow.id == _CALENDAR_KEY)
+            )
+
+
+def _to_overrides_calendar(row: CalendarOverrideRow) -> CalendarOverrides:
+    return CalendarOverrides(
+        slot_open=tuple(
+            sorted((int(index), bool(value)) for index, value in row.slot_open.items())
+        ),
+        holidays=(
+            None if row.holidays is None else tuple(_to_holiday(entry) for entry in row.holidays)
+        ),
+        shortened_day=(None if row.shortened_day is None else _to_shortened(row.shortened_day)),
+    )
+
+
+def _holiday_json(holiday: Holiday) -> dict[str, object]:
+    return {
+        "date": holiday.date.isoformat(),
+        "label": holiday.label,
+        "lunar": holiday.lunar,
+        "approximate": holiday.approximate,
+        "blocking": holiday.blocking,
+    }
+
+
+def _to_holiday(entry: dict[str, object]) -> Holiday:
+    return Holiday(
+        date=date.fromisoformat(str(entry["date"])),
+        label=str(entry["label"]),
+        lunar=bool(entry["lunar"]),
+        approximate=bool(entry["approximate"]),
+        blocking=bool(entry["blocking"]),
+    )
+
+
+def _shortened_json(shortened: ShortenedDay) -> dict[str, object]:
+    return {
+        "start": shortened.start.isoformat(),
+        "end": shortened.end.isoformat(),
+        "shift_minutes": shortened.shift_minutes,
+    }
+
+
+def _to_shortened(entry: dict[str, object]) -> ShortenedDay:
+    return ShortenedDay(
+        start=date.fromisoformat(str(entry["start"])),
+        end=date.fromisoformat(str(entry["end"])),
+        shift_minutes=int(str(entry["shift_minutes"])),
     )
 
 

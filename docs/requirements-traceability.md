@@ -11,11 +11,59 @@ Status: `—` not started · `WIP` in progress · `✓` implemented and tested
 FR-11, FR-13, FR-15, FR-17 and FR-19**, each driven through the HTTP API because a requirement is `✓`
 only once a user can *reach* it. ⚠️ **A passing acceptance test is necessary, not sufficient**: FR-13
 still waits on **C-15**, FR-11 on account management and a `secret_key` that is not published in this
-repository. *(FR-2's own reasons are both discharged as of 2026-08-07.)* The suite is what makes those
-remaining reasons the *only* ones.
+repository. *(FR-2's own reasons are both discharged as of 2026-08-07; **FR-13's and FR-11's are too**
+— C-15 on 2026-08-07, account management in Phase 11.)* The suite is what makes those remaining reasons
+the *only* ones.
 
 ✅ **The whole table was reviewed against evidence in one pass at M7**, as M2 promised — not row by row
 as work landed, which is how a table acquires a count nobody can reproduce.
+
+---
+
+## Phase 11 — two requirements closed by building their screens, 2026-08-11
+
+**FR-9 and FR-11 reached `✓`.** The count moved **16 → 18 of 25**. Unlike Phase 10, this phase closed
+them by writing software rather than by finding a criterion: both had a working, tested *mechanism* and
+**no surface a user could reach**, which is precisely what this project's `✓` rule forbids counting.
+
+| | What was already true | What Phase 11 added |
+|---|---|---|
+| **FR-9** | `Slot.is_open` + H9, acceptance-tested against the real solver — a closure had to be made by editing `slots.csv` | `PUT/GET/DELETE /api/calendar` (administrator), the overrides layered over the pristine instance at run assembly, and `features/admin`'s week, holiday list and shortened-day window |
+| **FR-11** | Token authentication and per-endpoint role checks, tested with real tokens | `GET/POST/DELETE /api/accounts` (administrator) — **what C-18 recorded as owed** — plus the student's own surface, `GET /api/me/timetable`, and the role restriction that keeps a student off every other timetable endpoint |
+
+⚠️ **FR-9's criterion is now met through the screen, and the two-engine split is deliberate.** SRS Table
+35 asks that closing a half-day *in configuration* remove those slots *from every timetable, with no
+code change*. Whether H9 removes them is a question about the **engine** and stays with the four
+`solver`-marked tests at production settings; whether an administrator's save reaches the instance a run
+is assembled from is a question about the **application** and is tested through the API against the fake
+solver. `acceptance/test_fr09.py` carries both halves and says which is which.
+
+⚠️ **One limitation is recorded rather than absorbed, and it is a gap between FR-9's *statement* and the
+product — not a gap in its criterion.** ADR-003 gives the shortened-day window one effect: *displayed and
+printed hours*. Phase 11 makes the window configurable, persisted and served, and shows the hours it
+produces **on the administration screen**. The timetable views and the CSV export still print the
+ordinary hours. **Nothing in Table 35 or §3.2 asks for more**, and the criterion FR-9 is ticked against
+is exclusively about closing a half-day — but a department that sets a Ramadan window and prints a
+timetable will see 08:30. Whether to carry the shift into the timetable views is the project owner's
+call, and it is listed in `docs/status.md`'s remaining work rather than left to be discovered.
+
+⚠️ **FR-11's second historical hold is discharged by a guard, not by removing the default.**
+`secret_key` still defaults to `change-me-in-env` so the suite and a local demonstration need no
+configuration; **Phase 8's `Settings.require_deployable()` refuses that default when
+`OPTIEDT_ENVIRONMENT=production`**, and `unit/test_config_guard.py` holds it. The application is safe to
+demonstrate and safe to deploy *only when configured*; that is a deployment instruction, not an unmet
+requirement.
+
+⚠️ **The student surface has no requirement code, and this table does not invent one.** SRS Table 2
+grants the student *"read the timetable of their group"*; that is a **rights** row, not an acceptance
+test, so `acceptance/test_student_view.py` says so at its head and the evidence is counted under FR-11,
+whose statement is *restrict access by role*.
+
+**An authorisation defect recorded at Phase 9's audit is closed here.** `GET /runs/{id}` accepted any
+authenticated caller. That was harmless while every role worked on timetables; a student is the first
+role for which it is not, because a run carries every group's drafts and candidates nobody published.
+The run, candidate, comparison, assistant and availability endpoints now admit the three roles that work
+on timetables, and refuse the student.
 
 ---
 
@@ -59,15 +107,16 @@ quoted in the five acceptance files is the supervisor's own wording.
 backend mutations and three frontend ones. One of them is the FR-16 finding above, which is recorded in
 the test's own docstring rather than papered over with a stronger-sounding name.
 
-**Where the project actually is: 16 of 25 requirements are finished, 6 are under way, 3 are not
-started.** *(✓ FR-2, 3, 4, 5, 7, 12, 13, 14, 15, 16, 17, 19, 22, 23, 24, 25 · WIP FR-6, 8, 9, 10, 11,
+**Where the project actually is: 18 of 25 requirements are finished, 4 are under way, 3 are not
+started.** *(✓ FR-2, 3, 4, 5, 7, 9, 11, 12, 13, 14, 15, 16, 17, 19, 22, 23, 24, 25 · WIP FR-6, 8, 10,
 18 · — FR-1, 20, 21 — count them in the table rather than trusting this line.)*
 
-⚠️ **This line read "10 finished, 11 under way, 4 not started" until 2026-08-10, and the second and
-third figures contradicted the table in the same file.** Phase 9 moved FR-10 from `—` to `WIP` and this
-sentence was not re-derived, so it kept counting FR-10 as not started — the identical fault it already
-records against itself at M7, in the identical sentence, eleven days later. **Count the table.** The
-line is kept because a summary that has now been wrong twice is worth a warning rather than a deletion.
+⚠️ **This line has been wrong twice and is therefore kept with its warning.** It read "10 finished, 11
+under way, 4 not started" until 2026-08-10, and the second and third figures contradicted the table in
+the same file: Phase 9 moved FR-10 from `—` to `WIP` and this sentence was not re-derived, so it kept
+counting FR-10 as not started — the identical fault it already records against itself at M7, in the
+identical sentence, eleven days later. **Count the table.** It was re-derived from the table again on
+2026-08-11, when Phase 11 moved FR-9 and FR-11.
 
 ---
 
@@ -180,8 +229,12 @@ incompleteness of FR-12's own statement.
   now raises **S3 and S4** — S5 being an admitted proxy for absent preference data (C-12) and the most
   expensive criterion to optimise. Measured: S3 **29 → 0** (the proven single-criterion optimum), S5
   103 → 95, score 79.45 → 81.10. **FR-13 is `✓`.**
-- **FR-11** — account management through the interface is not built (C-18), and `secret_key` still
-  defaults to a value published in this repository.
+- ~~**FR-11** — account management through the interface is not built (C-18), and `secret_key` still
+  defaults to a value published in this repository.~~ ✅ **Both closed. Phase 11 built account
+  management (2026-08-11), and Phase 8's `require_deployable()` refuses the published default when
+  `OPTIEDT_ENVIRONMENT=production` (2026-08-07).** The default itself remains, deliberately, so the
+  suite and a local demonstration need no configuration — the guard is what stops it reaching a
+  deployment. **FR-11 is `✓`.**
 - **FR-17** — built, displayed and tested, but **C-9** is open: it has no input/processing/output row in
   the SRS, so its criterion comes from this project's own design document rather than the specification.
 
@@ -212,14 +265,20 @@ nothing failed loudly. Fixed, and pinned by a test that intercepts `urlopen` and
 
 **FR-9 moved from `—` to `WIP`** at M7: the mechanism is built and its acceptance criterion is met and
 tested (`test_fr09`), while the administration screen it also names is not. `—` said "not started",
-which stopped being true when M4 landed.
+which stopped being true when M4 landed. ✅ **`✓` since 2026-08-11** — Phase 11 built the screen and the
+endpoint under it, and `test_fr09` now performs the closure through the API as an administrator. See the
+Phase 11 section above, **including the one limitation it records**: the shortened-day window is
+configured and previewed, and the timetable views still print ordinary hours.
 
 **FR-11 joined in Phase 5 M4**, and it moves an acceptance criterion: *a teacher account obtains only
 its own availability and timetable* is **met** — verified against the real API with seeded accounts.
-⚠️ It stays `WIP` for two reasons beyond the acceptance test. **Account management through the
-interface is not built** (SRS Table 2 gives it to the administrator; C-18 records why a seed command
-stands in), and **`secret_key` still defaults to a value published in this repository**, so the
-application is safe to demonstrate rather than safe to expose.
+⚠️ It stayed `WIP` for two reasons beyond the acceptance test. **Account management through the
+interface was not built** (SRS Table 2 gives it to the administrator; C-18 records why a seed command
+stood in), and **`secret_key` still defaults to a value published in this repository**, so the
+application was safe to demonstrate rather than safe to expose. ✅ **Both are discharged and FR-11 is
+`✓` since 2026-08-11**: Phase 11 built account management, and **Phase 8's `require_deployable()`
+refuses the published default when `OPTIEDT_ENVIRONMENT=production`** — the default remains for the
+suite and for a local demonstration, which is why the guard, rather than its removal, is the answer.
 
 **FR-19 joined in Phase 5 M3.** Runs, weights, pre-analysis checks, the diagnosis, candidates,
 placements and sub-scores are recorded in PostgreSQL behind the Protocols Phase 4 left in place, and
@@ -383,9 +442,9 @@ arithmetic can deliver, since the teacher criteria genuinely conflict.
 | **FR-6** | Order candidates by score | Necessary | `analysis` — ranking | `property` ✓ | **WIP** |
 | **FR-7** | Display the timetable by teacher, group and room | Necessary | `features/timetable` ✓ | `acceptance/test_fr07` ✓, `frontend model.test` ✓, `frontend TimetableGrid.test` ✓ | **✓** |
 | **FR-8** | Report the rules in conflict when no timetable exists | Necessary | `preanalysis` ✓, `solver` — `diagnose()` ✓; `features/conflicts` ✓ | `unit/test_diagnosis` ✓, `integration/test_api_runs` ✓, `frontend ConflictReport.test` ✓, `acceptance/test_fr08` ✓ | **WIP** |
-| **FR-9** | Configure the calendar: holidays, closed slots, shortened day | Necessary | `db` ✓ — `Slot.is_open` + H9; `features/admin` ⬜ **not built** | `acceptance/test_fr09` ✓ | **WIP** |
+| **FR-9** | Configure the calendar: holidays, closed slots, shortened day | Necessary | `db` ✓ — `Slot.is_open` + H9; `services/calendar` ✓; `api/routers/calendar` ✓; `features/admin` ✓ | `acceptance/test_fr09` ✓ (15), `unit/test_calendar` ✓ (16), `integration/test_store_contract` ✓, `frontend CalendarEditor.test` ✓ | **✓** |
 | **FR-10** | Print or export a timetable view | Expected | `features/timetable` ✓ — `export.ts`, `PrintHeader.tsx`; `styles.css` `@media print` ✓ | `frontend export.test` ✓, `frontend PrintHeader.test` ✓ | **WIP** |
-| **FR-11** | Authenticate users and restrict access by role | Necessary | `core/security` ✓; `services/users` ✓; `api/deps` + `routers/auth` ✓; `features/auth` ✓ | `integration/test_rbac` ✓, `unit/test_seed` ✓, `acceptance/test_fr11` ✓ | **WIP** |
+| **FR-11** | Authenticate users and restrict access by role | Necessary | `core/security` ✓; `services/users` ✓; `api/deps` + `routers/auth` ✓; `routers/accounts` ✓; `routers/student` ✓; `features/auth` ✓; `features/admin` ✓; `features/student` ✓ | `integration/test_rbac` ✓, `unit/test_seed` ✓, `acceptance/test_fr11` ✓ (20), `acceptance/test_student_view` ✓ (12), `frontend AccountsPanel.test` ✓ | **✓** |
 | **FR-12** | Verify data before solving; report structural risks | Necessary | `preanalysis` ✓; `api` — `RunOut.preAnalysis`; `features/generation` ✓ | `unit/test_preanalysis` ✓, `integration/test_preanalysis_matches_verifier` ✓, `frontend PreAnalysisReport.test` ✓, `acceptance/test_fr12` ✓ | **✓** |
 | **FR-13** | Produce candidates under distinct weight profiles | Necessary | `services` — runs ✓; `solver` ✓ | `unit/test_portfolio` ✓, `acceptance/test_fr13` ✓ | **✓** |
 | **FR-14** | Compare two candidates criterion by criterion | Necessary | `analysis` — decomposition ✓; `features/comparison` ✓ | `acceptance/test_fr14` ✓, `frontend ContributionsTable.test` ✓ | **✓** |

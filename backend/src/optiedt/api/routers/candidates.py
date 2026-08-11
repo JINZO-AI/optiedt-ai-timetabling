@@ -13,13 +13,22 @@ candidate's producing profile: the identity
     score(A) - score(B) = 100 * sum( w_i * ( n_i(A) - n_i(B) ) )
 
 only holds when the same w_i prices both sides.
+
+⚠️ **Every read here takes `WorksOnTimetablesDep`, not `CurrentUserDep`, since
+Phase 11.** A run carries three DRAFT timetables for every group in the
+faculty, and SRS Table 2 grants the student exactly *"read the timetable of
+their group"* - so an account that could reach these endpoints would be reading
+forty-nine groups' weeks and candidates the department never adopted. Phase 9's
+audit recorded that any authenticated caller reached a run; that was harmless
+while every role worked on timetables, and the student is the role for which it
+stopped being so. What a student reads instead is `GET /me/timetable`.
 """
 
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from optiedt.api.deps import CurrentUserDep, RunStoreDep
+from optiedt.api.deps import RunStoreDep, WorksOnTimetablesDep
 from optiedt.api.schemas import (
     CandidateOut,
     DecompositionOut,
@@ -60,7 +69,9 @@ def _require_candidate(record: RunRecord, candidate_id: str) -> Candidate:
     response_model=list[CandidateOut],
     summary="Candidates of a run, best first",
 )
-def list_candidates(store: RunStoreDep, _user: CurrentUserDep, run_id: str) -> list[CandidateOut]:
+def list_candidates(
+    store: RunStoreDep, _user: WorksOnTimetablesDep, run_id: str
+) -> list[CandidateOut]:
     """Returned in RANK order. The client displays this order, it does not sort."""
     return [CandidateOut.of(c) for c in _require_run(store, run_id).candidates]
 
@@ -71,7 +82,7 @@ def list_candidates(store: RunStoreDep, _user: CurrentUserDep, run_id: str) -> l
     summary="One candidate with its placements and sub-scores",
 )
 def read_candidate(
-    store: RunStoreDep, _user: CurrentUserDep, run_id: str, candidate_id: str
+    store: RunStoreDep, _user: WorksOnTimetablesDep, run_id: str, candidate_id: str
 ) -> CandidateOut:
     record = _require_run(store, run_id)
     return CandidateOut.of(_require_candidate(record, candidate_id))
@@ -84,7 +95,7 @@ def read_candidate(
 )
 def compare(
     store: RunStoreDep,
-    _user: CurrentUserDep,
+    _user: WorksOnTimetablesDep,
     run_id: str,
     a: str = Query(description="Candidate id on the left"),
     b: str = Query(description="Candidate id on the right"),
@@ -105,7 +116,9 @@ def compare(
     response_model=list[DominanceVerdictOut],
     summary="FR-17 — candidates another improves on across the board",
 )
-def dominance(store: RunStoreDep, _user: CurrentUserDep, run_id: str) -> list[DominanceVerdictOut]:
+def dominance(
+    store: RunStoreDep, _user: WorksOnTimetablesDep, run_id: str
+) -> list[DominanceVerdictOut]:
     """Pareto dominance across the whole portfolio (C-14, resolved 2026-08-05):
     at least as good on every criterion, strictly better on at least one.
 
@@ -124,7 +137,7 @@ def dominance(store: RunStoreDep, _user: CurrentUserDep, run_id: str) -> list[Do
     summary="FR-16 — the candidate put forward, and the rule that chose it",
 )
 def recommendation(
-    store: RunStoreDep, _user: CurrentUserDep, run_id: str
+    store: RunStoreDep, _user: WorksOnTimetablesDep, run_id: str
 ) -> RecommendedCandidateOut | None:
     """None while a run has produced no candidate yet."""
     result = recommendation_for(_require_run(store, run_id))

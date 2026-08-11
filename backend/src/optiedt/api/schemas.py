@@ -22,6 +22,7 @@ Two rules the frontend depends on:
 
 from __future__ import annotations
 
+from datetime import date as date_
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
@@ -41,6 +42,7 @@ from optiedt.domain.entities import (
     Course,
     DiagnosisResult,
     Group,
+    Holiday,
     Placement,
     Programme,
     Promotion,
@@ -66,6 +68,7 @@ from optiedt.domain.enums import (
 )
 from optiedt.domain.instance import Instance
 from optiedt.preanalysis.checks import CheckResult
+from optiedt.services.calendar import CalendarEdit, CalendarOverrides, ShortenedDay
 from optiedt.services.publications import PublishedTimetable
 from optiedt.services.runs import RunRecord
 
@@ -109,10 +112,12 @@ class UserOut(ApiModel):
     username: str
     role: UserRole
     teacher: str | None
+    group: str | None = None
+    """Set only for a STUDENT — SRS Table 2's *"timetable of their group"*."""
 
     @classmethod
     def of(cls, u: User) -> UserOut:
-        return cls(id=u.id, username=u.username, role=u.role, teacher=u.teacher)
+        return cls(id=u.id, username=u.username, role=u.role, teacher=u.teacher, group=u.group)
 
 
 # ── Structure of the teaching ──────────────────────────────────────────
@@ -851,3 +856,204 @@ class RecommendedCandidateOut(ApiModel):
     @classmethod
     def of(cls, r: Recommendation) -> RecommendedCandidateOut:
         return cls(candidate=r.candidate, rule=r.rule, score=r.score, dominated_by=r.dominated_by)
+
+
+# ── The calendar an administrator edits — FR-9 ─────────────────────────
+
+
+class HolidayOut(ApiModel):
+    """One entry of the academic calendar.
+
+    ⚠️ **A holiday does not close a slot by itself, and this is where a reader
+    is most likely to assume it does.** ADR-003 gives the calendar exactly two
+    effects, and a holiday reaches the model through the first of them: an
+    administrator closes the slots concerned, and H9 removes them from every
+    session's domain. The weekly grid is a repeating template with no dates on
+    it, so a date could only close a slot by closing that weekday for the whole
+    semester — which is a different institutional decision from a day off, and
+    not one any document asks the application to take on its own.
+    """
+
+    date: date_
+    label: str
+    lunar: bool
+    approximate: bool
+    blocking: bool
+
+    @classmethod
+    def of(cls, h: Holiday) -> HolidayOut:
+        return cls(
+            date=h.date,
+            label=h.label,
+            lunar=h.lunar,
+            approximate=h.approximate,
+            blocking=h.blocking,
+        )
+
+    def to_domain(self) -> Holiday:
+        return Holiday(
+            date=self.date,
+            label=self.label,
+            lunar=self.lunar,
+            approximate=self.approximate,
+            blocking=self.blocking,
+        )
+
+
+class ShortenedDayOut(ApiModel):
+    """The window during which displayed hours shift, and by how much.
+
+    ⚠️ **Displayed hours only (ADR-003).** The slot index does not move, so no
+    variable and no constraint is affected — which is the whole reason a
+    shortened day is configuration rather than a thirteenth hard rule.
+    """
+
+    start: date_
+    end: date_
+    shift_minutes: int
+
+    @classmethod
+    def of(cls, s: ShortenedDay) -> ShortenedDayOut:
+        return cls(start=s.start, end=s.end, shift_minutes=s.shift_minutes)
+
+    def to_domain(self) -> ShortenedDay:
+        return ShortenedDay(start=self.start, end=self.end, shift_minutes=self.shift_minutes)
+
+
+class ShiftedHourOut(ApiModel):
+    """A slot's hours as they read inside the shortened-day window."""
+
+    slot: int
+    start_hour: str
+    end_hour: str
+
+
+class CalendarOut(ApiModel):
+    """The calendar in force, and what it was edited away from.
+
+    `slots` are the effective ones — `isOpen` already carries the
+    administrator's closures, which is what every other screen renders against.
+    `loadedOpenSlots` is the same field as the 13 CSVs supply it, so the
+    administration screen can say *what changed* rather than only *what is*,
+    and so "reset" is a visible act rather than a button whose effect the user
+    has to infer.
+    """
+
+    slots: list[SlotOut]
+    loaded_open_slots: list[int]
+    holidays: list[HolidayOut]
+    holidays_stated: bool
+    """False when the administrator has never stated a holiday list and the
+    instance's own stands. ⚠️ Distinct from an EMPTY list, which states that
+    there are none — collapsing the two would make that impossible to say."""
+
+    shortened_day: ShortenedDayOut | None
+    shifted_hours: list[ShiftedHourOut]
+    open_slot_count: int
+    """Shown because closing a half-day changes what every future run can
+    produce, and this instance has 8 spare two-period windows in the whole week
+    (C-13). An administrator should see the margin they are spending."""
+
+    edited_at: datetime | None
+    edited_by: str | None
+
+    @classmethod
+    def of(
+        cls,
+        effective: Instance,
+        pristine: Instance,
+        overrides: CalendarOverrides,
+        edit: CalendarEdit | None,
+        shifted: tuple[tuple[int, str, str], ...],
+    ) -> CalendarOut:
+        return cls(
+            slots=[SlotOut.of(s) for s in effective.slots],
+            loaded_open_slots=[s.index for s in pristine.slots if s.is_open],
+            holidays=[HolidayOut.of(h) for h in effective.holidays],
+            holidays_stated=overrides.holidays is not None,
+            shortened_day=(
+                None
+                if overrides.shortened_day is None
+                else ShortenedDayOut.of(overrides.shortened_day)
+            ),
+            shifted_hours=[
+                ShiftedHourOut(slot=index, start_hour=start, end_hour=end)
+                for index, start, end in shifted
+            ],
+            open_slot_count=sum(1 for s in effective.slots if s.is_open),
+            edited_at=None if edit is None else edit.at,
+            edited_by=None if edit is None else edit.by,
+        )
+
+
+class SlotStateIn(ApiModel):
+    slot: int
+    is_open: bool
+
+
+class CalendarIn(ApiModel):
+    """A calendar stated wholesale — the same shape as FR-2's grid, and for the
+    same reason: a calendar is one statement about a year, so a slot left out
+    of `slots` keeps what the loaded instance says rather than what a previous
+    save happened to leave behind.
+
+    `holidays` and `shortenedDay` are `null` when nothing is being stated about
+    them, which is deliberately different from `[]` and from a zero shift.
+    """
+
+    slots: list[SlotStateIn] = []
+    holidays: list[HolidayOut] | None = None
+    shortened_day: ShortenedDayOut | None = None
+
+
+# ── Accounts — FR-11 ───────────────────────────────────────────────────
+
+
+class AccountIn(ApiModel):
+    """An account the administrator creates.
+
+    ⚠️ **The password appears here and nowhere else.** It reaches
+    `UserStore.create`, is hashed inside the store, and is never read back:
+    `domain.User` has no field for it, so no response, log line or assistant
+    payload can carry it by accident (`services/users.py`).
+    """
+
+    username: str
+    password: str
+    role: UserRole
+    teacher: str | None = None
+    group: str | None = None
+
+
+# ── The student's own timetable — SRS Table 2 ──────────────────────────
+
+
+class StudentTimetableOut(ApiModel):
+    """The published timetable of the signed-in student's group.
+
+    ⚠️ **`placements` is FILTERED on the server, and that is the point of this
+    schema rather than reusing `PublishedTimetableOut`.** SRS Table 2 grants the
+    student *"read the timetable of their group"*; a payload carrying all 218
+    placements with the client filtering for display would be granting them
+    every group's week and calling the difference presentation. Authorisation
+    that a browser performs is not authorisation.
+
+    A group's timetable **includes its ancestors' sessions**: a CM gathers the
+    whole promotion, so a subgroup shown only the sessions addressed to it
+    would display a week with holes its students do not have. The same relation
+    H12 uses in the solver, and the same one `features/timetable/model.ts`
+    applies for the other views.
+
+    ⚠️ **`publishedAt` is null when nothing has been published**, and the
+    absence is reported rather than being an error: an empty timetable and a
+    404 read very differently to someone whose department has simply not
+    published yet.
+    """
+
+    group: str
+    group_label: str
+    placements: list[PlacementOut]
+    published_at: datetime | None
+    published_by: str | None
+    run: str | None
+    candidate: str | None
