@@ -21,7 +21,9 @@ checks, diagnosis and candidates only the first time they appear.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import UTC, date, datetime
+from uuid import uuid4
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, sessionmaker
@@ -31,6 +33,7 @@ from optiedt.db.models import (
     AvailabilityRow,
     CalendarOverrideRow,
     CandidateRow,
+    DepartmentDatasetRow,
     DiagnosisRow,
     PlacementRow,
     PreAnalysisCheckRow,
@@ -59,6 +62,7 @@ from optiedt.domain.entities import (
 from optiedt.domain.enums import AvailabilityState, DeclarationSource, RunState, UserRole
 from optiedt.preanalysis.checks import CheckResult
 from optiedt.services.calendar import EMPTY, CalendarEdit, CalendarOverrides, ShortenedDay
+from optiedt.services.dataset import StoredDataset
 from optiedt.services.runs import RunRecord
 
 # ── domain <- rows ─────────────────────────────────────────────────────
@@ -489,6 +493,80 @@ def _to_user(row: UserRow) -> User:
 
 
 # ── The calendar an administrator stated — FR-9 ────────────────────────
+
+_DATASET_KEY = "current"
+"""One department per installation - CdC 3.2 puts several faculties at once
+outside the scope, so this table holds one row under a fixed key, exactly as
+`calendar_overrides` does."""
+
+
+class SqlDatasetStore:
+    """The imported department dataset in PostgreSQL - FR-1.
+
+    ⚠️ **`save` writes one row inside one transaction**, which is the whole of
+    what "atomic" has to mean here: the dataset is one document, so there is no
+    second write that could succeed while this one failed, and no window in
+    which half a dataset is readable. Compatibility and validation both run
+    *before* this is reached (`api/routers/dataset.py`), so a rejected import
+    never opens a transaction at all.
+
+    ⚠️ **It writes nothing but this row.** The A7 decision forbids an import
+    touching FR-2 declarations or FR-9 overrides, and that is what keeps
+    atomicity honest: each store owns its own session, so a write spanning two
+    of them could not be one transaction. See `services/dataset.py`.
+    """
+
+    def __init__(self, session_factory: sessionmaker[Session]) -> None:
+        self._sessions = session_factory
+
+    def revision(self) -> str | None:
+        with self._sessions() as session:
+            row = session.get(DepartmentDatasetRow, _DATASET_KEY)
+            return None if row is None else row.revision
+
+    def current(self) -> StoredDataset | None:
+        with self._sessions() as session:
+            row = session.get(DepartmentDatasetRow, _DATASET_KEY)
+            return None if row is None else _to_stored_dataset(row)
+
+    def save(self, files: Mapping[str, str], author: str) -> StoredDataset:
+        revision = uuid4().hex
+        imported_at = datetime.now(UTC)
+        with self._sessions() as session, session.begin():
+            row = session.get(DepartmentDatasetRow, _DATASET_KEY)
+            if row is None:
+                row = DepartmentDatasetRow(id=_DATASET_KEY)
+                session.add(row)
+            row.files = dict(files)
+            row.revision = revision
+            row.imported_at = imported_at
+            row.imported_by = author
+        return StoredDataset(
+            files=dict(files),
+            revision=revision,
+            imported_at=imported_at,
+            imported_by=author,
+        )
+
+    def reset(self) -> None:
+        """Delete the row rather than blanking it, for `SqlCalendarStore`'s
+        reason: a row of nulls and an absent row would both mean "nothing
+        imported", and two representations of one state is how a later reader
+        ends up asking which is real."""
+        with self._sessions() as session, session.begin():
+            session.execute(
+                delete(DepartmentDatasetRow).where(DepartmentDatasetRow.id == _DATASET_KEY)
+            )
+
+
+def _to_stored_dataset(row: DepartmentDatasetRow) -> StoredDataset:
+    return StoredDataset(
+        files=dict(row.files),
+        revision=row.revision,
+        imported_at=row.imported_at,
+        imported_by=row.imported_by,
+    )
+
 
 _CALENDAR_KEY = "current"
 """One installation, one calendar. See `CalendarOverrideRow`."""

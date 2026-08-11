@@ -9,6 +9,15 @@ students matching declared group sizes.
 **Those claims were re-measured on 2026-07-29 against the actual files, and every one matched.**
 The instance lives in `data/instance/` — 13 CSVs, 36 KB, committed.
 
+⚠️ **Since Phase 12 these files are the REFERENCE dataset, not the only one** (FR-1). A department can
+supply its own through the application, and what it supplies becomes the base every screen reads and
+every run solves; `DELETE /api/dataset` restores these files. **Two rules protect this directory and
+both matter here.** Nothing at runtime writes to `data/instance/` — if it did,
+`scripts/verify-instance.ps1` would be checking whatever the last import left rather than the committed
+reference. And **`constraint_catalogue.csv` is not importable at all**: it is the software's rule
+catalogue, not department data, so a supplied dataset is **eleven** files and not thirteen
+(`students.csv` is the other exclusion — it belongs to the examination model, increment 2).
+
 ⚠️ **One of them matched and was still wrong — read this before trusting a verification.** The "95%
 laboratory occupancy" figure was arithmetically correct and described an instance that **had no
 solution**: it counted periods, and a two-period session needs two *consecutive* periods inside one

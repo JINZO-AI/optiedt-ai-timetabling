@@ -221,6 +221,21 @@ loading the department data, while SRS Table 2 gives that right to the person in
 administrator to accounts and calendar. **SRS Table 2 is authoritative**; the two flow sentences are
 imprecise prose. Recorded as C-8 in `docs/open-questions.md`.
 
+✅ **C-8 stopped being theoretical in Phase 12 (2026-08-11), when FR-1 was built.**
+`api/routers/dataset.py` takes `PersonInChargeDep`, so **the administrator is refused** `/api/dataset` —
+verified against real tokens in `acceptance/test_fr01.py`. That is the first place C-8's ruling has a
+403 behind it rather than only a paragraph.
+
+⚠️ **An imported dataset replaces the BASE; it is not a fourth overlay.** `Programme`, `Promotion`,
+`Group`, `Teacher`, `Course`, `Session`, `Room`, `Slot`, `Availability`, `Holiday` and the calendar
+configuration all arrive from the eleven supplied files. **`ConstraintDefinition` does not, and cannot**
+— the catalogue is the software's own (ADR-003, invariant 7), and `instance/validation.validate_dataset`
+takes it as a parameter so no supplied file has a path to `Instance.constraints`. **`Student` does not
+either**: it belongs to the examination model, increment 2.
+
+⚠️ **A replacement is refused rather than allowed to orphan a declaration or a closure** — a **project
+decision**, C-22 and ADR-012, covering a case the specification never raises.
+
 **Head of department.** CdC Table 1 lists a fifth actor who "examines the teaching loads and approves
 the timetable". This actor appears in no other document and has no requirement, no right, no screen and
 no acceptance test. Treated as an **out-of-system stakeholder** until stated otherwise.

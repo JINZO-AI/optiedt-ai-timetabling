@@ -541,3 +541,67 @@ export interface RecommendedCandidate {
   score: number
   dominatedBy: string | null
 }
+
+/**
+ * FR-1 — the department data, and where it came from.
+ *
+ * `imported: false` means no dataset has been supplied and the reference files
+ * govern. ⚠️ Distinct from an imported dataset that happens to match them:
+ * collapsing the two would make the withdrawal control meaningless.
+ */
+export interface DatasetSummary {
+  imported: boolean
+  importedAt: string | null
+  importedBy: string | null
+  files: string[]
+  programmes: number
+  promotions: number
+  groups: number
+  teachers: number
+  courses: number
+  sessions: number
+  rooms: number
+  slots: number
+  holidays: number
+}
+
+/**
+ * One line the server refused — SRS §3.2 Table 4's "report of the rejected
+ * lines". `line` is the physical line number, header included; `null` means the
+ * fault is the file as a whole.
+ */
+export interface RejectedLine {
+  file: string
+  line: number | null
+  reason: string
+  field: string | null
+  value: string | null
+}
+
+/**
+ * One stored statement a replacement would orphan — the A7 project decision.
+ *
+ * ⚠️ **Not a rejected line, and the screen must not present it as one.** A
+ * rejected line is fixed by editing the file; an incompatibility is fixed by a
+ * person withdrawing a declaration or a closure. Showing them in one list would
+ * tell somebody to correct a file that is already correct.
+ */
+export interface Incompatibility {
+  overlay: string
+  subject: string
+  reason: string
+  remedy: string
+}
+
+export interface DatasetImportResult {
+  accepted: boolean
+  dataset: DatasetSummary
+  rejectedLines: RejectedLine[]
+  incompatibilities: Incompatibility[]
+  /**
+   * False when a line failed to parse, so references were not examined yet.
+   * Fixing the types can reveal a further round; the screen says so rather than
+   * letting a user infer that the list was complete.
+   */
+  referencesChecked: boolean
+}

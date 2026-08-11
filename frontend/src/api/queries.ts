@@ -9,13 +9,15 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { apiGet, apiSend } from '@/api/client'
+import { apiGet, apiSend, apiUpload } from '@/api/client'
 import type {
   Account,
   AssistantAnswer,
   Availability,
   AvailabilityState,
   CalendarData,
+  DatasetImportResult,
+  DatasetSummary,
   Decomposition,
   DominanceVerdict,
   Holiday,
@@ -350,5 +352,58 @@ export function useRecommendation(runId: string | null) {
     queryFn: () =>
       apiGet<RecommendedCandidate | null>(`/runs/${runId as string}/recommendation`),
     enabled: runId !== null,
+  })
+}
+
+/** The department data in force — FR-1, person in charge only. */
+export function useDataset(enabled: boolean) {
+  return useQuery({
+    queryKey: ['dataset'],
+    queryFn: () => apiGet<DatasetSummary>('/dataset'),
+    enabled,
+    retry: false,
+  })
+}
+
+/**
+ * Supply a department dataset — FR-1.
+ *
+ * ⚠️ **A refused import is a SUCCESS at this layer.** The endpoint answers 200
+ * with `accepted: false` and the report, so `onError` is for a network or
+ * authorisation failure only; treating a rejected line as a thrown error would
+ * lose the report that is the requirement's whole output.
+ *
+ * ⚠️ On success the INSTANCE and CALENDAR caches are invalidated, for the reason
+ * `useSaveCalendar` gives: `GET /instance` serves whatever dataset is in force
+ * and `useInstance` holds it with `staleTime: Infinity`, so an import that did
+ * not invalidate it would leave every other screen drawing the previous
+ * department's week.
+ */
+export function useImportDataset() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (files: File[]) => apiUpload<DatasetImportResult>('/dataset', files),
+    onSuccess: (result) => {
+      queryClient.setQueryData(['dataset'], result.dataset)
+      if (result.accepted) {
+        void queryClient.invalidateQueries({ queryKey: ['instance'] })
+        void queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      }
+    },
+  })
+}
+
+/** Withdraw the imported dataset; the reference files govern again — FR-1. */
+export function useWithdrawDataset() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => apiSend<DatasetImportResult>('DELETE', '/dataset'),
+    onSuccess: (result) => {
+      queryClient.setQueryData(['dataset'], result.dataset)
+      if (result.accepted) {
+        void queryClient.invalidateQueries({ queryKey: ['instance'] })
+        void queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      }
+    },
   })
 }

@@ -333,3 +333,41 @@ class AvailabilityRow(Base):
     state: Mapped[str] = mapped_column(String(16))
     semester: Mapped[int] = mapped_column(Integer)
     source: Mapped[str] = mapped_column(String(16))
+
+
+class DepartmentDatasetRow(Base):
+    """The department dataset that was imported — FR-1.
+
+    ⚠️ **One row, and the row is the whole dataset.** `id` is a fixed key
+    because an installation has one department; CdC §3.2 puts *"simultaneous
+    treatment of several faculties of the same university"* outside the scope,
+    so a table admitting several would model something the specification
+    excludes.
+
+    ⚠️ **`files` holds the supplied TEXTS, not a serialisation of the entities**,
+    and not one table per entity. Three reasons, in order of weight. The
+    instance is read *whole* at run assembly and never queried into, which is
+    the same test `RunRow.overrides` and `calendar_overrides` already passed —
+    eleven tables would add eleven joins to answer a question nobody asks.
+    Storing the text keeps **one** parse path, `instance/validation.py`, so a
+    stored dataset cannot drift from what was verified. And the file schema is
+    already what `docs/data-and-instance.md` calls the contract between the
+    generator and the application; a second shape for the same entities would
+    be a second thing to keep in step with the domain.
+
+    ⚠️ **`constraint_catalogue.csv` is not among the files and cannot be.**
+    `instance/validation.DEPARTMENT_FILES` names eleven, and the catalogue is
+    the software's own — see ADR-003 and invariant 7.
+
+    `revision` changes on every save. `api/deps.py` reads it on every request
+    and re-parses only when it has moved, which is what makes serving a dataset
+    the database no longer holds impossible rather than unlikely.
+    """
+
+    __tablename__ = "department_dataset"
+
+    id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    files: Mapped[dict[str, str]] = mapped_column(JSON)
+    revision: Mapped[str] = mapped_column(String(36))
+    imported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    imported_by: Mapped[str] = mapped_column(String(64))

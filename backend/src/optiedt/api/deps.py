@@ -30,13 +30,16 @@ from optiedt.domain.enums import UserRole
 from optiedt.domain.instance import Instance
 from optiedt.instance.loader import load_instance
 from optiedt.instance.loader import resolve_instance_path as loader_instance_path
+from optiedt.instance.validation import validate_dataset
 from optiedt.services.availability import AvailabilityStore, apply_declarations
 from optiedt.services.calendar import CalendarStore, apply_calendar
+from optiedt.services.dataset import DatasetStore
 from optiedt.services.publications import PublicationStore
 from optiedt.services.runs import RunStore
 from optiedt.services.stores import (
     build_availability_store,
     build_calendar_store,
+    build_dataset_store,
     build_publication_store,
     build_run_store,
     build_user_store,
@@ -65,13 +68,90 @@ def resolve_instance_path(settings: Settings) -> Path:
 
 @lru_cache(maxsize=1)
 def get_instance() -> Instance:
-    """The reference instance, loaded once.
+    """The **reference** instance — the 13 CSVs, loaded once.
 
     Deliberately NOT the instance a run solves — that one carries the teachers'
     declarations on top (`services.availability.apply_declarations`). Keeping
     the loaded instance pristine means a declaration can be withdrawn.
+
+    ⚠️ **Since FR-1 this is the FALLBACK, not necessarily the base.** When a
+    department dataset has been imported, `base_instance()` serves that instead
+    and this stays exactly what it always was: the files on disk, which nothing
+    at runtime writes to. Caching it is safe for that reason — the CSVs cannot
+    change under a running process, whereas an imported dataset can, which is
+    why `base_instance()` is not cached the same way.
     """
     return load_instance(resolve_instance_path(get_settings()))
+
+
+@lru_cache(maxsize=1)
+def get_dataset_store() -> DatasetStore:
+    """The imported department dataset — FR-1. Database-backed by default."""
+    return build_dataset_store(get_settings())
+
+
+_parsed_dataset: dict[str, Instance] = {}
+"""One entry, keyed by the store's revision. See `base_instance()`."""
+
+
+def base_instance() -> Instance:
+    """The department's data: the imported dataset, or the reference files.
+
+    ⚠️ **This cannot serve a dataset the database no longer holds, and the
+    mechanism is worth reading rather than trusting.** The store's `revision()`
+    is read on **every** call — a small, cheap read — and the parsed instance is
+    reused only while that token is unchanged. So the cache is not invalidated
+    by anyone remembering to invalidate it; it is keyed by a value that comes
+    back from the database each time. An import committed by another request,
+    or a withdrawal, is picked up on the next call with no cache-clearing step
+    anywhere.
+
+    ⚠️ **Re-parsing is bounded by exactly that.** The stored files are the texts
+    that were supplied, so the parse path is `instance/validation.py` — the same
+    one that accepted them, which is what stops a stored dataset from drifting
+    from what was verified. Parsing 36 KB on every request would be waste that
+    hides itself, and parsing it only when the revision moves is neither waste
+    nor a stale read.
+
+    ⚠️ **This calls `get_dataset_store()` directly rather than taking it as a
+    dependency**, exactly as `effective_instance` calls `get_calendar_store()`.
+    The reason is that `solve_instance` is handed to the executor as a plain
+    callable and runs outside any request, where `Depends` does not exist. The
+    consequence to know: overriding `get_dataset_store` through
+    `app.dependency_overrides` reaches the ROUTERS but not this function, so a
+    test that wants both to agree must clear the `lru_cache` instead — which is
+    what `tests/acceptance/conftest.py` does, and why the store is configured by
+    `OPTIEDT_PERSISTENCE` rather than injected.
+    """
+    store = get_dataset_store()
+    revision = store.revision()
+    if revision is None:
+        _parsed_dataset.clear()
+        return get_instance()
+
+    cached = _parsed_dataset.get(revision)
+    if cached is not None:
+        return cached
+
+    stored = store.current()
+    if stored is None:  # withdrawn between the two reads
+        _parsed_dataset.clear()
+        return get_instance()
+
+    result = validate_dataset(stored.files, get_instance().constraints)
+    if result.instance is None:
+        # Unreachable through the API: nothing is stored until it validates.
+        # Raised rather than silently falling back, because a process quietly
+        # serving the reference instance while the database holds a department's
+        # data is the one failure this whole mechanism exists to prevent.
+        raise RuntimeError(
+            "the stored department dataset no longer validates: "
+            + "; ".join(r.describe() for r in result.rejected[:5])
+        )
+
+    _parsed_dataset.clear()
+    _parsed_dataset[revision] = result.instance
+    return result.instance
 
 
 @lru_cache(maxsize=1)
@@ -99,18 +179,23 @@ def get_calendar_store() -> CalendarStore:
 
 
 def effective_instance() -> Instance:
-    """The loaded instance with the administrator's calendar applied (FR-9).
+    """The base instance with the administrator's calendar applied (FR-9).
 
-    ⚠️ **Not cached, and `get_instance()` is left pristine.** Layering rather
-    than editing is what lets a closed half-day be withdrawn — the same reason
-    FR-2's declarations are layered — and caching this would mean a calendar
-    saved through the interface took effect only after a restart.
+    ⚠️ **Not cached, and the base is left pristine.** Layering rather than
+    editing is what lets a closed half-day be withdrawn — the same reason FR-2's
+    declarations are layered — and caching this would mean a calendar saved
+    through the interface took effect only after a restart.
 
     This is what every screen reads, so a slot the administrator closed shows
     as closed on the availability grid and in every timetable view, and it is
     what the pre-analysis measures its occupancy against.
+
+    ⚠️ **`base_instance()`, not `get_instance()`, since FR-1.** An imported
+    dataset is the department's data; the reference CSVs are the fallback. The
+    layering order is unchanged and so is its guarantee — an import replaces the
+    *base*, and the calendar and the declarations still sit above it.
     """
-    return apply_calendar(get_instance(), get_calendar_store())
+    return apply_calendar(base_instance(), get_calendar_store())
 
 
 def solve_instance() -> Instance:
@@ -263,9 +348,16 @@ is reached only through the layering functions, which is what keeps a closure
 withdrawable.
 """
 
-PristineInstanceDep = Annotated[Instance, Depends(get_instance)]
-"""The 13 CSVs as loaded, before any calendar edit — for the administration
-screen, which must show what it is editing away from."""
+PristineInstanceDep = Annotated[Instance, Depends(base_instance)]
+"""The department's data before any calendar edit — for the administration
+screen, which must show what it is editing away from.
+
+⚠️ **The BASE, which is the imported dataset when there is one** (FR-1), and the
+13 CSVs otherwise. Resolving this to the reference files after an import would
+show an administrator a week their institution does not have, and would make
+`build_overrides` validate a closure against slots that are not in force."""
+
+DatasetStoreDep = Annotated[DatasetStore, Depends(get_dataset_store)]
 
 AvailabilityStoreDep = Annotated[AvailabilityStore, Depends(get_availability_store)]
 CalendarStoreDep = Annotated[CalendarStore, Depends(get_calendar_store)]

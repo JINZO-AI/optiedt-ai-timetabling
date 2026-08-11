@@ -127,6 +127,7 @@ React ──HTTPS/JSON/token──► FastAPI ──► PostgreSQL
 |---|---|---|
 | `domain/` | Entities, enums. **Pure** — no I/O, ORM or framework | — |
 | `core/` · `db/` · `api/` · `services/` | Config/security · ORM · routers+RBAC · use cases | `domain` |
+| `instance/` | Loads the 13 CSVs; **verifies a supplied department dataset (FR-1)** | `domain` |
 | `preanalysis/` | The five checks. Stage 1 of every run | `domain` |
 | `solver/` | Variables, constraints, objective, diagnosis | `domain` |
 | `analysis/` | Criteria, scoring, ranking, decomposition | `domain` |
@@ -233,9 +234,12 @@ Read the ADR before arguing with any of these.
 
 ## Open — do not silently decide
 
-**Two questions are open; `docs/open-questions.md` is the authority and `docs/dashboard.md` carries the
-current summary.** They are not listed here, so that there is exactly one place to update when one is
-resolved. What belongs here is the rule, not the list:
+**How many are open is NOT recorded here — `docs/open-questions.md` is the authority and
+`docs/dashboard.md` carries the current summary.** ⚠️ **This paragraph said "Two questions are open"
+until 2026-08-11 and was stale**, exactly as the SHA in the dashboard's repository row was stale five
+times, and for the same reason: a count cannot survive a resolution that does not touch the file
+recording it. The codes are not listed here either, so that there is exactly one place to update. What
+belongs here is the rule, not the list:
 
 > If your work touches an open question, **resolve it in `docs/open-questions.md` first, with the
 > reason, then implement.** If it is not yours to decide, say so and stop. An assumption made in code
@@ -244,7 +248,8 @@ resolved. What belongs here is the rule, not the list:
 
 **The resolved ones are NOT summarised here**, for the same reason the open ones are not: every code
 belongs to exactly one file, and a second copy is a second thing to update. `docs/open-questions.md`
-carries all twenty with their full reasoning; `docs/constraint-model.md` owns the modelling facts
+carries them all with their full reasoning — ⚠️ **and the number is deliberately not written here
+either**, for the reason above; it went from twenty to twenty-one when Phase 12 raised C-22; `docs/constraint-model.md` owns the modelling facts
 (C-6's four withdrawable rules, C-7's `y[s][t]` encoding), `docs/scoring-and-explanation.md` owns the
 scoring ones (C-5, C-14), and `docs/data-and-instance.md` owns C-13's two occupancy bounds.
 
@@ -340,6 +345,15 @@ on).
 reused.** Implement the `Criterion` Protocol, which requires `raw_value` *and* `bounds` together so a
 criterion cannot be half-defined. Add its default weight to the catalogue; profile weights are
 renormalised to sum to 1 before any score is computed.
+
+**Touch the department data.** ⚠️ **`data/instance/` is READ-ONLY at runtime and nothing may write to
+it** — `scripts/verify-instance.ps1` holds those files to figures the documentation states as facts, and
+an application that edited them would make that check meaningless. A supplied dataset is recorded in
+`department_dataset` and becomes the *base*, with FR-9's calendar and FR-2's declarations still layered
+above it (`docs/architecture.md`). Two rules that fail a review if broken: **`constraint_catalogue.csv`
+is never importable** (invariant 7 — an upload able to replace the catalogue could delete a hard rule),
+and **a replacement that would orphan a declaration or a closure is refused rather than allowed to
+delete one** (ADR-012, C-22).
 
 **Change a time limit.** It is a *deterministic* budget, not seconds (ADR-011). The wall-clock ceiling
 is a hang backstop, not the primary bound. The deterministic-to-wall-clock ratio is machine-dependent

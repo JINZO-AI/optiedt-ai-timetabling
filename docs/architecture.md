@@ -246,6 +246,7 @@ condition that would change the answer.
 | `optiedt.db` | SQLAlchemy models, session, repositories | `domain` |
 | `optiedt.api` | Routers, schemas, dependencies, RBAC | `domain`, `services` |
 | `optiedt.services` | Use cases: runs, comparison, publication | everything below |
+| `optiedt.instance` | Reads the 13 CSVs; verifies a supplied dataset (FR-1) | `domain` |
 | `optiedt.preanalysis` | The five checks | `domain` |
 | `optiedt.solver` | Variables, constraints, objective, diagnosis | `domain` |
 | `optiedt.analysis` | Criteria, scoring, ranking, decomposition, dominance | `domain` |
@@ -301,7 +302,9 @@ The 13 CSVs are read **once per process** and cached (`api/deps.get_instance`), 
 copy**. What a run solves is built by layering, in one place:
 
 ```
-get_instance()            the 13 CSVs, cached, pristine — never mutated
+base_instance()           the IMPORTED dataset if there is one,               FR-1
+      │                   otherwise get_instance() — the 13 CSVs   ← Phase 12
+      │                   ⚠️ NOT cached by a flag: keyed by the store's revision
       │
       ├─ apply_calendar()      the administrator's closures, holidays and         FR-9
       │                        shortened-day window                    ← Phase 11
@@ -310,6 +313,22 @@ get_instance()            the 13 CSVs, cached, pristine — never mutated
       └─ apply_declarations()  each declaring teacher's own week                  FR-2
                = solve_instance()       ── what every RUN solves
 ```
+
+⚠️ **FR-1 replaces the BASE; it is not a fourth overlay.** The two layers above it are statements
+*about* the department's data and can be withdrawn; an imported dataset **is** the data.
+`get_instance()` stays exactly what it was — the 13 CSVs, cached, never mutated — and is now the
+*fallback* rather than always the base, which is what lets `DELETE /api/dataset` restore it.
+
+⚠️ **Replacing the base can orphan the layers above it, and the application refuses rather than let it.**
+That is **ADR-012** (project decision, C-22): a replacement leaving an FR-2 declaration or an FR-9
+closure naming something absent is rejected, and no overlay is ever deleted. Neither overlay can be
+*created* orphaned — `routers/availability` 404s an unknown teacher, `build_overrides` refuses an
+unknown slot — so a base change was the only remaining way to make one.
+
+⚠️ **`base_instance()` cannot serve a dataset the database no longer holds, and the mechanism is worth
+reading rather than trusting.** The store's `revision()` is read on **every** call, and the parsed
+instance is reused only while that token is unchanged. The cache is therefore not invalidated by anyone
+remembering to invalidate it — it is keyed by a value that comes back from the database each time.
 
 ⚠️ **Layering rather than editing is what makes a change withdrawable**, and both layers were built for
 that reason: `services/availability.py` says an unmerged teacher grid can clear a generated row, and

@@ -123,3 +123,23 @@ export async function signIn(username: string, password: string): Promise<string
   storeToken(body.access_token)
   return body.access_token
 }
+
+/**
+ * Send a set of files — FR-1's only write path.
+ *
+ * ⚠️ **No `Content-Type` header is set, deliberately.** `fetch` derives the
+ * multipart boundary from the `FormData` body, and setting the header by hand
+ * omits it — which makes the server parse zero files and report every one of
+ * them missing, a failure that reads as a bad dataset rather than a bad request.
+ */
+export async function apiUpload<T>(path: string, files: File[]): Promise<T> {
+  const body = new FormData()
+  for (const file of files) body.append('files', file, file.name)
+  const response = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', ...authHeaders() },
+    body,
+  })
+  if (!response.ok) await parseError(response)
+  return (await response.json()) as T
+}

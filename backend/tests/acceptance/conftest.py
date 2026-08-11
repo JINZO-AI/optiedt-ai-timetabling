@@ -170,15 +170,25 @@ def wire_application(
         deps.get_instance,
         deps.get_availability_store,
         deps.get_calendar_store,
+        deps.get_dataset_store,
         deps.get_run_store,
         deps.get_executor,
     ):
         cached.cache_clear()
+    deps._parsed_dataset.clear()
     # ⚠️ `get_calendar_store` belongs in that list and its absence would be a
     # cross-test leak with teeth: the store is `lru_cache`d per process, so a
     # half-day closed by FR-9's acceptance test would still be closed for every
     # module that ran after it - and the symptom would be a *different* file
     # failing on a timetable with two fewer slots than its instance has.
+    #
+    # ⚠️ `get_dataset_store` (FR-1) is in the list for the same reason and with
+    # sharper teeth: a dataset imported by `test_fr01` would become the base
+    # instance for every module after it, so a *different* file would fail on a
+    # department it never supplied. `_parsed_dataset` is the revision-keyed parse
+    # of that store and is cleared with it - it is keyed by a revision the store
+    # hands out, so a fresh store with no revision can never read a stale entry,
+    # but clearing it keeps the two obviously in step.
 
     store = InMemoryRunStore()
     executor = RunExecutor(

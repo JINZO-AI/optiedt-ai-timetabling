@@ -2,12 +2,19 @@
 
 **This is the practical tracking view.** One question, one answer: *what phase are we in?*
 
-> **Phase 11 — Administrative surfaces. ✅ COMPLETE 2026-08-11.** Phases 1–11 are complete; **Phase 12
-> of 14 is next and has not begun**, and opening it is the project owner's call, not a session's.
+> **Phase 12 — Data management. ✅ COMPLETE 2026-08-11.** Phases 1–12 are complete; **the two remaining
+> phases, 13 and 14, are CONDITIONAL on remaining time** (PPM), and opening either is the project
+> owner's call, not a session's.
 >
-> ✅ **21 of 25 requirements are `✓`, and every open question is resolved.** Phase 10 took the count from
-> 10 to 15; the pre-Phase-11 audit added FR-17; Phase 11 added FR-9 and FR-11; and **closing C-9 on
-> 2026-08-11 added FR-6, FR-10 and FR-18**.
+> ✅ **22 of 25 requirements are `✓`, and every open question is resolved.** Phase 10 took the count from
+> 10 to 15; the pre-Phase-11 audit added FR-17; Phase 11 added FR-9 and FR-11; closing C-9 on
+> 2026-08-11 added FR-6, FR-10 and FR-18; and **Phase 12 added FR-1**.
+>
+> ⚠️ **FR-1's criterion was supervisor-written all along — SRS §3.2 Table 4 — and this repository had
+> recorded it as unspecified for four phases.** The arithmetic that revealed it was already on the page:
+> §3.2 covers 21 requirements and is absent for exactly C-9's four, so the twenty-first is FR-1. **A new
+> project decision, C-22 / ADR-012, covers only what the specification is silent about**: what a
+> *second* load does to declarations and closures already stored.
 >
 > ✅ **C-9 — the last open question — is CLOSED**, in two stages and both times by falsifying its own
 > premise. **SRS Table 36** gave FR-6 and FR-17 supervisor-written criteria nobody had looked for. Then
@@ -53,7 +60,7 @@ Reference instance: 218 sessions · 51 groups · 44 teachers · 20 rooms · 28 o
 | **9** | Outputs and distribution | ✅ COMPLETE | A timetable that can leave the screen — print and CSV, all four views | FR-10 *(software; ticked 2026-08-11 when C-9 closed)* | `004f38d` |
 | **10** | Requirement closure by test | ✅ COMPLETE | Five requirements closed on the supervisor's own wording; **10 ✓ → 15 ✓** | FR-3 · FR-4 · FR-7 · FR-14 · FR-16 → ✓ | `375c220` |
 | **11** | Administrative surfaces | ✅ COMPLETE | The screens whose mechanisms already existed, and the endpoints under them; **16 ✓ → 18 ✓**. Followed by **C-9's closure — 18 ✓ → 21 ✓** | FR-9 · FR-11 → ✓ · student view · then FR-6 · FR-10 · FR-18 → ✓ | *derive it: `git log --oneline`* |
-| **12** | Data management | 🔵 **NEXT — not started** | A second institution becomes possible | FR-1 | — |
+| **12** | Data management | ✅ COMPLETE | A department's data can be supplied, verified and recorded through the application; **21 ✓ → 22** | FR-1 → ✓ | *derive it: `git log --oneline`* |
 | **13** | Examination session | ⬜ CONDITIONAL | Exam timetabling (*was increment 2*) | FR-20 | — |
 | **14** | Weight adjustment | ⬜ CONDITIONAL | Learn weights from recorded comparisons (*was increment 2*) | FR-21 | — |
 
@@ -74,7 +81,7 @@ requirement to `✓`, which is not always the phase that built it.
 
 | FR | Requirement | Status | Built in | Closes in | Held by |
 |---|---|---|---|---|---|
-| FR-1 | Load and manage department data | — | — | **12** | not started |
+| FR-1 | Load and manage the data of the department | ✅ | **12** | **12** | — ⚠️ *replacement rule is a project decision (C-22)* |
 | FR-2 | Teacher declares availability | ✅ | 4 | **8** | — |
 | FR-3 | Generate respecting H1–H12 | ✅ | 2 | **10** | — |
 | FR-4 | Improve quality within a time limit | ✅ | 3 | **10** | — |
@@ -100,17 +107,16 @@ requirement to `✓`, which is not always the phase that built it.
 | FR-24 | Answer a question in ordinary language | ✅ | 7 | **8** | — |
 | FR-25 | Produce a readable report | ✅ | 7 | **7** | — |
 
-**Totals: 21 ✅ · 1 WIP · 3 not started = 25.** ⚠️ **The single `WIP` is FR-8, and it is a decision
+**Totals: 22 ✅ · 1 WIP · 2 not started = 25.** ⚠️ **The single `WIP` is FR-8, and it is a decision
 rather than an omission**: promoting it would need its criterion narrowed to match what the software
 cannot do — on the C-13 contiguity shape CP-SAT proves no infeasibility — and this project refuses that
-direction. The three not started are FR-1 (Phase 12) and FR-20/FR-21 (conditional Phases 13–14).
+direction. **The two not started are FR-20 and FR-21, both in the conditional Phases 13–14** — so
+**every non-conditional requirement is now either `✓` or held by a wording this project will not
+narrow.**
 
-⚠️ **FR-6 is the only requirement in the project waiting on a test, and it is a small one.** Phase 10
-emptied that group; the pre-Phase-11 audit put one requirement back into it by *unblocking* FR-6 rather
-than by leaving it under C-9. `DefaultRanker.rank()` implements SRS §6.7's two sentences and
-`GET /runs/{id}/candidates` returns that order — covered by `integration/test_api_runs` and
-`unit/test_portfolio`, but **not** by an acceptance file. **It is unscheduled**: assigning it to a phase
-is the project owner's call.
+✅ ~~**FR-6 is the only requirement in the project waiting on a test.**~~ **Superseded: `test_fr06`
+was written when C-9 closed on 2026-08-11 (8 tests) and FR-6 is `✓`.** The paragraph is kept because it
+records what was believed on the day. **No requirement is now waiting on a test.**
 
 ✅ **FR-17's row was the one open disagreement between this table and
 [`docs/open-questions.md`](open-questions.md), and it is settled.** This table called FR-17 C-9-blocked
@@ -305,16 +311,17 @@ mutation there would have cost a 150-second solve each.
 
 ---
 
-## 4 · Current phase — Phase 12, Data management
+## 4 · Current phase — none open; Phases 13–14 remain conditional
 
-**Status: 🔵 NEXT — not started, and opening it needs the project owner's approval.** Phase 11 closed
-on 2026-08-11.
+**Status: Phase 12 closed on 2026-08-11.** Every non-conditional phase is complete. **Opening
+increment 2 — Phases 13 and 14 — is the project owner's call**, and PPM makes both conditional on
+remaining time.
 
-### Why this phase is next
-**FR-1 is the largest genuine gap and the only requirement left with no software at all** outside the
-two conditional phases. The only way into the application is 13 hand-authored CSVs, so no second
-institution can use it. Phases 10 and 11 were the right order before it: the model and the surfaces
-around it are now stable, so an import path is being built on something that has stopped moving.
+### Why Phase 12 was last, and what it changed
+**FR-1 was the largest genuine gap and the only requirement left with no software at all** outside the
+two conditional phases. The only way into the application was 13 hand-authored CSVs, so no second
+institution could use it. Phases 10 and 11 were the right order before it: the model and the surfaces
+around it had stopped moving, so the import path was built on something stable.
 
 ### What no phase can do
 ✅ **Nothing. C-9 — the last thing no phase could do — was closed on 2026-08-11**, and the paragraph
@@ -399,17 +406,71 @@ mutations and 6 frontend — and **two mutations survived on the first pass, bot
 test rather than defective code**: a holiday-withdrawal test with nothing to withdraw, and a
 "never mutated" test comparing a dict to itself. Both were repaired and the mutations then failed them.
 
-### Phase 12 — Data management ⏳
-**Purpose.** **The largest genuine gap.** FR-1 is `—`; the only way in is 13 hand-authored CSVs. Without
-it there is no second institution.
-**Requirements:** FR-1.
-**Dependencies:** should follow Phases 10–11 so the model is stable before an import path is built on it.
-**Tasks.** Import, per-entity management, validation surfaced *before* solving rather than inside a run.
-⚠️ **Scope discipline:** the solver decides `(slot, room)` only — teacher assignment, session
-materialisation and group membership are **inputs**. An import path must not grow into a student
-information system.
-**COMPLETE when** a second institution's data can be loaded, validated and solved without editing files
-by hand.
+### Phase 12 — Data management ✅ **COMPLETE 2026-08-11**
+
+**Mission, as it was written:** *"a second institution's data can be loaded, validated and solved
+without editing files by hand."* **Delivered, and verified live**: a department dataset supplied as
+eleven CSVs through the interface was recorded, served to every screen, and **solved by the real CP-SAT
+engine — 212 placements over 43 teachers, COMPLETED in 212 s** on data that had never touched
+`data/instance/`.
+
+⚠️ **The scope warning held, and one line of it was the phase's main decision.** The brief said *"an
+import path must not grow into a student information system"*. **SRS §4.1 settles it**: it enumerates
+nine user interfaces, names the administration screen's contents to the item — accounts, holidays,
+closed half-days, shortened-day period — and names **no** data-management form. So FR-1's *"files or
+forms"* is a disjunction, the file half is what was missing, and no per-entity CRUD was built.
+
+#### What was delivered
+
+| | Delivered | Where |
+|---|---|---|
+| **Verification of types and references** | Every rejected line reported with its file, physical line number, column and value — in one pass, never one per attempt | `instance/validation.py` |
+| **Recording** | `department_dataset`, one row holding the supplied **file texts**, one migration, `SqlDatasetStore` under the same store contract as the other five | `db/models.py`, `db/repositories.py` |
+| **The surface** | `POST`/`GET`/`DELETE /api/dataset`, **person in charge only** (SRS Table 2, C-8), and a screen showing what is in force, what was refused and why | `api/routers/dataset.py`, `features/dataset/` |
+| **Base resolution** | `base_instance()` — the imported dataset, else the reference files — beneath FR-9's and FR-2's layers, keyed by the store's revision so a stale read is not possible | `api/deps.py` |
+
+#### The decisions taken, and by whom
+
+- ⚠️ **The replacement rule is a PROJECT DECISION, and it is the only part of FR-1 that is** — **C-22**
+  and **ADR-012**. The specification says how a dataset is loaded and is silent on what a *second* load
+  does to the declarations and closures already stored. A replacement that would orphan either is
+  refused; nothing is ever silently deleted. **The rest of FR-1 rests on the supervisor's own §3.2
+  Table 4.**
+- **`constraint_catalogue.csv` is refused, not ignored** — invariant 7. It is excluded by construction:
+  the catalogue reaches `Instance.constraints` as a *parameter from the application*, so no supplied
+  file has a path to it.
+- **The dataset is stored as file texts, not as a serialisation of the entities** — one parse path, so
+  a stored dataset cannot drift from what was verified, and eleven tables are not added to answer a
+  question nobody asks.
+
+#### ⚠️ Two limitations, recorded rather than absorbed
+
+1. **A slot whose numeric index survives but whose meaning changes is undetectable.** Detecting it needs
+   a slot identity the model does not have.
+2. **No concurrency protection.** A declaration saved between the compatibility check and the write is
+   not seen by the check. The repository has no locking anywhere and the specification asks for none.
+
+#### What the phase did not touch
+
+The solver, the analysis layer, the objective and the scoring; the eleven `import-linter` contracts
+(**11/11 kept throughout**); `data/instance/` — **nothing writes to the reference files**, which is what
+keeps `verify-instance.ps1` meaningful; the constraint catalogue; FR-8, which stays `WIP` by decision.
+
+#### Evidence
+
+`acceptance/test_fr01.py` (34) · `unit/test_dataset_validation.py` (45) · `unit/test_dataset.py` (16) ·
+**12** store-contract tests over **both** stores · `DatasetPanel.test.tsx` (20). **107 backend tests and
+20 frontend** — the collected backend total moved 647 → **754**, the frontend 142 → **162**, and the
+acceptance suite 197 → **231 over 22 requirements**.
+
+⚠️ **`test_fr01.py` was written WITHOUT `pytestmark = pytest.mark.acceptance` and was silently excluded
+from `run-acceptance.ps1` for its first full run.** The script selects by the **marker**, not by the
+directory, so the file sat in `tests/acceptance/`, passed under `run-checks.ps1`, and was absent from
+the one report that answers *"is FR-1 verified against its criterion?"* — 197 selected where the
+directory held 231. Caught by comparing the two counts rather than by any test failing, which is the
+point: **a missing marker cannot fail.** The marker is now on the file with that reasoning beside it. ⚠️ **39 mutations run, 39 detected — but two survived the first pass and both revealed a
+real gap**: a compatibility guard that could never fire (removed, not kept as decoration) and a missing
+test that a *second* import replaces the first, which let a cache ignoring the store's revision pass.
 
 ### Phase 13 — Examination session ⬜ CONDITIONAL
 **Purpose.** Exam timetabling. **This is what the specification calls increment 2**, budgeted 4 days.
@@ -450,10 +511,13 @@ met.** ADR-010 commits the assistant to increment 1 and it is built. Phases 1–
 coverage table.
 
 ### 🔵 Optional — improves the product, not required by the gate
-~~Phase 11 (administrative surfaces)~~ ✅ **DELIVERED 2026-08-11**, and unlike Phase 9 it moved the
-count: FR-9 and FR-11 are `✓`. · Phase 12 (FR-1 data management) · the six unscheduled usability
-findings in `status.md` · **the shortened-day shift in the timetable views** (Phase 11's recorded
-limitation).
+~~Phase 11 (administrative surfaces)~~ ✅ **DELIVERED 2026-08-11** — FR-9 and FR-11 are `✓`. ·
+~~Phase 12 (FR-1 data management)~~ ✅ **DELIVERED 2026-08-11** — FR-1 is `✓`. · the six unscheduled
+usability findings in `status.md` · **the shortened-day shift in the timetable views** (Phase 11's
+recorded limitation).
+
+**Nothing remains on this list either.** What is left is the two conditional phases and two recorded
+limitations, none of which the acceptance gate asks for.
 
 ### ~~🔴 Supervisor-dependent~~ — ✅ **nothing remains here**
 ~~**C-9, now two requirements.**~~ **RESOLVED 2026-08-11.** It listed four until 2026-08-10; FR-6 and
@@ -477,31 +541,38 @@ a solver-validation harness that does not fit the project.
 
 | Measure | Value | Note |
 |---|---|---|
-| **Phases complete** | **11 of 14** (79 %) | 11 of 12 (92 %) excluding the two conditional phases |
+| **Phases complete** | **12 of 14** (86 %) | **12 of 12 (100 %)** excluding the two conditional phases |
 | **Acceptance criteria** | **9 of 9 (100 %)** | The specification's actual gate |
-| **Requirements `✓`** | **21 of 25 (84 %)** | **10 → 15 in Phase 10, → 16 at the pre-Phase-11 audit, → 18 in Phase 11, → 21 when C-9 closed** |
-| **Open questions** | **20 of 20 resolved** | ✅ **None open.** ⚠️ Six were project decisions from repository evidence, not supervisor answers |
-| **Tests** | **647 backend + 142 frontend** | ⚠️ **Derive these**: `uv run pytest --collect-only -q` and `npm run test` |
+| **Requirements `✓`** | **22 of 25 (88 %)** | **10 → 15 in Phase 10, → 16 at the pre-Phase-11 audit, → 18 in Phase 11, → 21 when C-9 closed, → 22 in Phase 12** |
+| **Open questions** | **21 of 21 resolved** | ✅ **None open.** ⚠️ Several were project decisions from repository evidence rather than supervisor answers — `docs/open-questions.md` is the authority on which. **C-22 is the newest, and the only one answering a question the specification never raises** |
+| **Tests** | **754 backend + 162 frontend** | ⚠️ **Derive these**: `uv run pytest --collect-only -q` and `npm run test` |
 | **Mandatory work remaining** | **None** | By the nine-criteria gate |
 
-⚠️ **Why 84 % still understates it.** Of the 4 requirements not `✓`, **1 has working software** —
-FR-8, held by a statement this project deliberately refuses to narrow — and 3 are not started (FR-1 in
-Phase 12, FR-20/FR-21 conditional). ⚠️ **Nothing is held by a missing acceptance standard any more**:
-C-9 closed on 2026-08-11, and FR-6, FR-10 and FR-18 are `✓`.
+⚠️ **Why 88 % still understates it.** Of the 3 requirements not `✓`, **1 has working software** —
+FR-8, held by a statement this project deliberately refuses to narrow — and **the other 2 are FR-20 and
+FR-21, both conditional**. ⚠️ **Nothing is held by a missing acceptance standard any more**: C-9 closed
+on 2026-08-11, and FR-6, FR-10 and FR-18 are `✓`. **Every requirement the project committed to
+delivering is delivered.**
 
 ⚠️ **Phase 9 remains the clearest illustration of the gap.** It delivered a whole requirement's
 software and moved the `✓` count by **zero**. Anyone quoting a percentage should say what it measures.
 
 **If a single figure is wanted, use this one and say how it is computed:**
 
-> **~95 % of the project as scoped.** = Phases 1–11 complete (11/12 non-conditional phases = 92 %),
-> weighted by the fact that the **acceptance gate is 100 % met** and the one remaining non-conditional
-> phase — FR-1's data management — is a capability the delivered product does not need to be
-> demonstrated. Phases 13–14 are excluded as conditional by PPM.
+> **100 % of the project as scoped.** = **all 12 non-conditional phases complete**, the **acceptance
+> gate 100 % met**, and 22 of 25 requirements `✓` with the only non-conditional exception (FR-8) held by
+> a wording this project deliberately refuses to narrow rather than by missing software. Phases 13–14
+> are excluded as conditional by PPM.
+>
+> ⚠️ **"100 % as scoped" is not "nothing remains".** Two recorded limitations stand — the shortened-day
+> shift in the timetable views, and FR-8's statement — plus six usability findings. None is required by
+> the gate; all are the project owner's call.
 
-**Realistic remaining effort:** Phase 12 ≈ 3–5 days · Phases 13–14 ≈ 7 days if undertaken.
-*(Phase 10 was estimated at ≈ 1 day and took one session; **Phase 11 was estimated at ≈ 2 days and took
-one session**, the estimate having correctly warned that it was not frontend-only.)*
+**Realistic remaining effort:** Phases 13–14 ≈ 7 days if undertaken; nothing otherwise.
+*(Phase 10 was estimated at ≈ 1 day and took one session; Phase 11 at ≈ 2 days and took one session;
+**Phase 12 was estimated at ≈ 3–5 days and took one session** — the estimate was the least accurate of
+the three, and the reason is worth keeping: the investigation that preceded it found FR-1's criterion
+already written in SRS Table 4, so no acceptance standard had to be invented.)*
 
 ---
 

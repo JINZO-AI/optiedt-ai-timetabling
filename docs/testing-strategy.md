@@ -181,10 +181,10 @@ around — read this before adding or moving a row:
 | Source | What it gives | Which requirements it covers |
 |---|---|---|
 | **SRS §8.6, Table 35 — "Acceptance tests"** | A test and an expected result, in the supervisor's own words | **13 rows over 14 requirements** — FR-2, 3, 5, 8, 9, 11, 12, 13, 15, 19, 23, 24, and one row shared by FR-22 and FR-25. **The upper table below is a transcription of it** |
-| **SRS §3.2 — "Detailed specification"** | An **input / processing / output** row per requirement | **21 requirements**, Tables 4–24. Absent for exactly FR-6, FR-10, FR-17 and FR-18 — that absence **is C-9** |
+| **SRS §3.2 — "Detailed specification"** | An **input / processing / output** row per requirement | **21 requirements**, Tables 4–24. Absent for exactly FR-6, FR-10, FR-17 and FR-18 — that absence **is C-9**. ⚠️ **Table 4 is FR-1's**, and this project overlooked it until Phase 12: the arithmetic here (25 − 4 = 21) always implied FR-1 had a row, and nobody drew the inference |
 
-The two are not nested. **FR-4, FR-7, FR-14 and FR-16 have a §3.2 row and no Table 35 row**, which is
-the opposite shape from C-9's four and needs the opposite treatment: there *is* a promise written by
+The two are not nested. **FR-1, FR-4, FR-7, FR-14 and FR-16 have a §3.2 row and no Table 35 row**,
+which is the opposite shape from C-9's four and needs the opposite treatment: there *is* a promise written by
 the supervisor to quote, so an acceptance file can open with it and the requirement can be verified
 against something it did not write itself. Those four are the **lower** table.
 
@@ -216,10 +216,32 @@ promise. Transcribed here **verbatim** in Phase 10, so no session ever needs the
 
 | FR | SRS table | Input | Processing | Output | State |
 |---|---|---|---|---|---|
+| FR-1 | Table 4 | Files or forms validated by the server | Verification of the types and of the references, then recording | Entities recorded and report of the rejected lines | ✅ `test_fr01` — 34 tests, none `solver`-marked. See the note below |
 | FR-4 | Table 7 | Weights of the criteria and time limit | Minimisation of the weighted penalty within the limit | Best solution found when the limit is reached | ✅ `test_fr04` — 7 tests, **1 `solver`-marked** |
 | FR-7 | Table 9 | Published timetable and chosen filter | Selection of the sessions concerning the resource | Weekly grid of the resource | ✅ `test_fr07` + `model.test.ts` + `TimetableGrid.test.tsx` — both halves, see below |
 | FR-14 | Table 15 | Two candidates of the same run | Reading of the sub-scores recorded for each | Table of the criteria with the two values and their difference | ✅ `test_fr14` — 8 tests |
 | FR-16 | Table 17 | Ordered candidates of a run | Selection of the first, then verification of dominance | Candidate recommended and statement of the rule applied | ✅ `test_fr16` — 6 tests |
+
+⚠️ **A file in `tests/acceptance/` is NOT in the acceptance suite unless it carries the marker.**
+`scripts/run-acceptance.ps1` runs `pytest -m acceptance`, so a file without
+`pytestmark = pytest.mark.acceptance` passes under `run-checks.ps1` and is absent from the report that
+answers *"is this requirement verified against its criterion?"*. **`test_fr01.py` was written without it
+and was excluded from its first full run** — 197 tests selected where the directory held 231. Nothing
+failed; the two counts simply disagreed. **Check the collected count against the directory after adding
+an acceptance file**, because a missing marker cannot fail a test.
+
+⚠️ **FR-1's row was found in Phase 12, four phases after it could have been.**
+`docs/requirements-traceability.md` had recorded FR-1 as "absent from Table 35 — not yet relevant" and
+stopped; the requirement was carried as unspecified while a supervisor-written promise sat in Table 4.
+**Before calling a requirement unspecified, check §3.2 and Table 36 — this project has now been caught
+by that twice**, once by C-9 (which never opened Table 36) and once here.
+
+⚠️ **FR-1's acceptance file carries a second criterion that is NOT the supervisor's, and says so at its
+head.** The §3.2 row above governs loading; it says nothing about what a *second* load does to the FR-2
+declarations and FR-9 closures already stored. That silence was settled as a **project decision** —
+**C-22** and **ADR-012** — and the tests verifying it are marked as verifying a project decision, so a
+reader can tell the two apart inside one file. Nothing was attributed to the supervisor that the
+supervisor did not write.
 
 **Verified against SRS §6.7 and §8.4** — located through **SRS Table 36**, which names the section that
 specifies each requirement. Transcribed **verbatim** on 2026-08-10:

@@ -56,6 +56,7 @@ from optiedt.api.routers import (
     availability,
     calendar,
     candidates,
+    dataset,
     instance,
     publications,
     runs,
@@ -115,6 +116,10 @@ _api.include_router(publications.router)
 _api.include_router(calendar.router)
 _api.include_router(accounts.router)
 _api.include_router(student.router)
+# FR-1 — the person in charge loads the department data. SRS Table 2 gives
+# that actor "read and write on all the data"; C-8 settled that Table 2 wins
+# where the flow prose names the administrator instead.
+_api.include_router(dataset.router)
 # ⚠️ Registered unconditionally, even though the service is off by default.
 # Gating the routes on `assistant_enabled` would make the interface 404 rather
 # than fall back, and the fallback IS the specified behaviour: only text

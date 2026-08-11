@@ -20,10 +20,17 @@ accepted one; the record of what was believed at the time is the point.
 | [009](ADR-009-instance-derived-bounds.md) | Normalisation bounds derived from the instance | Accepted |
 | [010](ADR-010-assistant-in-increment-1.md) | The assistant is committed to increment 1 | Accepted |
 | [011](ADR-011-deterministic-time-limit.md) | Solve under `max_deterministic_time`, not wall clock | Accepted · **amended 2026-07-30** |
+| [012](ADR-012-dataset-replacement-refuses-to-orphan-overlays.md) | A dataset replacement refuses rather than orphan an FR-2 declaration or an FR-9 closure | Accepted |
 
 ADRs 001–008 record decisions taken during the specification phase; their reasoning is drawn from the
-three documents in `docs/specifications/`. ADRs 009–011 record decisions taken when those documents
+three documents in `docs/specifications/`. ADRs 009–012 record decisions taken when those documents
 were found to contradict each other or to leave something undefined — see `docs/open-questions.md`.
+
+⚠️ **ADR-012 answers a question the specification does not raise at all**, which makes it a different
+kind of entry from the eleven before it: those resolve an ambiguity in what the supervisor wrote, and
+this one fills a silence. FR-1 is supervisor-written; *what happens on the second load* is not written
+anywhere. It is labelled a **project decision** wherever it is cited, and C-22 in
+`docs/open-questions.md` carries the same reasoning with its reversal condition.
 
 **ADR-011 is the only one amended so far**, and the distinction matters: its decision was never
 reversed. Measurement showed it was *incomplete* — it named a mechanism (deterministic time) that bounds

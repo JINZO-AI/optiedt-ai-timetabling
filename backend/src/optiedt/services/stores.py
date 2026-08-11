@@ -17,6 +17,7 @@ from __future__ import annotations
 from optiedt.core.config import Settings
 from optiedt.services.availability import AvailabilityStore, InMemoryAvailabilityStore
 from optiedt.services.calendar import CalendarStore, InMemoryCalendarStore
+from optiedt.services.dataset import DatasetStore, InMemoryDatasetStore
 from optiedt.services.publications import InMemoryPublicationStore, PublicationStore
 from optiedt.services.runs import InMemoryRunStore, RunStore
 from optiedt.services.users import InMemoryUserStore, UserStore
@@ -61,6 +62,18 @@ def build_calendar_store(settings: Settings) -> CalendarStore:
     return _sql_calendar_store(settings)
 
 
+def build_dataset_store(settings: Settings) -> DatasetStore:
+    """The imported department dataset — FR-1.
+
+    ⚠️ `memory` here means an imported dataset is forgotten on restart and the
+    reference instance governs again. Same trade as every other store, and the
+    same reason: the choice is configuration, never detection.
+    """
+    if settings.persistence == MEMORY:
+        return InMemoryDatasetStore()
+    return _sql_dataset_store(settings)
+
+
 # Imported inside the functions, not at module level: `optiedt.db` pulls in
 # SQLAlchemy and the whole mapper registry, and a process configured for
 # `memory` has no reason to pay for it - nor to fail at import time if the
@@ -100,3 +113,10 @@ def _sql_calendar_store(settings: Settings) -> CalendarStore:
     from optiedt.db.session import get_session_factory
 
     return SqlCalendarStore(get_session_factory(settings.database_url))
+
+
+def _sql_dataset_store(settings: Settings) -> DatasetStore:
+    from optiedt.db.repositories import SqlDatasetStore
+    from optiedt.db.session import get_session_factory
+
+    return SqlDatasetStore(get_session_factory(settings.database_url))

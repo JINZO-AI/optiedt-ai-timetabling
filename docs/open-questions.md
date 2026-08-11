@@ -17,8 +17,14 @@ weeks will disagree in places; the failure mode is not that they disagree, it is
 
 ## Index — what is actually still open
 
-✅ **NONE. All twenty are resolved**, the last of them — **C-9** — on 2026-08-11. Everything on this
-page is kept for its reasoning.
+✅ **NONE. All twenty-one are resolved**, the last of them — **C-22** — on 2026-08-11. Everything on
+this page is kept for its reasoning.
+
+⚠️ **C-22 is a different kind of entry from every one before it, and the difference matters.** The other
+twenty record an ambiguity or a silence in what the supervisor *did* write about a requirement. C-22
+records a question the specification **never raises**: FR-1 says how data is loaded and says nothing
+about what a *second* load does to the declarations and closures already stored against the first. It
+was raised by Phase 12 and settled the same day as a project decision — see **ADR-012**.
 
 ⚠️ **"Resolved" is not "answered by the supervisor", and the difference is recorded on every entry that
 needs it.** Four were settled as **project decisions from repository evidence** because supervisor
@@ -36,18 +42,21 @@ occupancy figure was defined nowhere; it was defined in **C-4, on this page**, u
 | # | Was open | Blocks | Owner |
 |---|---|---|---|
 | ~~**C-9**~~ | ~~FR-6, FR-10, FR-17, FR-18 have no detailed specification~~ — **RESOLVED 2026-08-11.** Narrowed to two on 2026-08-10 when SRS Table 36 was finally read, then closed when **FR-18's figure was found already defined in C-4** (`utilisation(r,k)`) rather than missing. ⚠️ **A Table 35 row is still absent for FR-10 and FR-18 and none was invented** — both criteria are labelled *project decision* | ~~The `✓` of FR-10 and FR-18~~ — unblocked | ~~Technical lead · supervisor~~ |
+| ~~**C-22**~~ | ~~What a dataset replacement does to the FR-2 declarations and FR-9 closures already stored~~ — **RESOLVED 2026-08-11, project decision (ADR-012): it is refused rather than allowed to orphan them.** ⚠️ **Raised by Phase 12 and absent from all three specification documents.** Investigation established that an orphaned statement fails *nowhere* today — the solver reads `.get(teacher, frozenset())`, the pre-analysis iterates the new teachers, and `apply_calendar` discards an unknown slot — so it stops meaning anything in silence | ~~The `✓` of FR-1~~ — unblocked | ~~Technical lead~~ |
 | ~~**C-15**~~ | ~~The objective weights raw violation counts of incomparable scale~~ — **RESOLVED 2026-08-07 on measurement.** The diagnosis was wrong: the objective formulation is sound and is unchanged. `teacher-favouring` now raises **S3 and S4** rather than S3 and S5, because S5 is an admitted proxy (C-12) and the most expensive criterion to optimise. A profile's promise is reworded to its **headline** criterion, the only reading the arithmetic can deliver | ~~FR-13~~ — unblocked | ~~Technical lead~~ |
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
 **C-17, C-18** (2026-08-04) · **C-5, C-14** (2026-08-05, project-owner decision) ·
 **C-19, C-20, C-21** (2026-08-06, project-owner decision, before any Phase 7 code) ·
 **C-8, C-11** · **C-4, C-12** · **C-16** (2026-07-30, implemented) · **C-15** (2026-08-07, on
-measurement). The sections below keep their full reasoning; headings say which is which.
+measurement) · **C-22** (2026-08-11, project decision, ADR-012). The sections below keep their full
+reasoning; headings say which is which.
 
-**Nineteen resolved plus one open is twenty, and the codes run C-1 to C-21 — there is no C-10, and that
-is not a lost question.** The number was never assigned. Recorded here for the same reason the retired
+**Twenty-one resolved and none open, and the codes run C-1 to C-22 — there is no C-10, and that is not
+a lost question.** The number was never assigned. Recorded here for the same reason the retired
 soft-criterion codes S1/S8/S9 are recorded in the errata: a gap in a sequence invites someone to go
-looking for what fell through it.
+looking for what fell through it. ⚠️ **C-22 was added on 2026-08-11 by Phase 12**, so a reader who
+remembers "twenty questions" is remembering the count before FR-1 was built.
 
 ⚠️ C-4 and C-12 **were** one bug waiting to happen, before they were resolved together on 2026-07-30:
 had S5 measured identically zero, the teacher-favouring profile would have differed from the others by
@@ -1509,6 +1518,91 @@ point from the other side, FR-25 being *Expected* where FR-22/23/24 are *Necessa
 
 Written here so that if Phase 7 runs late the reduction is applied as the decision it already is, rather
 than re-argued under pressure — which is the whole reason the order was decided in advance.
+
+---
+
+### C-22 — What a dataset replacement does to the declarations and closures already stored · **RESOLVED 2026-08-11 → it is refused rather than allowed to orphan them**
+
+> **Project decision — determined from repository evidence and engineering research because supervisor
+> clarification was unavailable.** Full reasoning, alternatives and the reversal condition:
+> [`ADR-012`](decisions/ADR-012-dataset-replacement-refuses-to-orphan-overlays.md).
+
+⚠️ **Raised by Phase 12, and unlike every other question on this page it is not an ambiguity in the
+specification — it is a silence.** FR-1 has a supervisor-written §3.2 row (Table 4) saying how a
+dataset is loaded: *files or forms validated by the server* → *verification of the types and of the
+references, then recording* → *entities recorded and report of the rejected lines*. **None of the three
+documents says anything about the second load.** Two other requirements store statements *about* the
+department's data and layer them over it at run assembly:
+
+- **FR-2** — a teacher's availability declaration, keyed by teacher and slot index.
+- **FR-9** — the administrator's calendar, keyed by slot index.
+
+Replacing the base can leave either naming something that no longer exists.
+
+**What made this urgent rather than theoretical: today nothing fails, anywhere.** The investigation
+traced every consumer:
+
+| Where an orphan could surface | What actually happens |
+|---|---|
+| The import | No import path existed before Phase 12 |
+| `apply_declarations` | Appends the store's rows verbatim; the orphan lands in `Instance.availability` |
+| `apply_calendar` | Iterates the **new** instance's slots and consults the stated map only for slots it finds — an orphaned closure is discarded **without trace** |
+| `solver/variables.py::unavailable_by_teacher` | Builds a map, read with `.get(session.teacher, frozenset())`. A departed teacher's entry is never looked up |
+| `preanalysis` `TEACHER_FREE_SLOTS` | Iterates `instance.teachers`; an orphan is not among them |
+| Scoring | S5 reads placements, not declarations |
+
+**No exception is raised at any stage.** The declaration or the closure simply stops meaning anything,
+in silence — which is the *"wrong rather than absent"* failure `GroupHierarchy` already names as worse
+than a crash. A department that had closed Wednesday afternoon would find it quietly reopened.
+
+**Decision: refuse the replacement; never delete an overlay.** Stated so it can be checked against code:
+
+1. Compatibility is judged on the **complete effective dataset** — the candidate with the stored
+   calendar and declarations applied — not on the raw supplied base.
+2. **FR-9 needs a second, separate check**, because `apply_calendar` swallows an orphaned closure and
+   the effective dataset therefore cannot show it.
+   `unit/test_dataset.py::test_an_orphaned_closure_is_invisible_in_the_effective_dataset` asserts that
+   invisibility, so the second check cannot later be deleted as redundant.
+3. **An inert `-1` declaration marker must not block.** A teacher whose grid was emptied is still named
+   by `declared_teachers()` while contributing no availability row.
+4. **Withdrawal is a base replacement too** and takes the same check.
+
+**⚠️ Point 3 is not a refinement of convenience — without it the rule deadlocks.** `AvailabilityStore`
+has **no delete**, and no endpoint forgets a declaration. Had compatibility been judged on
+`declared_teachers()`, a teacher who had left would have blocked every future import permanently,
+recoverable only by direct SQL. What the person in charge *can* do is empty that teacher's grid
+(`_require_own_grid` returns early for every role but `TEACHER`), and judging on the effective rows is
+what makes that the escape route.
+`acceptance/test_fr01.py::test_clearing_the_declaration_first_lets_the_replacement_through` is that
+path, end to end.
+
+**Why refusing rather than cascading**, in the order the evidence weighs:
+
+1. **It is the missing half of a rule the application already enforces.** Neither overlay can be
+   *created* pointing at something absent — `routers/availability` answers 404 for an unknown teacher
+   and 422 for an unknown slot; `services/calendar.build_overrides` raises `CalendarError` for an
+   unknown slot index. A base change was the only remaining way to manufacture an orphan.
+2. **It is PostgreSQL's own default.** `NO ACTION`/`RESTRICT` refuse; `CASCADE` must be asked for
+   explicitly. Nothing in this project asks for it.
+3. **It keeps atomicity achievable.** Each store owns its own session, so **no transaction spans two of
+   them**. An import that also cleared declarations could not be atomic with the write replacing the
+   dataset. Refusing keeps the write set to one row of one store.
+4. **The specification puts several faculties at once out of scope** (CdC §3.2), so an installation
+   replaces its data rarely and deliberately. Refusing costs a conversation; cascading costs a
+   statement somebody made.
+
+⚠️ **Two limitations, recorded rather than absorbed.**
+
+- **A slot whose index survives but whose meaning changes is undetectable.** A new dataset numbering
+  slot 7 as Tuesday period 2 where the old had Monday period 3 passes every check here, and the
+  closure now closes a different half-day. Detecting it needs a slot identity the model does not have.
+- **No protection against a concurrent write.** A declaration saved between the compatibility check and
+  the replacement is not seen. The repository has no locking anywhere and the specification asks for
+  none; building it for this path alone would be new architecture.
+
+**What would reverse it.** A supervisor statement about what a second load does to existing
+declarations and closures, or a requirement for unattended import where refusing is worse than losing
+an overlay. Both would be new information; neither exists today.
 
 ---
 

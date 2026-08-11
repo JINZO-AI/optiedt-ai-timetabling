@@ -8,6 +8,7 @@ import { AdminScreen } from '@/features/admin/AdminScreen'
 import { AvailabilityScreen } from '@/features/availability/AvailabilityScreen'
 import { LoginScreen } from '@/features/auth/LoginScreen'
 import { ComparisonScreen } from '@/features/comparison/ComparisonScreen'
+import { DatasetScreen } from '@/features/dataset/DatasetScreen'
 import { GenerationScreen } from '@/features/generation/GenerationScreen'
 import { PublicationScreen } from '@/features/publication/PublicationScreen'
 import { StudentTimetableScreen } from '@/features/student/StudentTimetableScreen'
@@ -101,6 +102,10 @@ export function App() {
           ) : (
             <>
               <NavLink to="/disponibilites">Disponibilités</NavLink>
+              {/* FR-1 — SRS Table 2 gives the person in charge "read and write
+                  on all the data"; C-8 settled that Table 2 wins where the flow
+                  prose names the administrator instead. */}
+              {mayGenerate && <NavLink to="/donnees">Données</NavLink>}
               {mayGenerate && <NavLink to="/generation">Génération</NavLink>}
               {mayGenerate && <NavLink to="/publications">Publications</NavLink>}
               <NavLink to="/emplois-du-temps">Emplois du temps</NavLink>
@@ -114,6 +119,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<Navigate to={landingFor(user?.role)} replace />} />
         <Route path="/disponibilites" element={<AvailabilityScreen />} />
+        <Route path="/donnees" element={<DatasetScreen />} />
         <Route path="/generation" element={<GenerationScreen />} />
         <Route path="/emplois-du-temps" element={<TimetableScreen />} />
         <Route path="/comparaison" element={<ComparisonScreen />} />

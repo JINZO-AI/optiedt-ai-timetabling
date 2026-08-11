@@ -67,8 +67,10 @@ from optiedt.domain.enums import (
     UserRole,
 )
 from optiedt.domain.instance import Instance
+from optiedt.instance.validation import RejectedLine
 from optiedt.preanalysis.checks import CheckResult
 from optiedt.services.calendar import CalendarEdit, CalendarOverrides, ShortenedDay
+from optiedt.services.dataset import Incompatibility, StoredDataset
 from optiedt.services.publications import PublishedTimetable
 from optiedt.services.runs import RunRecord
 
@@ -1057,3 +1059,119 @@ class StudentTimetableOut(ApiModel):
     published_by: str | None
     run: str | None
     candidate: str | None
+
+
+# ── Department data (FR-1) ─────────────────────────────────────────────
+
+
+class RejectedLineOut(ApiModel):
+    """One line the server refused, and enough to go and fix it.
+
+    SRS §3.2 Table 4 names *"report of the rejected lines"* as FR-1's output.
+    `line` is the physical line number, header included, so it matches what a
+    spreadsheet shows; `null` means the fault is the file as a whole.
+    """
+
+    file: str
+    line: int | None
+    reason: str
+    field: str | None
+    value: str | None
+
+    @classmethod
+    def of(cls, rejection: RejectedLine) -> RejectedLineOut:
+        return cls(
+            file=rejection.file,
+            line=rejection.line,
+            reason=rejection.reason,
+            field=rejection.field,
+            value=rejection.value,
+        )
+
+
+class IncompatibilityOut(ApiModel):
+    """One stored statement a replacement would orphan — the A7 decision.
+
+    ⚠️ **Deliberately NOT merged with `RejectedLineOut`.** A rejected line is
+    fixed by editing the file; an incompatibility is fixed by a person
+    withdrawing a declaration or a closure. Reporting them in one list would
+    tell somebody to go and correct a file that is already correct.
+    """
+
+    overlay: str
+    subject: str
+    reason: str
+    remedy: str
+
+    @classmethod
+    def of(cls, found: Incompatibility) -> IncompatibilityOut:
+        return cls(
+            overlay=found.overlay,
+            subject=found.subject,
+            reason=found.reason,
+            remedy=found.remedy,
+        )
+
+
+class DatasetSummaryOut(ApiModel):
+    """What the department's data currently is, and where it came from."""
+
+    imported: bool
+    """False when no dataset has been imported and the reference files govern."""
+
+    imported_at: datetime | None
+    imported_by: str | None
+    files: list[str]
+    programmes: int
+    promotions: int
+    groups: int
+    teachers: int
+    courses: int
+    sessions: int
+    rooms: int
+    slots: int
+    holidays: int
+
+    @classmethod
+    def of(cls, instance: Instance, stored: StoredDataset | None) -> DatasetSummaryOut:
+        return cls(
+            imported=stored is not None,
+            imported_at=None if stored is None else stored.imported_at,
+            imported_by=None if stored is None else stored.imported_by,
+            files=sorted(stored.files) if stored is not None else [],
+            programmes=len(instance.programmes),
+            promotions=len(instance.promotions),
+            groups=len(instance.groups),
+            teachers=len(instance.teachers),
+            courses=len(instance.courses),
+            sessions=len(instance.sessions),
+            rooms=len(instance.rooms),
+            slots=len(instance.slots),
+            holidays=len(instance.holidays),
+        )
+
+
+class DatasetImportOut(ApiModel):
+    """The outcome of an import: what was recorded, or why nothing was.
+
+    ⚠️ **`accepted` is the single fact to branch on.** When it is false, nothing
+    was written: the previous dataset is still the one `dataset` describes, and
+    `rejectedLines` or `incompatibilities` says why.
+    """
+
+    accepted: bool
+    dataset: DatasetSummaryOut
+    rejected_lines: list[RejectedLineOut]
+    incompatibilities: list[IncompatibilityOut]
+
+    references_checked: bool
+    """False when a line failed to parse, so references were not examined yet.
+
+    ⚠️ **This exists so the interface does not have to guess.** References are
+    verified only once every line parses, because a rejected line takes its
+    identifier with it — and a session naming a teacher whose own row failed to
+    parse would otherwise be reported as an unknown reference, which is a second
+    report of one fault that disappears when the first is fixed. The consequence
+    is that fixing the types can reveal a further round, and a user told that in
+    advance is being informed rather than surprised.
+    """

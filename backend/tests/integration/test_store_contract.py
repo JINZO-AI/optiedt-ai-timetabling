@@ -48,6 +48,7 @@ from optiedt.domain.enums import AvailabilityState, DeclarationSource, RunState,
 from optiedt.preanalysis.checks import CheckResult
 from optiedt.services.availability import InMemoryAvailabilityStore, build_declaration
 from optiedt.services.calendar import CalendarOverrides, InMemoryCalendarStore, ShortenedDay
+from optiedt.services.dataset import InMemoryDatasetStore
 from optiedt.services.publications import InMemoryPublicationStore, new_publication
 from optiedt.services.runs import InMemoryRunStore, RunRequest, RunStore, new_run_record
 from optiedt.services.users import InMemoryUserStore
@@ -147,7 +148,7 @@ def clean(session_factory: sessionmaker[Session]) -> None:
         session.execute(
             text(
                 "truncate runs, availability_declarations, publications, "
-                "calendar_overrides, users restart identity cascade"
+                "calendar_overrides, department_dataset, users restart identity cascade"
             )
         )
 
@@ -194,6 +195,16 @@ def calendar_store(request: pytest.FixtureRequest, session_factory: sessionmaker
     from optiedt.db.repositories import SqlCalendarStore
 
     return SqlCalendarStore(session_factory)
+
+
+@pytest.fixture(params=["memory", "database"])
+def dataset_store(request: pytest.FixtureRequest, session_factory: sessionmaker[Session]):
+    """FR-1's store, under the same contract as the other five."""
+    if request.param == "memory":
+        return InMemoryDatasetStore()
+    from optiedt.db.repositories import SqlDatasetStore
+
+    return SqlDatasetStore(session_factory)
 
 
 @pytest.fixture(params=["memory", "database"])
@@ -727,3 +738,75 @@ def test_a_deleted_account_can_no_longer_authenticate(user_store) -> None:
     user_store.delete("partant")
 
     assert user_store.authenticate("partant", "a-long-password") is None
+
+
+# ── FR-1: the imported department dataset ──────────────────────────────
+
+
+def test_an_installation_with_no_import_reports_no_dataset(dataset_store) -> None:
+    """⚠️ `None` means "the reference instance governs", and it must stay
+    distinguishable from an imported dataset that happens to be identical to it
+    — `api/deps.base_instance` branches on exactly this."""
+    assert dataset_store.current() is None
+    assert dataset_store.revision() is None
+
+
+def test_a_dataset_round_trips_with_its_files_and_its_author(dataset_store) -> None:
+    files = {"rooms.csv": "room_id,capacity\nR1,30\n", "slots.csv": "slot_id\n0\n"}
+
+    saved = dataset_store.save(files, author="responsable")
+    read = dataset_store.current()
+
+    assert read is not None
+    assert read.files == files
+    assert read.imported_by == "responsable"
+    assert read.revision == saved.revision
+
+
+def test_the_revision_is_the_cheap_read_and_agrees_with_the_document(dataset_store) -> None:
+    """⚠️ `api/deps.py` re-parses only when `revision()` moves, so a revision
+    disagreeing with `current()` would serve a stale instance for as long as the
+    process lived."""
+    dataset_store.save({"rooms.csv": "room_id\nR1\n"}, author="responsable")
+
+    current = dataset_store.current()
+    assert current is not None
+    assert dataset_store.revision() == current.revision
+
+
+def test_a_second_import_replaces_the_first_wholesale_and_moves_the_revision(
+    dataset_store,
+) -> None:
+    """A dataset is one statement about a department, the shape FR-2's and
+    FR-9's writes already take. Merging two would produce a department nobody
+    supplied."""
+    first = dataset_store.save({"rooms.csv": "room_id\nR1\n"}, author="responsable")
+    second = dataset_store.save({"teachers.csv": "teacher_id\nT1\n"}, author="responsable")
+
+    read = dataset_store.current()
+    assert read is not None
+    assert read.files == {"teachers.csv": "teacher_id\nT1\n"}
+    assert "rooms.csv" not in read.files
+    assert second.revision != first.revision
+
+
+def test_withdrawing_an_import_leaves_no_row_rather_than_an_empty_one(dataset_store) -> None:
+    dataset_store.save({"rooms.csv": "room_id\nR1\n"}, author="responsable")
+
+    dataset_store.reset()
+
+    assert dataset_store.current() is None
+    assert dataset_store.revision() is None
+
+
+def test_file_text_survives_exactly_including_its_quoting(dataset_store) -> None:
+    """⚠️ The stored text is re-parsed by the same validator that accepted it,
+    so a store that normalised whitespace or quoting could turn an accepted
+    dataset into a rejected one on the next read."""
+    quoted = 'label\n"Fete de l\'Evacuation, 1963"\n'
+
+    dataset_store.save({"holidays.csv": quoted}, author="responsable")
+
+    read = dataset_store.current()
+    assert read is not None
+    assert read.files["holidays.csv"] == quoted

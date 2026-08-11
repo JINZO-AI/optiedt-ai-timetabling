@@ -139,10 +139,11 @@ catalogued in `docs/open-questions.md` rather than resolved silently.
 
 ## Status
 
-**Increment 1 · COMPLETE. Phases 1–11 delivered. Phase 12 of 14 is next and has not started.**
+**Increment 1 · COMPLETE. Phases 1–12 delivered — every non-conditional phase. Phases 13–14 remain
+CONDITIONAL on remaining time.**
 
 📍 **A fresh session should read [`docs/dashboard.md`](docs/dashboard.md), then
-[`docs/project-roadmap.md`](docs/project-roadmap.md) §5's Phase 12 subsection — that is the handoff.**
+[`docs/project-roadmap.md`](docs/project-roadmap.md) — that is the handoff.**
 
 📍 **[`docs/project-roadmap.md`](docs/project-roadmap.md) is the phase view** — the whole project as one
 continuous sequence, with what the specification calls increment 1 and increment 2 mapped into it.
@@ -187,10 +188,18 @@ That record is a dated observation, not automation: a green build is still no ev
 this repository. The eleven `import-linter` contracts are real and do fire — but nothing runs them
 automatically, so a violation is caught when someone runs the script, not when they push.
 
-⚠️ **21 of 25 requirements are `✓`, and the last open question is closed.** The single remaining `WIP`
-is **FR-8**, and it is a decision rather than an omission: promoting it would need its criterion
-narrowed to match what the software cannot do, which this project refuses. The other three are not
-started — FR-1 (Phase 12) and FR-20/FR-21 (conditional).
+⚠️ **22 of 25 requirements are `✓`, and no open question remains.** The single remaining `WIP` is
+**FR-8**, and it is a decision rather than an omission: promoting it would need its criterion narrowed
+to match what the software cannot do, which this project refuses. The other two are **FR-20 and FR-21,
+both conditional** — so every requirement the project committed to delivering is delivered.
+
+⚠️ **Phase 12 added FR-1 on 2026-08-11: the department's data can now be supplied through the
+application.** Eleven CSVs at **Données** (person in charge only — SRS Table 2, C-8), verified for types
+and references, with every rejected line named by file, line, column and value; what is recorded becomes
+the dataset every screen reads and every run solves, and withdrawal restores the files the application
+shipped with. ⚠️ **A replacement that would orphan a teacher's declaration or the administrator's
+calendar is refused** — a project decision, **C-22 / ADR-012**, covering a case the specification never
+raises.
 
 ⚠️ **C-9 closed on 2026-08-11 as a project decision from repository evidence, because the supervisor
 never answered** — the project owner granted that authority. FR-6's criterion turned out to be
