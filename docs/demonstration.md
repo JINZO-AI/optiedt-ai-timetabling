@@ -128,6 +128,27 @@ produce, and on this instance it takes `Lab_Info` to exactly 100.0 % of its two-
 | A12 | Print it, or export the CSV | The same print sheet and spreadsheet FR-10 gives every other view, carrying the group and the publication |
 | A13 | Try `/api/runs`, `/api/publications` or another teacher's grid | **403** on each. A run carries every group's *drafts*; Table 2 gives the student the published timetable of **their** group and nothing more |
 
+#### The examination session — FR-20
+
+| # | Do | Expect |
+|---|---|---|
+| X1 | As **`responsable`**, open *Examens* and choose **Rapide**, then *Generer le calendrier* | **202** and the screen polls. The examinations are **derived** — one per course — so there is nothing to upload and no form to fill (C-23) |
+| X2 | Wait for the calendar | **32 examinations over 55 slots**, eleven working days from 8 June 2026. **Optimality proven**, spread penalty **0** |
+| X3 | Say what the penalty means before being asked | SX1 counts examinations of one promotion sharing a day, beyond the first. **0 means no promotion sits two examinations on one day** |
+| X4 | Switch to *Par salle* | The same session by room - SRS 5.5 asks for both groupings. An examination in several rooms appears once per room, because it genuinely occupies each |
+| X5 | Point at the room column | Each examination shows its rooms and their **summed capacity** against its candidate count. That sum **is** X2: SRS 6.8 makes room assignment a sum of capacities, not the choice of one room |
+| X6 | Note what is absent from 16 June | Nothing is placed there - it is a blocking holiday, and X3 is applied by never building the slot rather than by a rule checked afterwards |
+
+⚠️ **If asked "does it split an examination across rooms?"** — yes, and it is tested
+(`test_an_examination_larger_than_every_single_room_is_split_across_rooms`), but **the reference
+instance never needs it**: the largest examination is 120 candidates and Amphi A seats 250. Say that
+rather than implying the screen will show it.
+
+⚠️ **If asked about ITC-2007 Track 1** — it has not been opened. It is benchmark evidence for the
+examination engine, not a product requirement, and it would live in `optiedt.validation` like Track 3.
+The engine's correctness here rests on X1-X4 being **re-derived from the placements** in
+`acceptance/test_fr20.py`, not on a published cost.
+
 #### An instance with no solution — FR-8
 
 | # | Do | Expect |
@@ -229,10 +250,11 @@ each has a one-sentence answer if asked.
 | ~~**The AI assistant** — explanations, questions, reports (FR-22, FR-24, FR-25)~~ | ✅ **Built 2026-08-06, Phase 7 M3–M5**, and reachable from the comparison screen. ⚠️ **A LIVE model is still not shown BY THIS SCRIPT**: the service is off by default and no test calls a provider (**C-21**), so what a demonstration shows is the **computed form** — complete figures, no prose. Say so plainly. A first live call **was** performed once, on 2026-08-07, and §4 records it; that is a deployment step, not a step of this script |
 | ~~**Regeneration from an accepted recommendation** (FR-23)~~ | ✅ **Built 2026-08-06, Phase 7 M2.** Reachable from the comparison screen: choose one of the three catalogue actions, accept, and a **new run** is launched through the same solver. The candidate on screen is unchanged. H10's dormant gap — `lock_session`'s prerequisite — was filled by M1 (C-19) |
 | ~~**Calendar administration screen** (FR-9)~~ | ✅ **Built 2026-08-11, Phase 11.** `features/admin/CalendarEditor` over `GET`/`PUT`/`DELETE /api/calendar`, administrator only. ⚠️ **This row said "Not built" until Phase 12 noticed it, one phase late** |
+| ~~**The examination session** (FR-20)~~ | ✅ **Built 2026-08-12, Phase 13**, and shown by steps X1–X6 above. ⚠️ **ITC-2007 Track 1 is NOT part of it and has never been opened**: it is benchmark evidence for the examination engine, not a product requirement. If asked how the engine is known to be right, the answer is that X1–X4 are **re-derived from the placements** in `acceptance/test_fr20.py` rather than taken from CP-SAT's status — the same discipline the weekly H1–H12 get |
 | ~~**Data management** (FR-1)~~ | ✅ **Built 2026-08-11, Phase 12**, and **FR-1 is `✓`.** The person in charge supplies eleven CSVs at **Données**; the server verifies types and references and reports every rejected line by file, line, column and value; what is recorded becomes the dataset every screen reads and every run solves. **Withdrawal restores the files the application shipped with.** ⚠️ **Say plainly what the demonstration machine is showing**: unless a dataset has been imported, the reference instance is in force and the screen says so |
-| **Print / export** (FR-10) | ✅ **Built 2026-08-10** — steps 14–15 above. ⚠️ Still shows as **`WIP`** on the requirement sheet: **C-9** leaves it with no acceptance criterion, so there is nothing to verify a `✓` against. Say *"the software is finished and the specification row is missing"*, which is exactly what it is |
+| ~~**Print / export** (FR-10)~~ | ✅ **Built 2026-08-10** — steps 14–15 above — **and `✓` since 2026-08-11, when C-9 closed.** ⚠️ **This row said "still shows as `WIP`" until Phase 13 and was stale by two phases.** Its criterion is a **project decision** taken from CdC §3 and SRS §4.1, labelled as such wherever cited and reversible; no Table 35 row was invented |
 | ~~**Account management**~~ | ✅ **Built 2026-08-11, Phase 11.** `features/admin/AccountsPanel` over `GET`/`POST`/`DELETE /api/accounts`, administrator only. ⚠️ **The seed command remains and is still how the FIRST accounts exist** (C-18) — a management screen cannot create the account that reaches it — and **every seeded account still shares one password**, which is why the deployment row below still stands. This row said "Not built" until Phase 12 |
-| **A deployment** | ⚠️ **Not deployable as it stands**, though it can no longer fail silently: `OPTIEDT_SECRET_KEY` defaults to a value published in this repository, and **since 2026-08-07 `OPTIEDT_ENVIRONMENT=production` makes start-up REFUSE that default** (`Settings.require_deployable`, verified to fire). Account management is still unbuilt and every seeded account shares one password. Safe to demonstrate, not to expose |
+| **A deployment** | ⚠️ **Not deployable as it stands**, though it can no longer fail silently: `OPTIEDT_SECRET_KEY` defaults to a value published in this repository, and **since 2026-08-07 `OPTIEDT_ENVIRONMENT=production` makes start-up REFUSE that default** (`Settings.require_deployable`, verified to fire). ⚠️ **Account management IS built** (Phase 11) — this row said otherwise until Phase 13, contradicting the row three above it — but **every seeded account still shares one password**, which is the reason that stands. Safe to demonstrate, not to expose |
 
 ⚠️ **If asked "where is the AI?"**, the answer is in `docs/ai-integration.md` and it is worth giving in
 full rather than deflecting: **constraint programming is the AI here**, in the symbolic sense — CP-SAT

@@ -139,8 +139,8 @@ catalogued in `docs/open-questions.md` rather than resolved silently.
 
 ## Status
 
-**Increment 1 · COMPLETE. Phases 1–12 delivered — every non-conditional phase. Phases 13–14 remain
-CONDITIONAL on remaining time.**
+**Increment 1 · COMPLETE. Phases 1–13 delivered. Phase 14 alone remains CONDITIONAL on remaining
+time.** 23 of 25 requirements are `✓`.
 
 📍 **A fresh session should read [`docs/dashboard.md`](docs/dashboard.md), then
 [`docs/project-roadmap.md`](docs/project-roadmap.md) — that is the handoff.**
@@ -161,7 +161,13 @@ requirements by evidence rather than by code** (FR-3, FR-4, FR-7, FR-14, FR-16),
 10 `✓` to 15 of 25. **Phase 11 added the administrative surfaces** (FR-9, FR-11 → 18 of 25, and 21 once C-9 closed): an
 administrator configures the calendar — closed half-days, holidays and the shortened-day window — and
 manages the accounts, and a student reaches the published timetable of their own group and nothing
-else.
+else. **Phase 12 made the application independent of the files it shipped with** (FR-1 → 22 of 25): a
+department's data can be supplied, verified line by line and solved without editing anything by hand.
+**Phase 13 added the examination session** (FR-20 → 23 of 25): a CP-SAT model of the four examination
+rules with the spreading criterion as its objective, over examinations derived from the instance, and
+a calendar of the session by group and by room. ⚠️ **An examination may occupy several rooms at once**,
+so it has its own placement type beside the weekly one rather than widening it — the specification
+says so, and two import contracts hold the two models apart.
 
 Phase 5 added the five pre-solve checks inside the application, a diagnosis run that names the rules
 in conflict, the run record in PostgreSQL, authentication with rights, and publication. Phase 6 added

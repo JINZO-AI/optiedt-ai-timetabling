@@ -248,14 +248,15 @@ condition that would change the answer.
 | `optiedt.services` | Use cases: runs, comparison, publication | everything below |
 | `optiedt.instance` | Reads the 13 CSVs; verifies a supplied dataset (FR-1) | `domain` |
 | `optiedt.preanalysis` | The five checks | `domain` |
-| `optiedt.solver` | Variables, constraints, objective, diagnosis | `domain` |
+| `optiedt.solver` | Variables, constraints, objective, diagnosis — the **weekly** model | `domain` |
+| `optiedt.examination` | **FR-20.** Derivation of the session, and the CP-SAT model of SRS §6.8 (X1-X4, SX1) | `domain` |
 | `optiedt.analysis` | Criteria, scoring, ranking, decomposition, dominance | `domain` |
 | `optiedt.recommendations` | Catalogue, translation to solver input | `domain`, `analysis` |
 | `optiedt.assistant` | Adapter, context builder, verifier, computed forms | `domain`, `analysis` |
 | `optiedt.tasks` | Background run executor | `services` |
 | `optiedt.validation` | **Not product code.** The ITC-2007 benchmark harness | nothing in `optiedt` |
 
-Five boundaries carry design weight rather than convenience:
+Six boundaries carry design weight rather than convenience:
 
 - **`preanalysis` is not inside `solver`.** It needs no solver by definition, it is stage 1 of every
   run, and it is how a near-critical instance stays debuggable.
@@ -271,6 +272,17 @@ Five boundaries carry design weight rather than convenience:
   store, which is the database. The signature and invariant 4 could not both be honoured; the
   signature moved. A caller assembles a `RunFacts` and passes values, and that type is the whole of
   what may reach a model: data minimisation holds because there is no field that could carry a name.
+- **`examination` is PARALLEL to `solver`, not inside it or under it.** ⚠️ **This is R-6, and SRS §6.8
+  states it in the supervisor's own words**: *"An examination may occupy several rooms at once, so the
+  assignment of the rooms becomes a sum of capacities and not the choice of a single room."* The weekly
+  model places one room per session over a week; the examination model assigns a SET of rooms over the
+  examination period. A shared variable schema would force one of the two into a shape that does not
+  fit it, so `domain.examination.ExamPlacement` sits **beside** `Placement` rather than widening it —
+  and `Placement` is depended on by persistence, scoring, the four views and invariant 6's immutability
+  tests, every one of which would have inherited a collection only exams need. Two contracts hold the
+  line: `api ⇸ examination` (a solve must not run inside a request handler, exactly as for the weekly
+  solver) and `examination ⇸ solver, analysis` (so "parallel" cannot decay into a second entry point
+  into the weekly model). Both were verified to fire.
 - **`domain` is pure.** It is imported by the solver, the analysis layer and the ORM alike; a framework
   import there would leak into all three.
 - **`validation` runs *against* the product, never inside it.** It models ITC-2007 — a different

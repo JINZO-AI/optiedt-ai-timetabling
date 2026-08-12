@@ -49,7 +49,7 @@ Other fixed vocabulary:
 | `Programme` | code, label, degree cycle, department | Field of study |
 | `Promotion` | programme, level, academic year, size | Annual cohort |
 | `Group` | promotion, **parent_group**, type, label, size | Promotion / tutorial group / subgroup |
-| `Student` | promotion, tutorial group, laboratory subgroup | Individual. **Used only by the examination model** |
+| `Student` | promotion, tutorial group, laboratory subgroup | Individual. **Used only by the examination model** (X1). Loaded into `Instance` since Phase 13; no name field, so no student name can reach the assistant |
 | `Teacher` | department, rank, max hours per week | Person responsible for sessions |
 | `Course` | code, department, programme, level, semester, credits | Teaching unit |
 | `Session` | course, group, teacher, type, duration, required room type, **locked** | **The unit to be placed** |
@@ -231,7 +231,11 @@ verified against real tokens in `acceptance/test_fr01.py`. That is the first pla
 configuration all arrive from the eleven supplied files. **`ConstraintDefinition` does not, and cannot**
 — the catalogue is the software's own (ADR-003, invariant 7), and `instance/validation.validate_dataset`
 takes it as a parameter so no supplied file has a path to `Instance.constraints`. **`Student` does not
-either**: it belongs to the examination model, increment 2.
+either, and since Phase 13 that has a sharper consequence.** The roster is read from `data/instance/`
+by the loader and feeds the examination model (X1) — but it is **not one of the eleven files a
+department supplies**, because admitting it would build the examination-data upload SRS §4.1 names no
+form for. So a supplied dataset leaves `Instance.students` empty and **an examination session on it is
+refused, naming the file**, rather than solved against zero candidates. See **C-23** and **ADR-013**.
 
 ⚠️ **A replacement is refused rather than allowed to orphan a declaration or a closure** — a **project
 decision**, C-22 and ADR-012, covering a case the specification never raises.

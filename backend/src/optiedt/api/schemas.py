@@ -1175,3 +1175,50 @@ class DatasetImportOut(ApiModel):
     is that fixing the types can reveal a further round, and a user told that in
     advance is being informed rather than surprised.
     """
+
+
+# ── FR-20 - the examination session ────────────────────────────────────
+
+
+class ExamPlacementOut(ApiModel):
+    """One examination, placed.
+
+    ⚠️ `rooms` is a LIST and that is R-6, not a convenience: SRS §3.2 Table 19
+    promises *"one slot and one or more rooms assigned to each examination"*.
+    The weekly `PlacementOut` carries a single `room` and the two must not be
+    conflated — an examination indexes the examination period, a session
+    indexes the week.
+    """
+
+    examination: str
+    course: str
+    promotion: str
+    supervisor: str
+    candidate_count: int
+    slot: int
+    day: date_
+    period_index: int
+    rooms: list[str]
+    assigned_capacity: int
+    """Σ of the assigned rooms' capacities. Present so a reader can check X2
+    against `candidateCount` without refetching the room list."""
+
+
+class ExamRunOut(ApiModel):
+    """An examination generation, polled the way a weekly run is."""
+
+    id: str
+    state: RunState
+    created_at: datetime
+    seed: int
+    deterministic_budget: float
+    examination_count: int = 0
+    slot_count: int = 0
+    spread_penalty: int | None = None
+    proven_optimal: bool | None = None
+    wall_clock_seconds: float | None = None
+    placements: list[ExamPlacementOut] = []
+    error: str | None = None
+    """Verbatim from the service — most often a refusal to derive the session
+    at all (no roster, no examination period), which is actionable in a way
+    that "generation failed" is not."""

@@ -20,6 +20,57 @@ as work landed, which is how a table acquires a count nobody can reproduce.
 
 ---
 
+## Phase 13 — FR-20 closed by building it, 2026-08-12
+
+**FR-20 reached `✓`. The count moved 22 → 23 of 25.** The last requirement with
+no software outside the one that remains conditional.
+
+⚠️ **FR-20's criterion was supervisor-written all along, and this file had no
+record of it.** SRS §3.2 **Table 19** states it in full. The arithmetic that
+would have revealed it was already on this page and in
+`docs/testing-strategy.md` §4: §3.2 covers 21 requirements and is absent for
+exactly C-9's four, so FR-20 has a row. **This is the third time a requirement
+was carried as unspecified without checking §3.2 and Table 36** — after FR-1
+(Phase 12) and C-9's four (Phase 10). The row is now transcribed verbatim in
+`docs/testing-strategy.md` §4.
+
+| | The supervisor's own words (SRS §3.2, Table 19) |
+|---|---|
+| **Input** | Examinations, students, rooms, period of the session and supervisors |
+| **Processing** | Construction of the model of section 6.8 then solving |
+| **Output** | One slot and one or more rooms assigned to each examination |
+
+**What was built.** A parallel examination model: `ExamPlacement` carrying
+`rooms: tuple[...]` beside the weekly single-room `Placement`, a CP-SAT model of
+SRS §6.8's X1–X4 with SX1 as its objective, `POST`/`GET /api/examinations`
+(person in charge only, 202-and-poll like `POST /runs`), and the calendar view
+SRS §5.5 asks for, by group and by room. **`Student` was wired into `Instance`**
+after four phases of deliberate exclusion — X1 is stated per individual student.
+
+⚠️ **The derivation rule is a PROJECT DECISION and is labelled wherever cited** —
+**C-23** and **ADR-013**. Three of FR-20's five stated inputs (examinations, the
+period, supervisors) have no source: SRS Table 25 defines no Examination entity.
+One examination per course, the supervisor the course's CM teacher, the period
+two calendar keys — each settled on a measurement, not a preference.
+
+⚠️ **A mutation survived and produced a whole test file.** Deleting X4 left
+`acceptance/test_fr20.py` entirely green: with 55 slots for 32 examinations and
+SX1 spreading them, the solver avoids supervisor collisions whether or not X4 is
+posted, so the acceptance test proved that one optimal solution satisfied X4 and
+not that X4 is enforced. `unit/test_examination_solver.py` is the answer —
+instances small enough that one rule is load-bearing, asserting **infeasibility**
+rather than placement, because infeasibility cannot pass by luck. **8 mutations
+run, 7 detected**; the eighth is recorded in that file rather than hidden.
+
+⚠️ **A real defect was found by running the model rather than reading it.** X2 is
+a covering constraint with no cost, so the first working solve assigned **all
+twenty rooms (882 seats) to a 120-candidate examination** — satisfying X2 and
+serialising the whole session, since a room hosts one examination per slot. Room
+economy is now a secondary objective under SX1, and it is documented as a
+mechanism rather than a requirement.
+
+---
+
 ## Phase 12 — FR-1 closed by building it, 2026-08-11
 
 **FR-1 reached `✓`. The count moved 21 → 22 of 25.** It was the last requirement with no software at
@@ -213,9 +264,9 @@ quoted in the five acceptance files is the supervisor's own wording.
 backend mutations and three frontend ones. One of them is the FR-16 finding above, which is recorded in
 the test's own docstring rather than papered over with a stronger-sounding name.
 
-**Where the project actually is: 22 of 25 requirements are finished, 1 is under way, 2 are not
-started.** *(✓ FR-1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25 ·
-WIP FR-8 · — FR-20, 21 — count them in the table rather than trusting this line.)*
+**Where the project actually is: 23 of 25 requirements are finished, 1 is under way, 1 is not
+started.** *(✓ FR-1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 23, 24, 25 ·
+WIP FR-8 · — FR-21 — count them in the table rather than trusting this line.)*
 
 ⚠️ **This line has been wrong twice and is therefore kept with its warning.** It read "10 finished, 11
 under way, 4 not started" until 2026-08-10, and the second and third figures contradicted the table in
@@ -568,7 +619,7 @@ arithmetic can deliver, since the teacher criteria genuinely conflict.
 
 | FR | Requirement | Priority | Module | Test | Status |
 |---|---|---|---|---|---|
-| **FR-20** | Generate an examination session timetable | Expected | `solver` — exam model | `acceptance/test_fr20` | — |
+| **FR-20** | Generate an examination session timetable | Expected | `domain/examination` ✓; `examination/derive` ✓; `examination/solver` ✓ — X1–X4 + SX1; `services/examinations` ✓; `api/routers/examination` ✓; `features/examination` ✓ | `acceptance/test_fr20` ✓ (14), `unit/test_examination_solver` ✓ (14), `frontend ExamCalendar.test` ✓ (9) | **✓** ⚠️ *derivation rule is a project decision (C-23, ADR-013)* |
 | **FR-21** | Adjust criterion weights from recorded comparisons | Optional | `analysis` — weight fitting | leave-one-out evaluation | — |
 
 ---
@@ -581,8 +632,9 @@ Recorded rather than silently filled. See **C-9** in `docs/open-questions.md`.
 |---|---|
 | ~~**FR-6, FR-10, FR-17, FR-18**~~ → **FR-10 and FR-18** | Listed in the summary tables, but **no input/processing/output row** in SRS §3.2. ⚠️ **Narrowed 2026-08-10**: SRS **Table 36** names a specifying section for three of the four, and two of those sections state testable behaviour — **FR-6 → §6.7** ("ordered by decreasing score… equal scores separated by the criteria taken in the order of their weights") and **FR-17 → §6.7 and §8.4 Table 34** ("A candidate improved on every criterion is signalled"). Both leave C-9. **FR-10 and FR-18 remain**: their scope is named in the CdC but no document states an acceptance standard, and for FR-18 **no document defines the occupancy figure itself**. See C-9's NARROWED subsection |
 | **FR-4, FR-7, FR-14, FR-16** | ⚠️ **A different gap, found in Phase 10, and NOT part of C-9.** They have a full §3.2 row and **no row in SRS §8.6 Table 35**, the acceptance-test table. The §3.2 row is therefore what their acceptance files verify against, quoted verbatim and transcribed into `docs/testing-strategy.md` §4 so the PDF need never be opened again. **This gap is closed** — all four are `✓` — and it is recorded because the distinction is what makes C-9 unclosable by comparison: a requirement with no promise of *either* kind cannot be verified at all |
+| **FR-20** | ⚠️ **Absent from Table 35, and this file recorded no criterion for it until Phase 13 — wrongly.** It has a full SRS §3.2 row, **Table 19**, transcribed into `docs/testing-strategy.md` §4. What it genuinely lacks is a source for three of the five inputs it names; see **C-23** |
 | **FR-1** | ⚠️ **This row said "Also absent from Table 35. Not yet relevant" until Phase 12, and the second half was a missed inference.** FR-1 is absent from Table 35, but it **has a full SRS §3.2 row — Table 4** — which puts it in exactly the class Phase 10 closed FR-4, FR-7, FR-14 and FR-16 against. The inference was available all along: §3.2 covers 21 requirements and is absent for *exactly* FR-6, FR-10, FR-17 and FR-18, so 25 − 4 = 21 leaves FR-1 with one. Nobody drew it, and FR-1 was carried as unspecified for four phases. **Transcribed verbatim into `docs/testing-strategy.md` §4 in Phase 12.** ⚠️ What FR-1 *does* lack is any statement about the **second** load — see **C-22** |
-| **FR-10** | **Missing entirely from SRS Table 36**, the traceability matrix. Its mapping above is reconstructed, not quoted. ⚠️ **Built in Phase 9 and still `WIP`, deliberately** — both halves of "print or export" are reachable and tested, and there is no criterion to verify them against. Software and tick are not the same thing, and the count must not be inflated |
+| **FR-10** | **Missing entirely from SRS Table 36**, the traceability matrix. Its mapping above is reconstructed, not quoted. ⚠️ **Built in Phase 9, and `✓` since 2026-08-11** when C-9 closed on a **project-authored** criterion, labelled as such wherever cited. ⚠️ **This cell said "still `WIP`, deliberately" until Phase 13**, two phases after the tick moved — in the file that is the authority on requirement status |
 | **FR-13's acceptance test** | ⚠️ "Three distinct candidates" can fail while the system behaves correctly — see **C-5** |
 
 **On reconstructing the numbering.** SRS Table 36 is the only reliable source for which code maps to

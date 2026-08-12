@@ -20,6 +20,7 @@ import type {
   DatasetSummary,
   Decomposition,
   DominanceVerdict,
+  ExamRun,
   Holiday,
   InstanceData,
   RecommendedCandidate,
@@ -404,6 +405,43 @@ export function useWithdrawDataset() {
         void queryClient.invalidateQueries({ queryKey: ['instance'] })
         void queryClient.invalidateQueries({ queryKey: ['calendar'] })
       }
+    },
+  })
+}
+
+/** FR-20 — the examination session. Same 202-and-poll shape as `useCreateRun`. */
+export function useExamRuns() {
+  return useQuery({
+    queryKey: ['examRuns'],
+    queryFn: () => apiGet<ExamRun[]>('/examinations'),
+  })
+}
+
+export function useExamRun(runId: string | null) {
+  return useQuery({
+    queryKey: ['examRun', runId],
+    queryFn: () => apiGet<ExamRun>(`/examinations/${runId as string}`),
+    enabled: runId !== null,
+    refetchInterval: (query) => {
+      const run = query.state.data
+      return run && isTerminal(run.state) ? false : 1000
+    },
+  })
+}
+
+export function useGenerateExamSession() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { seed?: number; deterministicBudget?: number }) => {
+      const params = new URLSearchParams()
+      if (body.seed !== undefined) params.set('seed', String(body.seed))
+      if (body.deterministicBudget !== undefined) {
+        params.set('deterministicBudget', String(body.deterministicBudget))
+      }
+      return apiSend<ExamRun>('POST', `/examinations?${params.toString()}`, {})
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['examRuns'] })
     },
   })
 }

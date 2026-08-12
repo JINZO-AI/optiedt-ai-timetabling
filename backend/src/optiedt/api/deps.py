@@ -34,6 +34,11 @@ from optiedt.instance.validation import validate_dataset
 from optiedt.services.availability import AvailabilityStore, apply_declarations
 from optiedt.services.calendar import CalendarStore, apply_calendar
 from optiedt.services.dataset import DatasetStore
+from optiedt.services.examinations import (
+    ExaminationService,
+    InMemoryExamRunStore,
+    exam_solver_factory,
+)
 from optiedt.services.publications import PublicationStore
 from optiedt.services.runs import RunStore
 from optiedt.services.stores import (
@@ -234,6 +239,31 @@ def get_executor() -> RunExecutor:
 
 
 @lru_cache(maxsize=1)
+def get_examination_service() -> ExaminationService:
+    """One examination service per process, one solve at a time.
+
+    Mirrors `get_executor`: the solver factory comes from `services`, not from
+    here, because this layer may not import `optiedt.examination` at all (the
+    twelfth import contract). The API asks for a service and never names CP-SAT.
+
+    ⚠️ `solve_instance` rather than `base_instance`, so an examination session
+    is derived from the instance a weekly run would solve — imported dataset,
+    administrator calendar and teacher declarations all layered in. An
+    examination timetable built from a different instance than the timetable
+    beside it would be two answers to one question.
+    """
+    settings = get_settings()
+    return ExaminationService(
+        store=InMemoryExamRunStore(),
+        instance_provider=solve_instance,
+        solver_factory=exam_solver_factory(
+            workers=settings.solver_workers,
+            wall_clock_ceiling_seconds=settings.solver_wall_clock_ceiling_seconds,
+        ),
+    )
+
+
+@lru_cache(maxsize=1)
 def get_publication_store() -> PublicationStore:
     """Publications — FR-19's trace. Database-backed unless `persistence = memory`."""
     return build_publication_store(get_settings())
@@ -365,6 +395,7 @@ RunStoreDep = Annotated[RunStore, Depends(get_run_store)]
 UserStoreDep = Annotated[UserStore, Depends(get_user_store)]
 PublicationStoreDep = Annotated[PublicationStore, Depends(get_publication_store)]
 ExecutorDep = Annotated[RunExecutor, Depends(get_executor)]
+ExaminationServiceDep = Annotated[ExaminationService, Depends(get_examination_service)]
 AssistantDep = Annotated[DefaultAssistant, Depends(get_assistant)]
 CurrentUserDep = Annotated[User, Depends(current_user)]
 

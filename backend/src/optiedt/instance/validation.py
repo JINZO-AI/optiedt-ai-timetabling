@@ -21,9 +21,16 @@ would let an upload delete a hard constraint, which ADR-003 and invariant 7
 forbid and `acceptance/test_fr09` asserts against. It stays with the
 application, read from `data/instance/` by `optiedt.instance.loader`.
 
-⚠️ **`students.csv` is not accepted either**, for the reason `domain/instance.py`
-already gives: `Instance` excludes `Student`, which exists only for the
-examination model (increment 2).
+⚠️ **`students.csv` is not accepted either**, and since Phase 13 the reason has
+changed rather than disappeared. `Instance` no longer excludes `Student` — the
+loader reads the roster for the examination model (X1). What stays true is that
+the roster is **not part of the eleven-file contract a department supplies**:
+SRS §3.2 Table 19 lists students among FR-20's inputs but SRS §4.1 names no
+form for them, and admitting a twelfth file here would be the examination-data
+upload system FR-1 was deliberately scoped not to become. A supplied dataset
+therefore carries no roster, `Instance.students` is empty, and an examination
+session on it is **refused with that reason** rather than solved against zero
+candidates.
 
 **What this module deliberately does NOT check**, so that one question keeps one
 answer: the promotion → TD → TP *level* rule. That is FR-12's

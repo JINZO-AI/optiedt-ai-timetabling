@@ -116,6 +116,7 @@ forbidden_modules =
     optiedt.recommendations
     optiedt.tasks
     optiedt.validation
+    optiedt.examination
     fastapi
     sqlalchemy
     ortools
@@ -164,6 +165,7 @@ source_modules =
     optiedt.recommendations
     optiedt.assistant
     optiedt.tasks
+    optiedt.examination
 forbidden_modules =
     optiedt.validation
 
@@ -214,3 +216,43 @@ source_modules =
 forbidden_modules =
     optiedt.db
 allow_indirect_imports = True
+
+# ── The examination model is PARALLEL to the weekly one ────────────
+# FR-20's examination occupies one or more rooms (R-6, SRS §6.8) and is
+# indexed over the examination period; a weekly session takes one room
+# over a week. The two share `domain` and nothing else, deliberately —
+# a shared variable schema would force one model into a shape that does
+# not fit it, which is exactly what R-6 warns against.
+#
+# This contract is the twelfth and it says the same thing about the
+# examination solver that the ninth says about the weekly one: a router
+# that could reach it could launch a solve inside a request handler, and
+# an examination solve takes about half a minute (ADR-005).
+#
+# DIRECT imports only, like api-cannot-reach-the-solver. `api -> services
+# -> examination` is the sanctioned path and services/examinations.py
+# takes it.
+[importlinter:contract:api-cannot-reach-the-examination-solver]
+name = API layer must not import the examination solver
+type = forbidden
+source_modules =
+    optiedt.api
+forbidden_modules =
+    optiedt.examination
+allow_indirect_imports = True
+
+# The examination model may not reach the weekly solver, nor the analysis
+# layer: it produces a timetable, not a score, and FR-20 asks for no
+# ranking. If it could import either, "parallel model" would quietly
+# become "second entry point into the weekly one".
+[importlinter:contract:examination-is-parallel-to-the-weekly-model]
+name = Examination model must not import the weekly solver or the analysis layer
+type = forbidden
+source_modules =
+    optiedt.examination
+forbidden_modules =
+    optiedt.solver
+    optiedt.analysis
+    optiedt.db
+    optiedt.api
+    optiedt.services

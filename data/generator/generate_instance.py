@@ -475,6 +475,17 @@ def build() -> dict[str, tuple[list[str], list[list[object]]]]:
             ["ramadan_end", "2026-03-19"],
             ["ramadan_shift_minutes", 60],
             ["period_minutes", 90],
+            # FR-20's "period of the session" (SRS §3.2, Table 19). Configuration
+            # rather than constraint, which is invariant 7: the examination model
+            # builds a slot only for a day inside this window, so X3 holds by the
+            # domain of the variable and never by a rule posted afterwards.
+            #
+            # ⚠️ The window deliberately SPANS 2026-06-16, a blocking holiday, so
+            # X3's exclusion is exercised by the reference data rather than only
+            # by a synthetic test. Fourteen days from Monday 8 June leave eleven
+            # working days once that holiday and two Sundays are withdrawn.
+            ["exam_period_start", "2026-06-08"],
+            ["exam_period_days", 14],
         ],
     )
 

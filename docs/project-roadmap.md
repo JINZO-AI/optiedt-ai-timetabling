@@ -2,13 +2,22 @@
 
 **This is the practical tracking view.** One question, one answer: *what phase are we in?*
 
-> **Phase 12 — Data management. ✅ COMPLETE 2026-08-11.** Phases 1–12 are complete; **the two remaining
-> phases, 13 and 14, are CONDITIONAL on remaining time** (PPM), and opening either is the project
-> owner's call, not a session's.
+> **Phase 13 — Examination session. ✅ COMPLETE 2026-08-12.** Phases 1–13 are complete. **Phase 14
+> (FR-21, weight adjustment) remains CONDITIONAL** and is the only phase left; opening it is the
+> project owner's call, not a session's.
 >
-> ✅ **22 of 25 requirements are `✓`, and every open question is resolved.** Phase 10 took the count from
+> ⚠️ **Phase 13 was opened after a gate that re-anchored the work against the original product
+> vision.** ITC-2007 Track 1 was deliberately **not** downloaded: it is benchmark evidence for the
+> examination engine, not a product requirement, and treating it as one would have spent half the
+> phase outside the product (`docs/testing-strategy.md` §1 keeps that distinction).
+>
+> ✅ **23 of 25 requirements are `✓`, and every open question is resolved.** Phase 10 took the count from
 > 10 to 15; the pre-Phase-11 audit added FR-17; Phase 11 added FR-9 and FR-11; closing C-9 on
-> 2026-08-11 added FR-6, FR-10 and FR-18; and **Phase 12 added FR-1**.
+> 2026-08-11 added FR-6, FR-10 and FR-18; Phase 12 added FR-1; and **Phase 13 added FR-20**.
+>
+> ⚠️ **FR-20's criterion was supervisor-written too — SRS §3.2 Table 19 — and was found only in Phase 13.
+> That is the THIRD requirement carried as unspecified while its row sat in §3.2**, after C-9's four and
+> FR-1. The arithmetic that finds them has been on the page since Phase 10.
 >
 > ⚠️ **FR-1's criterion was supervisor-written all along — SRS §3.2 Table 4 — and this repository had
 > recorded it as unspecified for four phases.** The arithmetic that revealed it was already on the page:
@@ -61,7 +70,7 @@ Reference instance: 218 sessions · 51 groups · 44 teachers · 20 rooms · 28 o
 | **10** | Requirement closure by test | ✅ COMPLETE | Five requirements closed on the supervisor's own wording; **10 ✓ → 15 ✓** | FR-3 · FR-4 · FR-7 · FR-14 · FR-16 → ✓ | `375c220` |
 | **11** | Administrative surfaces | ✅ COMPLETE | The screens whose mechanisms already existed, and the endpoints under them; **16 ✓ → 18 ✓**. Followed by **C-9's closure — 18 ✓ → 21 ✓** | FR-9 · FR-11 → ✓ · student view · then FR-6 · FR-10 · FR-18 → ✓ | *derive it: `git log --oneline`* |
 | **12** | Data management | ✅ COMPLETE | A department's data can be supplied, verified and recorded through the application; **21 ✓ → 22** | FR-1 → ✓ | *derive it: `git log --oneline`* |
-| **13** | Examination session | ⬜ CONDITIONAL | Exam timetabling (*was increment 2*) | FR-20 | — |
+| **13** | Examination session | ✅ COMPLETE | An examination timetable under X1-X4 with SX1, reachable and tested; **22 ✓ → 23** | FR-20 → ✓ | *derive it: `git log --oneline`* |
 | **14** | Weight adjustment | ⬜ CONDITIONAL | Learn weights from recorded comparisons (*was increment 2*) | FR-21 | — |
 
 ✅ **~~Cross-phase blocker — C-9~~ — RESOLVED 2026-08-11. The paragraph below is what it said.**
@@ -100,17 +109,17 @@ requirement to `✓`, which is not always the phase that built it.
 | FR-17 | Signal a dominated candidate | ✅ | 3–6 | **10 (audit)** | — |
 | FR-18 | Display room occupancy | ✅ | 4 | **11 (C-9)** | — ⚠️ *criterion is a project decision* |
 | FR-19 | Record every run with its trace | ✅ | 5 | **6** | — |
-| FR-20 | Examination session timetable | — | — | **13** | conditional |
+| FR-20 | Examination session timetable | ✅ | **13** | **13** | — ⚠️ *derivation rule is a project decision (C-23)* |
 | FR-21 | Adjust weights from comparisons | — | — | **14** | conditional |
 | FR-22 | Explain a candidate's quality | ✅ | 7 | **7** | — |
 | FR-23 | Regenerate from a recommendation | ✅ | 7 | **7** | — |
 | FR-24 | Answer a question in ordinary language | ✅ | 7 | **8** | — |
 | FR-25 | Produce a readable report | ✅ | 7 | **7** | — |
 
-**Totals: 22 ✅ · 1 WIP · 2 not started = 25.** ⚠️ **The single `WIP` is FR-8, and it is a decision
+**Totals: 23 ✅ · 1 WIP · 1 not started = 25.** ⚠️ **The single `WIP` is FR-8, and it is a decision
 rather than an omission**: promoting it would need its criterion narrowed to match what the software
 cannot do — on the C-13 contiguity shape CP-SAT proves no infeasibility — and this project refuses that
-direction. **The two not started are FR-20 and FR-21, both in the conditional Phases 13–14** — so
+direction. **The one not started is FR-21, in the conditional Phase 14** — so
 **every non-conditional requirement is now either `✓` or held by a wording this project will not
 narrow.**
 
@@ -242,7 +251,7 @@ brief said not to assume.
    because `run-checks.ps1` does not run it. Pre-existing, unrelated to FR-10, **left unfixed on scope
    discipline** and recorded here so it is not lost.
 
-⚠️ **FR-10 is `WIP`, not `✓`, and that is the correct outcome** — C-9 leaves it with no criterion to
+⚠️ **FR-10 is `WIP`, not `✓`, and that is the correct outcome** *(true on 2026-08-10, superseded 2026-08-11 when C-9 closed and FR-10 reached `✓`; kept because it records what Phase 9 concluded)* — C-9 leaves it with no criterion to
 verify against. The tests are therefore display-layer tests and **not** an acceptance file: there was no
 promise to quote at the top of one, and inventing a criterion would be worse than having none.
 
@@ -311,11 +320,13 @@ mutation there would have cost a 150-second solve each.
 
 ---
 
-## 4 · Current phase — none open; Phases 13–14 remain conditional
+## 4 · Current phase — none open; Phase 14 remains conditional
 
-**Status: Phase 12 closed on 2026-08-11.** Every non-conditional phase is complete. **Opening
-increment 2 — Phases 13 and 14 — is the project owner's call**, and PPM makes both conditional on
-remaining time.
+**Status: Phase 13 closed on 2026-08-12.** **Opening Phase 14 (FR-21) is the project owner's call**,
+and PPM makes it conditional on remaining time. ⚠️ **FR-21 has no counterpart in the project's own
+notes**: the optimization loop those notes describe — the administrator accepts a suggestion and the
+application re-runs — is FR-23, delivered in Phase 7. Weight LEARNING from recorded comparisons is an
+SRS requirement only, and `Comparison` is still a domain type nothing instantiates.
 
 ### Why Phase 12 was last, and what it changed
 **FR-1 was the largest genuine gap and the only requirement left with no software at all** outside the
@@ -472,7 +483,69 @@ point: **a missing marker cannot fail.** The marker is now on the file with that
 real gap**: a compatibility guard that could never fire (removed, not kept as decoration) and a missing
 test that a *second* import replaces the first, which let a cache ignoring the store's revision pass.
 
-### Phase 13 — Examination session ⬜ CONDITIONAL
+### Phase 13 — Examination session ✅ **COMPLETE 2026-08-12**
+
+**Mission:** FR-20 — the timetable of an examination session. Opened by the
+project owner on 2026-08-12 after a gate that re-anchored the remaining work
+against the original product vision rather than against this roadmap.
+
+⚠️ **FR-20's criterion was supervisor-written all along.** **SRS §3.2, Table 19**
+states it in full — input *"Examinations, students, rooms, period of the session
+and supervisors"*, processing *"Construction of the model of section 6.8 then
+solving"*, output *"One slot and one or more rooms assigned to each
+examination"*. This repository had recorded FR-20 as unspecified. **Third time**:
+after C-9's four (Phase 10) and FR-1 (Phase 12), and the same arithmetic would
+have found it each time.
+
+#### What was delivered
+
+| | Delivered | Where |
+|---|---|---|
+| **The model (X1-X4, SX1)** | CP-SAT over SRS §6.8. X1 per individual student, X2 a capacity SUM, X3 by the domain of the variable, X4 per supervisor; SX1 minimised | `examination/solver.py` |
+| **The inputs** | Derived from the instance — one examination per course, supervisor the CM teacher, period two calendar keys (**C-23, ADR-013**) | `examination/derive.py` |
+| **Students** | `Instance.students` wired at last; the loader reads `students.csv` | `domain/instance.py`, `instance/loader.py` |
+| **The surface** | `POST`/`GET /api/examinations`, person in charge only, **202 and poll** like `POST /runs` (ADR-005) | `services/examinations.py`, `api/routers/examination.py` |
+| **The view** | SRS §5.5's *"calendar of the session by group and by room"*, both groupings | `features/examination/` |
+
+#### ⚠️ R-6 was the supervisor's own words, not an inference
+
+SRS §6.8: *"An examination may occupy several rooms at once, so the assignment
+of the rooms becomes a sum of capacities and not the choice of a single room."*
+The weekly `Placement` was **not** widened — `ExamPlacement` carries a tuple of
+rooms and lives beside it. Two new import contracts (**13 kept**) keep the two
+models from sharing a variable schema, both verified to fire.
+
+#### ⚠️ Two findings from running the model rather than reading it
+
+1. **X2 is a covering constraint with no cost, so the first working solve took
+   every room** — 20 rooms, 882 seats, for 120 candidates. Satisfying X2 and
+   useless: a room hosts one examination per slot, so that serialises the
+   session. Room economy is now a secondary objective under SX1, documented as
+   a mechanism rather than a requirement.
+2. **Deleting X4 left the whole acceptance file green.** With 55 slots for 32
+   examinations and SX1 spreading them, the solver avoids supervisor collisions
+   whether or not X4 is posted. `unit/test_examination_solver.py` is the answer:
+   sessions small enough that one rule is load-bearing, asserting
+   **infeasibility** rather than placement, because infeasibility cannot pass by
+   luck. **8 mutations, 7 detected**; the eighth is recorded in that file.
+
+#### What the phase did not touch
+
+The weekly solver, the analysis layer, the objective, scoring or ranking; FR-1's
+eleven-file contract; the constraint catalogue (X1-X4 are not in it — SRS §6.8
+keeps them separate, and invariant 7 makes the catalogue unimportable anyway);
+FR-21, which stays conditional and unbuilt; ITC-2007 Track 1, which was **not
+downloaded** — it is benchmark evidence, not a product requirement.
+
+#### Evidence
+
+`acceptance/test_fr20.py` (14: 8 `solver`-marked, X1-X4 each re-derived from the
+placements a user obtains through the API) · `unit/test_examination_solver.py`
+(14) · `ExamCalendar.test.tsx` (9). **28 backend tests and 9 frontend**
+(collected: 754 → **782** backend, 162 → **171** frontend; the acceptance suite 231 → **245 over 23
+requirements**, measured **25 min 36 s**).
+
+### ~~Phase 13 — Examination session ⬜ CONDITIONAL~~ — the brief, kept
 **Purpose.** Exam timetabling. **This is what the specification calls increment 2**, budgeted 4 days.
 **Requirements:** FR-20.
 **Dependencies.** ⚠️ **ADR-008 places the ITC-2007 Track 1 verification at the start of this phase, and
@@ -504,7 +577,7 @@ met.** ADR-010 commits the assistant to increment 1 and it is built. Phases 1–
 ### 🟡 Strongly recommended before submission
 | Item | Phase | Why |
 |---|---|---|
-| ~~**FR-10 export/print**~~ | 9 | ✅ **DELIVERED 2026-08-10.** Print and CSV on all four views. ⚠️ The requirement is still `WIP` — C-9 holds the tick, not the software |
+| ~~**FR-10 export/print**~~ | 9 | ✅ **DELIVERED 2026-08-10, and `✓` since 2026-08-11** when C-9 closed. ⚠️ **This cell said "still `WIP`" until Phase 13** — stale by two phases, in a table a reader consults for what remains |
 | ~~**Acceptance tests for 5 requirements**~~ | 10 | ✅ **DELIVERED 2026-08-10.** 10 `✓` → 15 `✓`, and no new software. Four of the five were verified against their **SRS §3.2** row, Table 35 having no row for them |
 
 **Nothing remains on this list.** Every hold on a requirement is now external to the code — see §2's
@@ -531,7 +604,7 @@ refuses.
 words, so no ruling was needed and none was taken.
 
 ### ⬜ Out of scope unless time permits
-Phases 13–14. PPM defines increment 2 as **"conditional on remaining time"**, and
+Phase 14, and **ITC-2007 Track 1** — benchmark evidence for the examination engine, deliberately not undertaken in Phase 13 and belonging in `optiedt.validation` if ever taken up. PPM defines increment 2 as **"conditional on remaining time"**, and
 `docs/ai-integration.md` records **natural-language constraint entry as not undertaken** — it would need
 a solver-validation harness that does not fit the project.
 
@@ -541,16 +614,16 @@ a solver-validation harness that does not fit the project.
 
 | Measure | Value | Note |
 |---|---|---|
-| **Phases complete** | **12 of 14** (86 %) | **12 of 12 (100 %)** excluding the two conditional phases |
+| **Phases complete** | **13 of 14** (93 %) | Phase 13 was opened by the project owner on 2026-08-12 and delivered; only Phase 14 remains conditional |
 | **Acceptance criteria** | **9 of 9 (100 %)** | The specification's actual gate |
-| **Requirements `✓`** | **22 of 25 (88 %)** | **10 → 15 in Phase 10, → 16 at the pre-Phase-11 audit, → 18 in Phase 11, → 21 when C-9 closed, → 22 in Phase 12** |
-| **Open questions** | **21 of 21 resolved** | ✅ **None open.** ⚠️ Several were project decisions from repository evidence rather than supervisor answers — `docs/open-questions.md` is the authority on which. **C-22 is the newest, and the only one answering a question the specification never raises** |
-| **Tests** | **754 backend + 162 frontend** | ⚠️ **Derive these**: `uv run pytest --collect-only -q` and `npm run test` |
+| **Requirements `✓`** | **23 of 25 (92 %)** | **10 → 15 in Phase 10, → 16 at the pre-Phase-11 audit, → 18 in Phase 11, → 21 when C-9 closed, → 22 in Phase 12, → 23 in Phase 13** |
+| **Open questions** | **22 of 22 resolved** | ✅ **None open.** ⚠️ Several were project decisions from repository evidence rather than supervisor answers — `docs/open-questions.md` is the authority on which. **C-22 is the newest, and the only one answering a question the specification never raises** |
+| **Tests** | **782 backend + 171 frontend** | ⚠️ **Derive these**: `uv run pytest --collect-only -q` and `npm run test` |
 | **Mandatory work remaining** | **None** | By the nine-criteria gate |
 
-⚠️ **Why 88 % still understates it.** Of the 3 requirements not `✓`, **1 has working software** —
-FR-8, held by a statement this project deliberately refuses to narrow — and **the other 2 are FR-20 and
-FR-21, both conditional**. ⚠️ **Nothing is held by a missing acceptance standard any more**: C-9 closed
+⚠️ **Why 92 % still understates it.** Of the 2 requirements not `✓`, **1 has working software** —
+FR-8, held by a statement this project deliberately refuses to narrow — and **the other is FR-21, which
+is conditional and has no counterpart in the project's own notes**. ⚠️ **Nothing is held by a missing acceptance standard any more**: C-9 closed
 on 2026-08-11, and FR-6, FR-10 and FR-18 are `✓`. **Every requirement the project committed to
 delivering is delivered.**
 
@@ -559,16 +632,17 @@ software and moved the `✓` count by **zero**. Anyone quoting a percentage shou
 
 **If a single figure is wanted, use this one and say how it is computed:**
 
-> **100 % of the project as scoped.** = **all 12 non-conditional phases complete**, the **acceptance
-> gate 100 % met**, and 22 of 25 requirements `✓` with the only non-conditional exception (FR-8) held by
-> a wording this project deliberately refuses to narrow rather than by missing software. Phases 13–14
-> are excluded as conditional by PPM.
+> **100 % of the project as scoped, and the examination session on top of it.** = **all 12
+> non-conditional phases complete plus Phase 13**, the **acceptance gate 100 % met**, and 23 of 25
+> requirements `✓` with the only non-conditional exception (FR-8) held by a wording this project
+> deliberately refuses to narrow rather than by missing software. Phase 14 is excluded as conditional
+> by PPM.
 >
 > ⚠️ **"100 % as scoped" is not "nothing remains".** Two recorded limitations stand — the shortened-day
 > shift in the timetable views, and FR-8's statement — plus six usability findings. None is required by
 > the gate; all are the project owner's call.
 
-**Realistic remaining effort:** Phases 13–14 ≈ 7 days if undertaken; nothing otherwise.
+**Realistic remaining effort:** Phase 14 ≈ 3 days if undertaken; nothing otherwise. *(Phase 13 was budgeted 4 days and took one session — the investigation that preceded it found FR-20 already specified in SRS Table 19, so no acceptance standard had to be invented. The same reason Phase 12 came in short.)*
 *(Phase 10 was estimated at ≈ 1 day and took one session; Phase 11 at ≈ 2 days and took one session;
 **Phase 12 was estimated at ≈ 3–5 days and took one session** — the estimate was the least accurate of
 the three, and the reason is worth keeping: the investigation that preceded it found FR-1's criterion

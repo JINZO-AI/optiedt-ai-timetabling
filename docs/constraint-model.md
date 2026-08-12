@@ -323,7 +323,12 @@ reference instance**. Until it is, the user-facing time limit is an unvalidated 
 
 ---
 
-## Examination model — increment 2
+## Examination model — increment 2 · ✅ **BUILT 2026-08-12, Phase 13**
+
+⚠️ **Implemented in `optiedt/examination/`, PARALLEL to `optiedt/solver/` and sharing no variable
+schema with it.** X3 is applied by the domain of the start variable — a day outside the period or on a
+blocking holiday produces no slot at all — exactly as H9 works weekly. The examinations themselves are
+**derived** from the instance (C-23, ADR-013), because SRS Table 25 defines no Examination entity.
 
 | Code | Statement | Construction |
 |---|---|---|
@@ -346,4 +351,7 @@ Three differences from the weekly model:
    students of one group may sit different optional courses. The 425-student file exists for this and
    only this.
 
-X1–X4 and SX1 are **not** among the 19 constraints of the catalogue (12 hard + 7 soft).
+X1–X4 and SX1 are **not** among the 19 constraints of the catalogue (12 hard + 7 soft), and Phase 13
+did not add them to it: SRS §6.8 keeps the examination rules separate, and invariant 7 makes
+`constraint_catalogue.csv` unimportable in any case. `acceptance/test_fr09` still asserts the catalogue
+holds exactly H1–H12.

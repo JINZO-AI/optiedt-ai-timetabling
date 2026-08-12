@@ -15,9 +15,11 @@ for two documented corrections against what the raw files actually contain:
     .PREFERRED from real data. See C-12 in docs/open-questions.md — this
     is a data gap, not a bug in the loader.
 
-students.csv is not read here. Student exists only for the examination
-model (X1), which is increment 2; loading it now would be dead weight
-carried through every Phase 2 solve.
+students.csv IS read here since Phase 13. It was not until then, on the
+reasoning that Student exists only for the examination model (X1) and
+would be dead weight in every weekly solve. FR-20 made it live: X1 is
+stated per individual student. Nothing in the weekly pipeline reads
+Instance.students, so the cost is one parse of 425 rows at load time.
 """
 
 from __future__ import annotations
@@ -37,6 +39,7 @@ from optiedt.domain.entities import (
     Room,
     Session,
     Slot,
+    Student,
     Teacher,
 )
 from optiedt.domain.enums import (
@@ -131,6 +134,26 @@ def _load_groups(path: Path) -> tuple[Group, ...]:
             size=int(r["n_students"]),
         )
         for r in _rows(path, "groups.csv")
+    )
+
+
+def _load_students(path: Path) -> tuple[Student, ...]:
+    """The 425 individual students. Read by the examination model (X1) only.
+
+    ⚠️ `students.csv` carries first and last names and this loader drops them.
+    The domain's `Student` has no name field, deliberately: PROVENANCE.md's
+    privacy note requires that no student name reach the assistant's context,
+    and the cheapest way to guarantee that is for the name never to enter the
+    domain at all.
+    """
+    return tuple(
+        Student(
+            id=r["student_id"],
+            promotion=r["promotion_id"],
+            tutorial_group=r["td_group_id"],
+            laboratory_subgroup=r["tp_group_id"],
+        )
+        for r in _rows(path, "students.csv")
     )
 
 
@@ -290,6 +313,7 @@ def load_instance(path: Path | str) -> Instance:
         "holidays.csv",
         "calendar_config.csv",
         "constraint_catalogue.csv",
+        "students.csv",
     ):
         if not (root / name).is_file():
             raise FileNotFoundError(f"instance file missing: {root / name}")
@@ -307,4 +331,5 @@ def load_instance(path: Path | str) -> Instance:
         holidays=_load_holidays(root),
         calendar_config=_load_calendar_config(root),
         constraints=_load_constraints(root),
+        students=_load_students(root),
     )

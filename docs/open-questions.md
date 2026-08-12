@@ -43,6 +43,7 @@ occupancy figure was defined nowhere; it was defined in **C-4, on this page**, u
 |---|---|---|---|
 | ~~**C-9**~~ | ~~FR-6, FR-10, FR-17, FR-18 have no detailed specification~~ — **RESOLVED 2026-08-11.** Narrowed to two on 2026-08-10 when SRS Table 36 was finally read, then closed when **FR-18's figure was found already defined in C-4** (`utilisation(r,k)`) rather than missing. ⚠️ **A Table 35 row is still absent for FR-10 and FR-18 and none was invented** — both criteria are labelled *project decision* | ~~The `✓` of FR-10 and FR-18~~ — unblocked | ~~Technical lead · supervisor~~ |
 | ~~**C-22**~~ | ~~What a dataset replacement does to the FR-2 declarations and FR-9 closures already stored~~ — **RESOLVED 2026-08-11, project decision (ADR-012): it is refused rather than allowed to orphan them.** ⚠️ **Raised by Phase 12 and absent from all three specification documents.** Investigation established that an orphaned statement fails *nowhere* today — the solver reads `.get(teacher, frozenset())`, the pre-analysis iterates the new teachers, and `apply_calendar` discards an unknown slot — so it stops meaning anything in silence | ~~The `✓` of FR-1~~ — unblocked | ~~Technical lead~~ |
+| ~~**C-23**~~ | ~~FR-20 names five inputs and the SRS data model defines only two of them~~ - **RESOLVED 2026-08-12, project decision (ADR-013): examinations, supervisors and the examination period are DERIVED from the instance.** One examination per course, the supervisor the course's CM teacher, the period two calendar keys - each settled on a measurement. ⚠️ Raised by Phase 13 and, like C-22, answering a question the specification never asks | ~~The `✓` of FR-20~~ - **FR-20 is `✓`** | ~~Technical lead~~ |
 | ~~**C-15**~~ | ~~The objective weights raw violation counts of incomparable scale~~ — **RESOLVED 2026-08-07 on measurement.** The diagnosis was wrong: the objective formulation is sound and is unchanged. `teacher-favouring` now raises **S3 and S4** rather than S3 and S5, because S5 is an admitted proxy (C-12) and the most expensive criterion to optimise. A profile's promise is reworded to its **headline** criterion, the only reading the arithmetic can deliver | ~~FR-13~~ — unblocked | ~~Technical lead~~ |
 
 Resolved: **C-1, C-2, C-3** (ADRs 010, 011, 009) · **C-6, C-7, C-13** (2026-07-30, implemented) ·
@@ -1626,6 +1627,14 @@ capacity sum, not a single integer.
 
 **Do not bake a single-room abstraction into shared solver code.** Increment 2, but the constraint on
 the code structure applies now.
+
+✅ **HONOURED 2026-08-12 by Phase 13, and R-6 turned out to be the supervisor's own words rather than
+this project's inference.** SRS §6.8 states it directly: *"An examination may occupy several rooms at
+once, so the assignment of the rooms becomes a sum of capacities and not the choice of a single room."*
+The weekly `Placement` was **not** widened; `domain/examination.ExamPlacement` carries
+`rooms: tuple[RoomId, ...]` and lives beside it. A thirteenth import contract,
+`examination-is-parallel-to-the-weekly-model`, keeps the two models from sharing a variable schema, and
+was verified to fire before being relied on.
 
 ---
 

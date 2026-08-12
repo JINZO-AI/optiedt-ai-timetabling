@@ -605,3 +605,47 @@ export interface DatasetImportResult {
    */
   referencesChecked: boolean
 }
+
+/**
+ * One examination, placed — FR-20.
+ *
+ * ⚠️ **`rooms` is an ARRAY and that is R-6, not a convenience.** SRS §3.2
+ * Table 19 promises "one slot and one or more rooms assigned to each
+ * examination", and §6.8 explains why: an examination may occupy several rooms
+ * at once, so room assignment is a sum of capacities rather than the choice of
+ * a single room. The weekly `Placement` carries one `room`; the two must not be
+ * conflated, and `slot` here indexes the EXAMINATION PERIOD, not the week.
+ */
+export interface ExamPlacement {
+  examination: string
+  course: string
+  promotion: string
+  supervisor: string
+  candidateCount: number
+  slot: number
+  day: string
+  periodIndex: number
+  rooms: string[]
+  /** Σ of the assigned rooms' capacities, so a reader can check X2 on screen. */
+  assignedCapacity: number
+}
+
+export interface ExamRun {
+  id: string
+  state: RunState
+  createdAt: string
+  seed: number
+  deterministicBudget: number
+  examinationCount: number
+  slotCount: number
+  spreadPenalty: number | null
+  provenOptimal: boolean | null
+  wallClockSeconds: number | null
+  placements: ExamPlacement[]
+  /**
+   * Verbatim from the server. Usually a refusal to derive the session at all —
+   * an empty roster, an unset examination period — which is actionable in a way
+   * that "generation failed" is not, so the screen shows it as written.
+   */
+  error: string | null
+}

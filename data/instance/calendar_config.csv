@@ -10,3 +10,5 @@ ramadan_start,2026-02-18
 ramadan_end,2026-03-19
 ramadan_shift_minutes,60
 period_minutes,90
+exam_period_start,2026-06-08
+exam_period_days,14

@@ -9,6 +9,7 @@ import { AvailabilityScreen } from '@/features/availability/AvailabilityScreen'
 import { LoginScreen } from '@/features/auth/LoginScreen'
 import { ComparisonScreen } from '@/features/comparison/ComparisonScreen'
 import { DatasetScreen } from '@/features/dataset/DatasetScreen'
+import { ExaminationScreen } from '@/features/examination/ExaminationScreen'
 import { GenerationScreen } from '@/features/generation/GenerationScreen'
 import { PublicationScreen } from '@/features/publication/PublicationScreen'
 import { StudentTimetableScreen } from '@/features/student/StudentTimetableScreen'
@@ -107,6 +108,9 @@ export function App() {
                   prose names the administrator instead. */}
               {mayGenerate && <NavLink to="/donnees">Données</NavLink>}
               {mayGenerate && <NavLink to="/generation">Génération</NavLink>}
+              {/* FR-20 — generating a timetable is the person in charge's
+                  right, weekly or examination (SRS Table 2, C-8). */}
+              {mayGenerate && <NavLink to="/examens">Examens</NavLink>}
               {mayGenerate && <NavLink to="/publications">Publications</NavLink>}
               <NavLink to="/emplois-du-temps">Emplois du temps</NavLink>
               <NavLink to="/comparaison">Comparaison</NavLink>
@@ -121,6 +125,7 @@ export function App() {
         <Route path="/disponibilites" element={<AvailabilityScreen />} />
         <Route path="/donnees" element={<DatasetScreen />} />
         <Route path="/generation" element={<GenerationScreen />} />
+        <Route path="/examens" element={<ExaminationScreen />} />
         <Route path="/emplois-du-temps" element={<TimetableScreen />} />
         <Route path="/comparaison" element={<ComparisonScreen />} />
         <Route path="/publications" element={<PublicationScreen />} />

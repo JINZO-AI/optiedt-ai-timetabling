@@ -815,3 +815,107 @@ table.trace .num {
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
+
+/* ── FR-20 · the examination session ──────────────────────────────── */
+
+/* A one-line explanation at the head of a screen. U3's lesson: a page that
+   does not say what it is for leaves the reader to infer it from the controls. */
+.screen__lead {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+  max-width: 62ch;
+}
+
+.success {
+  color: var(--ok, #2f6b46);
+  font-size: 0.9rem;
+  margin-top: 0.75rem;
+}
+
+.pending {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  margin-top: 0.75rem;
+}
+
+.exam-controls {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.exam-controls legend {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  padding: 0 0.35rem;
+}
+
+.exam-controls__option {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.exam-controls__option small {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+}
+
+.exam-calendar {
+  margin-top: 1.5rem;
+}
+
+.exam-calendar__header {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.exam-calendar__tabs {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.exam-calendar__tabs button[aria-selected='true'] {
+  font-weight: 600;
+  border-bottom: 2px solid currentColor;
+}
+
+.exam-calendar__summary {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  max-width: 70ch;
+}
+
+.exam-calendar__day {
+  margin-top: 1.1rem;
+}
+
+.exam-calendar__day h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  text-transform: capitalize;
+}
+
+.exam-calendar__split {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+/* U3: a hint under a control, so a page explains itself without a manual. */
+.field__hint {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  max-width: 34ch;
+}

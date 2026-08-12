@@ -129,7 +129,8 @@ React ──HTTPS/JSON/token──► FastAPI ──► PostgreSQL
 | `core/` · `db/` · `api/` · `services/` | Config/security · ORM · routers+RBAC · use cases | `domain` |
 | `instance/` | Loads the 13 CSVs; **verifies a supplied department dataset (FR-1)** | `domain` |
 | `preanalysis/` | The five checks. Stage 1 of every run | `domain` |
-| `solver/` | Variables, constraints, objective, diagnosis | `domain` |
+| `solver/` | Variables, constraints, objective, diagnosis — the WEEKLY model | `domain` |
+| `examination/` | **FR-20's model, PARALLEL to `solver/` and sharing no variable schema with it.** An examination takes one or more rooms (R-6) over the examination period; a session takes one room over the week | `domain` |
 | `analysis/` | Criteria, scoring, ranking, decomposition | `domain` |
 | `recommendations/` | Closed catalogue, translation to solver input | `domain`, `analysis` |
 | `assistant/` | Adapter, context builder, answer verifier, computed forms | `domain`, `analysis` |
@@ -203,16 +204,19 @@ code-review comment.
    `slot.is_open = 0` and H9 does the rest; a shortened-day window shifts *displayed* hours only.
    Adding a CP-SAT constraint for Ramadan or a closed Saturday is a bug (ADR-003).
 
-**Invariants 1 and 3 fail the build.** `backend/.importlinter` carries **eleven** contracts and forbids
+**Invariants 1 and 3 fail the build.** `backend/.importlinter` carries **thirteen** contracts and forbids
 `analysis → solver`, `analysis → db`, `assistant → db`, `assistant → solver`, `recommendations → solver`,
-`api → solver`, `api → db`, and any product
+`api → solver`, `api → db`, `api → examination`, `examination → solver`, and any product
 package importing `optiedt.validation`; the recommendation catalogue is a union type so a fourth variant is a
 type error. Every contract is verified to fire before being relied on. **Do not weaken either to make a
 change compile.** The ninth (`api ⇸ solver`, Phase 4) earned that within one commit: it broke twice on
 new code and both times the fix was to move the import, never to relax the rule. The eleventh
 (`recommendations ⇸ solver`, Phase 7 M2) keeps FR-23's guarantee honest: a translator that could build
 and run a `SolverInput` itself would turn "a new run through the same engine" into a private solve with
-no run id, no seed and no trace.
+no run id, no seed and no trace. The **twelfth and thirteenth** (Phase 13) keep `api` off the
+examination solver — same reason as the ninth — and keep the examination model off the weekly solver
+and the analysis layer, which is what stops "parallel model" from quietly becoming "second entry point
+into the weekly one" (R-6). Both were verified to fire by injecting a violation.
 
 Invariant 1 earned its keep on 2026-07-31 in a way worth knowing: OR-Tools was found to report an
 objective value that did not match the solution it returned. Nothing broke, because `analysis` cannot
@@ -340,6 +344,14 @@ by wall clock passes on one machine and fails on another, and the failure looks 
 `optiedt/solver/`. Decide whether it gets its own assumption literal — **it should not if it overlaps
 another constraint** (C-6: redundant literals make the conflict report name a rule the user cannot act
 on).
+
+**Add an examination rule.** Next free `X` code. The examination model lives in `optiedt/examination/`
+and is **parallel to `solver/`, never an extension of it** — R-6, and SRS §6.8 states it: an
+examination may occupy several rooms at once, so room assignment is a capacity SUM and not a single
+`room[s]`. ⚠️ **X1-X4 and SX1 are NOT in `constraint_catalogue.csv`** (SRS §6.8 keeps them separate,
+and invariant 7 makes the catalogue unimportable anyway). ⚠️ **Examinations are DERIVED from the
+instance, never supplied** — C-23 and ADR-013; a form collecting them would be the
+examination-data upload FR-1 was scoped not to become.
 
 **Add a soft criterion.** Next free `S` code — **`S1`, `S8`, `S9` are retired and must never be
 reused.** Implement the `Criterion` Protocol, which requires `raw_value` *and* `bounds` together so a

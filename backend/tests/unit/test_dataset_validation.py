@@ -19,6 +19,7 @@ suite built on toys.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -107,10 +108,22 @@ def test_it_builds_exactly_what_the_loader_builds(  # type: ignore[no-untyped-de
     validator read a column differently from `instance/loader.py` — a semester,
     a boolean, an equipment flag — this fails, and the application would
     otherwise solve a dataset that was not the one on disk.
+
+    ⚠️ **`students` is the one field excluded, and excluding it is the contract
+    rather than a concession.** The loader reads thirteen files; a supplied
+    dataset is **eleven** (`instance/validation.py`), and `students.csv` is not
+    among them — admitting it would be the examination-data upload system FR-1
+    was scoped not to become, and SRS §4.1 names no form for it. So the roster
+    is something the validator was never given, and comparing it would assert
+    that two parse paths agree about a file only one of them read. Every field
+    the validator IS given is still compared whole.
     """
     result = validate_dataset(reference_files, catalogue)
 
-    assert result.instance == load_instance(instance_root)
+    assert result.instance == replace(load_instance(instance_root), students=())
+    # And the exclusion is exactly one field: a roster the dataset never carried.
+    assert result.instance.students == ()
+    assert load_instance(instance_root).students != ()
 
 
 # ── Files ──────────────────────────────────────────────────────────────

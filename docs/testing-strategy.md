@@ -230,6 +230,14 @@ and was excluded from its first full run** — 197 tests selected where the dire
 failed; the two counts simply disagreed. **Check the collected count against the directory after adding
 an acceptance file**, because a missing marker cannot fail a test.
 
+| **FR-20** | Examinations, students, rooms, period of the session and supervisors | Construction of the model of section 6.8 then solving | One slot and **one or more rooms** assigned to each examination |
+
+⚠️ **FR-20's row was found in Phase 13, and it is the THIRD requirement this has happened to.**
+`docs/requirements-traceability.md` recorded no criterion for FR-20 at all while SRS §3.2 Table 19
+stated it in full. The same arithmetic that should have found FR-1's row finds this one. ⚠️ What FR-20
+genuinely lacks is a **source** for three of the five inputs it names — SRS Table 25 defines no
+Examination entity — which is **C-23**, not a missing criterion.
+
 ⚠️ **FR-1's row was found in Phase 12, four phases after it could have been.**
 `docs/requirements-traceability.md` had recorded FR-1 as "absent from Table 35 — not yet relevant" and
 stopped; the requirement was carried as unspecified while a supervisor-written promise sat in Table 4.

@@ -59,7 +59,31 @@ export function GenerationScreen() {
 
         <div className="form-row">
           <div className="field">
-            <label htmlFor="seed">Graine</label>
+            <label htmlFor="budget">Durée de la recherche</label>
+            {/* ⚠️ U2. This control was labelled "Budget déterministe (pas des
+                secondes)" and the first-use session reported that users "do not
+                understand the purpose of each action". The underlying parameter
+                is UNCHANGED and is still a deterministic budget — a unit of
+                WORK, not of time (ADR-011), which is exactly why it cannot
+                honestly be relabelled "seconds" and why presets are the fix
+                rather than a different number box. */}
+            <select
+              id="budget"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+              disabled={launching}
+            >
+              <option value="30">Rapide — un premier résultat</option>
+              <option value="90">Standard — recommandé</option>
+              <option value="180">Approfondie — cherche plus longtemps</option>
+            </select>
+            <small className="field__hint">
+              Une recherche plus longue améliore les critères de qualité ; elle ne
+              change jamais le respect des contraintes obligatoires.
+            </small>
+          </div>
+          <div className="field">
+            <label htmlFor="seed">Graine aléatoire</label>
             <input
               id="seed"
               value={seed}
@@ -67,16 +91,10 @@ export function GenerationScreen() {
               onChange={(e) => setSeed(e.target.value)}
               disabled={launching}
             />
-          </div>
-          <div className="field">
-            <label htmlFor="budget">Budget déterministe (pas des secondes)</label>
-            <input
-              id="budget"
-              value={budget}
-              inputMode="decimal"
-              onChange={(e) => setBudget(e.target.value)}
-              disabled={launching}
-            />
+            <small className="field__hint">
+              À données et pondérations identiques, la même graine redonne
+              exactement le même emploi du temps.
+            </small>
           </div>
           <button onClick={launch} disabled={launching}>
             {launching ? 'Génération en cours…' : 'Lancer la génération'}
