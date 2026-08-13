@@ -31,9 +31,12 @@ limit does not help, because the work happens *after* the response.
 2. **`POST /runs` answers 202 immediately and the work continues in a background thread.**
    `tasks/executor.py` and `services/examinations.py` each hold a
    `ThreadPoolExecutor(max_workers=1)`. A function instance is frozen or destroyed once it responds, so
-   the thread never finishes and the run stays `PENDING` forever.
-3. **State lives in the process.** `InMemoryExamRunStore` is the only implementation — examination runs
-   do not survive a restart, let alone a new invocation on a different instance.
+   the thread is stopped wherever it had reached — and ⚠️ **nothing ever recovers a run left part-way**:
+   there is no startup reaper and no timeout sweep, so the row keeps whatever state it had and the
+   interface polls it forever. §2 A4 has the detail.
+3. **Some state lives only in the process.** Weekly runs *are* persisted (`persistence` defaults to
+   `database`), but `InMemoryExamRunStore` is the only examination store — those runs do not survive a
+   restart, let alone a new invocation on a different instance.
 
 Two further frictions worth knowing: the **single-worker pool is deliberate** (each solve already uses
 every core, so two concurrent solves oversubscribe the machine — ADR-005), and **OR-Tools is ~81 MB
@@ -49,34 +52,101 @@ shared host (`4` is what the demonstration machine used). Give the backend **at 
 
 ---
 
-## 2 · Vercel — the two options, assessed
+## 2 · Vercel — the two options, reassessed 2026-08-13
 
-**Option A — frontend *and* backend on Vercel: NOT VIABLE.** For the three reasons in §1. A Python
-function can serve `GET /api/instance` perfectly well, but `POST /runs` would return a run id for work
-that never runs, and the examination store would be empty on the next request. The product would appear
-to work and then never finish a timetable — the worst possible failure mode.
+Reassessed against the code rather than against a general belief about
+serverless. Every claim below names the file it comes from.
 
-**Option B — frontend on Vercel, backend on a persistent host, managed PostgreSQL: VIABLE, and
-recommended.** Nothing in the repository stands in the way. Two changes are required, both small:
+### Option A — frontend *and* backend on Vercel: **UNSAFE**
 
-1. **CORS.** `api/main.py` hard-codes `allow_origins=["http://localhost:5173"]`. It must accept the
-   deployed frontend origin — ideally from an environment variable rather than another literal.
-2. **Routing.** Add a Vercel rewrite from `/api/*` to the backend host. ⚠️ **Prefer a rewrite over a
-   base URL**: it keeps requests same-origin, leaves `src/api/client.ts` unchanged, and avoids CORS
-   entirely.
+FastAPI runs on Vercel; that is not the question. The question is whether *this*
+backend's generation lifecycle survives there, and four findings say it does not.
+Three are silent failures — the application would look like it works.
+
+**A1 · `InMemoryExamRunStore` breaks outright, and this one is a correctness bug.**
+`services/examinations.py` holds examination runs in a process dictionary — it is
+the only implementation, and its own docstring says so. `POST /api/examinations`
+returns an id; a following `GET /api/examinations/{id}` that lands on a different
+instance returns **404 for a session that was generated successfully**. No
+timeout, no error, just a result that has vanished.
+
+**A2 · The background work races the response.** `POST /runs` returns 202 and
+hands the solve to `RunExecutor.submit`, a `ThreadPoolExecutor(max_workers=1)` in
+`tasks/executor.py`. The handler returns before the work starts. A serverless
+instance is suspended once it responds, so the thread is frozen mid-solve. The
+code registers nothing with a keep-alive primitive and could not without changing
+the run lifecycle — which is what ADR-005 decided.
+
+**A3 · "One solve at a time" silently stops holding.** `get_executor()` in
+`api/deps.py` is `@lru_cache(maxsize=1)` — **one executor per process**. Across
+several instances there are several single-worker pools, so two runs proceed at
+once. That guarantee is not tidiness: `solver_workers=0` means each solve takes
+every core, and overlapping two was measured to stall unrelated work for minutes.
+
+**A4 · A recycled instance strands a run forever.** Run state *is* persisted —
+`persistence` defaults to `database`, and the executor saves at every transition —
+but **nothing ever recovers a run left in `SOLVING`.** Verified: no startup
+reaper, no timeout sweep, no state repair anywhere in `api/main.py` or
+`services/runs.py`. The row stays `SOLVING`, the interface polls it forever. On a
+persistent host that needs a crash; on serverless, instance recycling is routine.
+
+Two further frictions, neither decisive on its own: **OR-Tools is 81 MB
+installed**, which is close to the package limits of several function platforms;
+and a solve measured **122–150 s** on 4 dedicated workers, so on the smaller
+shared vCPU allocation of a function it would run considerably longer against
+whatever the platform's ceiling is.
+
+> ⚠️ **What would make Option A viable is an architectural decision, not a
+> configuration change**, and it is deliberately NOT implemented here: move
+> examination runs into the database, replace the in-process executor with an
+> external queue and worker, and add recovery for runs stranded in `SOLVING`.
+> That is ADR-005 reversed. It belongs to the project owner, and it should be a
+> new ADR rather than a quiet refactor.
+
+### Option B — frontend on Vercel, backend on a persistent host: **SAFE**
+
+Nothing in the repository stands in the way, and the one thing that did has been
+fixed. Three properties make it work:
+
+- **Product code writes nothing to disk.** Verified by search across
+  `backend/src/optiedt/` — no `open(…, "w")`, no `write_text`, no `mkdir`, no
+  `shutil.copy`. `data/instance/` is read-only at runtime by design, and a
+  supplied dataset goes to the `department_dataset` table. So an ephemeral or
+  read-only filesystem changes nothing.
+- **The API is stateless per request apart from the two in-process caches above**,
+  and a single persistent instance keeps both correct.
+- **The frontend needs no configuration.** `src/api/client.ts` calls `/api` as a
+  relative path.
+
+**Two changes, one of which is already done:**
+
+1. ✅ **CORS is now configurable** — `OPTIEDT_CORS_ALLOWED_ORIGINS`, comma-separated,
+   defaulting to the Vite dev server. Verified with real preflight requests: a
+   configured origin gets `200` with the matching `access-control-allow-origin`,
+   localhost still works, and an unconfigured origin gets `400`.
+2. **Add a Vercel rewrite** so the SPA and the API share an origin:
 
 ```json
-// vercel.json — not present in the repository; create it when Option B is executed
+// vercel.json — not in the repository; create it when Option B is executed
 {
   "rewrites": [{ "source": "/api/:path*", "destination": "https://YOUR-BACKEND-HOST/api/:path*" }]
 }
 ```
 
-⚠️ Even under Option B, a solve outlives typical proxy timeouts — but that is fine, because **no
-request is held open for one.** The client polls. Only make sure the proxy does not buffer or time out
-the short `POST` and `GET` calls.
+⚠️ **Prefer the rewrite over setting a cross-origin API base.** It keeps every
+request same-origin, leaves `client.ts` untouched, and means the CORS setting is
+never consulted at all — one fewer thing to get wrong at 2 a.m.
 
----
+⚠️ **Run one full generation on the chosen host before believing it.** That single
+test distinguishes a persistent host from a request-scoped one, and it is the only
+test that does.
+
+### ⚠️ One gap Option B does not close
+
+**A backend restart during a solve still strands that run in `SOLVING`** (A4). It
+is far rarer on a persistent host — a deploy or a crash rather than routine
+recycling — but the failure is the same and there is no recovery. Until there is,
+the operational answer is to notice and re-run. Worth an ADR before real users.
 
 ## 3 · Environment variables
 
@@ -90,6 +160,10 @@ Names only. ⚠️ **Never write a value into a tracked file.** The full table w
 (`Settings.require_deployable`, pinned by `unit/test_config_guard.py`). That guard is the only thing
 standing between a deployment and forgeable tokens, because the default key is published in this
 repository.
+
+**Required if the SPA and the API are on different origins:** `OPTIEDT_CORS_ALLOWED_ORIGINS` —
+comma-separated, no trailing-comma fuss, defaulting to the Vite dev server. ⚠️ Not consulted at all
+behind a same-origin `/api/*` rewrite, which is the arrangement §2 recommends.
 
 **Recommended:** `OPTIEDT_SOLVER_WORKERS`, `OPTIEDT_SOLVER_WALL_CLOCK_CEILING_SECONDS`.
 
@@ -153,7 +227,8 @@ After deploying, in a **fresh browser** on the deployed URL:
 
 - [ ] `OPTIEDT_ENVIRONMENT=production` and a real `OPTIEDT_SECRET_KEY`
 - [ ] `alembic upgrade head` against the production database
-- [ ] CORS origin set to the deployed frontend, not `localhost:5173`
+- [ ] `OPTIEDT_CORS_ALLOWED_ORIGINS` set to the deployed frontend origin — **or** a same-origin
+      `/api/*` rewrite in place, in which case it is not needed at all
 - [ ] `/api/*` reaching the backend from the SPA's origin
 - [ ] `OPTIEDT_SOLVER_WORKERS` sized to the host
 - [ ] The assistant key set only if written answers are wanted

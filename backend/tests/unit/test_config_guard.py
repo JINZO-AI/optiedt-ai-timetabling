@@ -81,3 +81,89 @@ def test_the_environment_is_read_case_and_whitespace_insensitively(value: str) -
     """
     with pytest.raises(InsecureConfigurationError):
         _settings(environment=value).require_deployable()
+
+
+# ── CORS origins ──────────────────────────────────────────────────────────
+#
+# ⚠️ **The hard-coded `["http://localhost:5173"]` these replace was the single
+# blocker that made the application undeployable.** A browser at any other
+# origin had every request refused at the preflight, and what a developer sees
+# then is an opaque CORS message in the console rather than "nobody configured
+# this" — so it is the kind of fault that gets diagnosed as a broken deployment.
+#
+# These are written the way the guard tests above are: the parsing is trivial,
+# but the DEFAULT and the SHAPE of the setting are the parts a future change
+# could break silently, so both are pinned.
+
+
+def test_the_default_origin_is_the_vite_dev_server(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A local checkout must work with no configuration at all.
+
+    Same reasoning as `environment` defaulting to development: a setting that
+    has to be set before anything runs is a setting people work around.
+
+    ⚠️ **`delenv` as well as `_env_file=None`.** The helper's `_env_file=None`
+    stops pydantic-settings reading `backend/.env`, and does NOT stop it reading
+    `os.environ` - so an operator who exports OPTIEDT_CORS_ALLOWED_ORIGINS in
+    their shell would turn a test about DEFAULTS red. Found by running these
+    tests with the variable set; it is the same defect `tests/conftest.py`
+    fixed for the assistant flag, reintroduced two files away.
+    """
+    monkeypatch.delenv("OPTIEDT_CORS_ALLOWED_ORIGINS", raising=False)
+
+    assert _settings().cors_origins == ["http://localhost:5173"]
+
+
+def test_no_production_url_is_baked_into_the_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    """⚠️ The deployment supplies its own origin; this repository does not know
+    it. A hard-coded production host here would be wrong for every deployment
+    but the first, and would silently authorise an origin nobody chose."""
+    monkeypatch.delenv("OPTIEDT_CORS_ALLOWED_ORIGINS", raising=False)
+
+    assert all("localhost" in origin for origin in _settings().cors_origins)
+
+
+def test_several_origins_are_read_from_one_comma_separated_value() -> None:
+    """⚠️ Comma-separated, NOT `list[str]`.
+
+    pydantic-settings parses a list-typed field from the environment as JSON, so
+    the value would have to be written `["https://x"]` in a hosting panel —
+    quoting that correctly through a shell, a Dockerfile and a web form is three
+    chances to get it wrong silently. A plain string is what a person can type.
+    """
+    settings = _settings(
+        cors_allowed_origins="https://optiedt.example.edu,https://staging.example.edu"
+    )
+
+    assert settings.cors_origins == [
+        "https://optiedt.example.edu",
+        "https://staging.example.edu",
+    ]
+
+
+def test_stray_whitespace_and_trailing_commas_are_tolerated() -> None:
+    """A trailing comma in a hosting panel is not worth failing a deployment on.
+
+    ⚠️ But an EMPTY entry would be: `""` matches no origin, and an allow list
+    containing one looks exactly like a setting that was ignored.
+    """
+    settings = _settings(cors_allowed_origins=" https://a.example , , https://b.example ,")
+
+    assert settings.cors_origins == ["https://a.example", "https://b.example"]
+
+
+def test_the_middleware_is_installed_with_the_configured_origins() -> None:
+    """⚠️ The setting must actually reach the middleware.
+
+    Verified to fire: reverting `api/main.py` to the literal list fails this,
+    which is what makes it a guard rather than a restatement of the parser.
+    """
+    from fastapi.middleware.cors import CORSMiddleware
+
+    from optiedt.api.main import _cors_origins, app
+
+    installed = [m for m in app.user_middleware if m.cls is CORSMiddleware]
+
+    assert len(installed) == 1, "exactly one CORS middleware is expected"
+    assert _cors_origins == Settings().cors_origins
+    assert installed[0].kwargs["allow_origins"] == _cors_origins

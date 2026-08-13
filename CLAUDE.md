@@ -462,6 +462,7 @@ Seed the first accounts once, on an empty system: `uv run python -m optiedt.serv
 | `OPTIEDT_ENVIRONMENT` | backend | production | `production` arms `Settings.require_deployable()` |
 | `OPTIEDT_SECRET_KEY` | backend | production | Signs bearer tokens. ⚠️ **The default is published in this repository**; start-up REFUSES it when the environment is `production` |
 | `OPTIEDT_ACCESS_TOKEN_EXPIRE_MINUTES` | backend | optional | Token lifetime; default 480 |
+| `OPTIEDT_CORS_ALLOWED_ORIGINS` | backend | **production, if cross-origin** | Browser origins allowed to call the API, **comma-separated**. Defaults to the Vite dev server. ⚠️ Was a hard-coded literal until 2026-08-13 and was the one setting that made the application undeployable. Not consulted at all behind a same-origin `/api/*` rewrite |
 | `OPTIEDT_PERSISTENCE` | backend | optional | `database` (default) or in-memory, for tests |
 | `OPTIEDT_SOLVER_WORKERS` | backend | recommended | `0` = every core. **Cap it on a shared host** |
 | `OPTIEDT_SOLVER_DETERMINISTIC_BUDGET` | backend | optional | Work for a WHOLE run, split between profiles — not seconds (ADR-011) |

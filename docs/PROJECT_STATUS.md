@@ -36,18 +36,19 @@ Everything in this section was run on **2026-08-13** and the figure is the outpu
 | Backend fast suite | `pytest -m "not solver and not database"` | **633 passed**, 149 deselected, 59 s |
 | Backend database suite | `pytest -m database` (Docker up) | **74 passed**, 19 s — real PostgreSQL 17, includes 2 migration tests |
 | Acceptance collected | `pytest tests/acceptance --collect-only -q` | **245 tests** over 23 requirements + the student surface |
+| Secret scan | `git grep` for key patterns, tracked **and** untracked | **0 hits** |
+| `.env` tracked? | `git ls-files --error-unmatch` | **not tracked**, both root and `backend/` |
+| API surface | `GET /api/openapi.json` | **33 endpoints** |
 
-⚠️ **The solver-marked tests were not run at the freeze.** They are the remaining ~75 of the 782 and
-take minutes each; the last full sweep was `scripts/run-acceptance.ps1` on 2026-08-12 — **245 passed in
-23 min 49 s**. Nothing in the V2 pass touched a backend source file that a solver test covers, but that
-is an argument, not a measurement.
+⚠️ **The solver-marked tests were not run at the freeze**, and were still not completed on the
+re-verification pass. They are the remaining ~75 of the suite and take minutes each; the last full
+sweep was `scripts/run-acceptance.ps1` on 2026-08-12 — **245 passed in 23 min 49 s**. Nothing in the V2
+pass touched a backend source file that a solver test covers, but that is an argument, not a
+measurement.
 
 ⚠️ The database suite **skipped silently** on the first attempt because Docker Desktop was not running —
 `74 skipped`, exit code 0. A skipped suite reporting success is exactly the trap `CLAUDE.md` warns
 about; start `docker compose up -d` and confirm the count before believing a green run.
-| Secret scan | `git grep` for key patterns, tracked **and** untracked | **0 hits** |
-| `.env` tracked? | `git ls-files --error-unmatch` | **not tracked**, both root and `backend/` |
-| API surface | `GET /api/openapi.json` | **33 endpoints** |
 
 ### Measured in the running application
 
@@ -61,6 +62,69 @@ about; start `docker compose up -d` and confirm the count before believing a gre
 | **Ledger identity** | `Σ contributions = Δ score` exactly, at 3 decimals, on real data |
 | **AI, live** | `generated: true`, `fallbackReason: null`, **1.05 s**, figures matching the context |
 | **Roles** | All four sign in; each lands on its own screen; a teacher on Compare is refused regeneration politely rather than by a 403 |
+
+---
+
+## 2b · Independent re-verification, and the one blocker resolved
+
+Everything in §2 was re-run rather than carried forward. Two figures moved and one blocker is closed.
+
+| Check | Result |
+|---|---|
+| mypy strict | no issues, **92** files |
+| ruff + format | clean, **165** files |
+| Import contracts | **13 kept, 0 broken** |
+| Frontend | typecheck clean, **196 / 196**, build clean |
+| Backend fast | **638 passed** (was 633 — five new CORS tests) |
+| Backend database | **74 passed**, Docker confirmed up first |
+| Alembic | `1e28bf61664e (head)`, **exactly one head**, 6 migrations, linear |
+| Endpoints | **33**, matching `API_OVERVIEW.md` |
+| Settings documented | 17 of 17 in `CLAUDE.md` |
+| Auth | 4 roles issue tokens; wrong password `401`; no token `401` |
+| Role permissions | **8 / 8** — every refusal a `403`, every grant a `200` |
+| Ledger identity | `Σ contributions` = `Δ score` to **1e-9** on real data |
+| AI | `generated: true`, `fallbackReason: null`, live provider |
+
+### ✅ CORS was the one true deployment blocker, and it is fixed
+
+`api/main.py` carried `allow_origins=["http://localhost:5173"]` as a literal. A browser at any other
+origin had every request refused at the preflight, and what a developer sees then is an opaque CORS
+error rather than "nobody configured this" — the failure most likely to be diagnosed as a broken
+deployment rather than as a missing setting.
+
+Now `OPTIEDT_CORS_ALLOWED_ORIGINS`, comma-separated, defaulting to the Vite dev server so a local
+checkout still needs no configuration. ⚠️ **No production URL is hard-coded and none may be added** —
+the deployment supplies its own origin.
+
+Proven with live preflight requests, not only by unit test:
+
+```
+https://optiedt.example.edu   200  access-control-allow-origin: https://optiedt.example.edu
+http://localhost:5173         200  access-control-allow-origin: http://localhost:5173
+https://evil.example          400  (no header — correctly refused)
+```
+
+⚠️ **The guard was verified to fire.** Reverting `main.py` to the literal fails
+`test_the_middleware_is_installed_with_the_configured_origins`, which is what makes it a guard rather
+than a restatement of the parser.
+
+### ⚠️ A new finding: nothing recovers a run stranded in `SOLVING`
+
+Weekly run state *is* persisted — `persistence` defaults to `database` and the executor saves at every
+transition. But **there is no startup reaper, no timeout sweep and no state repair anywhere**. If the
+process dies mid-solve, that row stays `SOLVING` in PostgreSQL and the interface polls it forever.
+
+Rare on a persistent host (a deploy or a crash); routine on serverless, where it is one of the four
+reasons Option A is unsafe. **Not fixed here** — it is an architectural decision that reverses ADR-005
+and belongs to the project owner. `deployment.md` §2 A4.
+
+### ⚠️ I reintroduced the hermeticity bug I had just fixed
+
+The first version of the new CORS tests asserted on defaults using `Settings(_env_file=None)`. That
+disables the dotenv file and **not** `os.environ` — so exporting `OPTIEDT_CORS_ALLOWED_ORIGINS` turned
+two tests about defaults red. Caught by running them with the variable set. Fixed with `monkeypatch
+.delenv`; both now pass with the variable exported and without it. Same defect as §3.1, two files away
+and one session later.
 
 ---
 

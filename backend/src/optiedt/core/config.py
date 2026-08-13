@@ -62,6 +62,46 @@ class Settings(BaseSettings):
 
     access_token_expire_minutes: int = 480
 
+    cors_allowed_origins: str = "http://localhost:5173"
+    """Browser origins allowed to call the API, comma-separated.
+
+    ⚠️ **This was a hard-coded `["http://localhost:5173"]` in `api/main.py`
+    until 2026-08-13, and it was the single blocker that made the application
+    undeployable.** A browser at any other origin had every request refused by
+    the preflight, which surfaces in the console as an opaque CORS error rather
+    than as "you did not configure this" - the failure mode most likely to be
+    mistaken for a broken deployment.
+
+    ⚠️ **A comma-separated string, not `list[str]`.** pydantic-settings parses a
+    list-typed field from the environment as JSON, so the value would have to be
+    written `["https://x"]` in a hosting panel's environment editor - quoting
+    that correctly through a shell, a Dockerfile and a web form is three chances
+    to get it wrong silently. A plain string with `cors_origins` doing the split
+    is what a person can type.
+
+    ⚠️ **The default keeps development working with no configuration at all**,
+    which is the same reason `environment` defaults to `development`: a setting
+    that must be set before anything runs is a setting people work around.
+
+    ⚠️ **No production URL is hard-coded here and none may be added.** The
+    deployment supplies its own origin; this repository does not know it.
+
+    Note that this matters only when the SPA is served from a different origin
+    than the API. Behind a same-origin rewrite - the arrangement
+    `docs/deployment.md` recommends - no cross-origin request is made at all and
+    this setting is never consulted."""
+
+    @property
+    def cors_origins(self) -> list[str]:
+        """`cors_allowed_origins` split, trimmed, and emptied of blanks.
+
+        A trailing comma or a stray space in a hosting panel is not a
+        configuration error worth failing on, but an empty string in the allow
+        list would be - `""` matches no origin and would look like the setting
+        had been ignored.
+        """
+        return [origin.strip() for origin in self.cors_allowed_origins.split(",") if origin.strip()]
+
     # ── Solver ─────────────────────────────────────────────────────
     solver_deterministic_budget: float = 120.0
     """Deterministic time for a WHOLE run — NOT wall-clock seconds.

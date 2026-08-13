@@ -94,12 +94,28 @@ app = FastAPI(
 )
 
 # Vite proxies /api, so same-origin holds in development and CORS is not
-# strictly needed. It is enabled for the dev origin only, so that running the
-# frontend against a differently-hosted API does not fail in a way that looks
-# like a routing bug.
+# strictly needed. It is enabled so that running the frontend against a
+# differently-hosted API does not fail in a way that looks like a routing bug.
+#
+# ⚠️ **The origins are CONFIGURATION, and until 2026-08-13 they were the literal
+# `["http://localhost:5173"]`.** That one line made the application undeployable:
+# a browser at any other origin had every request refused at the preflight, and
+# what a developer sees then is an opaque CORS message in the console rather
+# than "nobody configured this". Set `OPTIEDT_CORS_ALLOWED_ORIGINS` to the
+# deployed frontend's origin - comma-separated if there is more than one.
+#
+# ⚠️ **No production URL belongs in this file.** The default is the Vite dev
+# server so a local checkout works with no configuration; the deployment
+# supplies its own origin, because this repository does not know it.
+#
+# ⚠️ `Settings()` directly rather than `deps.get_settings`, for the same reason
+# the lifespan guard above does it: middleware is installed at import, before
+# any request has warmed the dependency cache. Read once, so a change needs a
+# restart - the same contract as every other setting here.
+_cors_origins = Settings().cors_origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
