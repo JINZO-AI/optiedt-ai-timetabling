@@ -1,5 +1,31 @@
 # Architecture
 
+> ## In plain language, before the detail
+>
+> **OptiEDT is one web application with four parts, and the boundary between two of them is the whole
+> design.**
+>
+> A **browser interface** (React) shows the screens. It calls a **web service** (FastAPI) over HTTPS.
+> The service stores everything in **PostgreSQL** and, when asked to build a timetable, hands the
+> problem to a **constraint solver** (OR-Tools CP-SAT) running in a background thread on the same
+> machine.
+>
+> The solver's job is to *place* every session — a time slot and a room for each — without breaking any
+> of the twelve compulsory rules. It cannot produce an invalid timetable; that is a mathematical
+> property of how the problem is posed, not something checked afterwards.
+>
+> A separate **analysis layer** then measures each timetable it produced against seven quality
+> criteria and turns those into a score out of 100. ⚠️ **This layer is forbidden from touching the
+> solver, and the solver is forbidden from touching it.** That separation is the reason a mistake in
+> the scoring can only produce a worse *ordering*, never an invalid *timetable* — the two failures have
+> completely different costs, so they are kept in completely different places.
+>
+> Finally a **language model** writes explanations of results the other parts computed. It places
+> nothing, scores nothing and ranks nothing, and every figure it writes is checked against figures the
+> system already produced. Switch it off and everything still works; only the prose disappears.
+>
+> Everything below states that precisely.
+
 ## The idea the system is built on
 
 The specification separates **two decisions of different natures** and refuses to let them mix.

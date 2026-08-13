@@ -127,10 +127,41 @@ data/            Instance generator, the 13 instance files, verification checks
 scripts/         Bootstrap and maintenance
 ```
 
+## The interface
+
+React 18 + Vite 5, plain CSS in six token-driven layers, no UI framework. IBM Plex Sans for the
+interface and IBM Plex Mono for figures and codes, both **self-hosted** — no CDN, so it renders
+identically on a machine with no internet.
+
+A grouped left rail, a sticky page bar carrying each screen's single primary action, and a content
+region that has a real layout rather than a stack of cards. The signature surface is the **decomposition
+ledger** on Compare: because the score is a weighted sum of normalised values, the difference between
+two candidates decomposes *exactly*, and the ledger draws each term either side of a zero axis with the
+sum landing on the difference.
+
+⚠️ **This interface is a frozen baseline, accepted 2026-08-13.** Read
+[`docs/UX_DECISIONS.md`](docs/UX_DECISIONS.md) before changing a visual decision — several entries
+record a specific defect that a plausible "improvement" would bring back.
+
 ## Documentation
 
 **`CLAUDE.md` is the entry point for anyone — human or model — about to change code.** It carries the
-read-order, the seven invariants, what is decided and what is still open.
+read-order, the seven invariants, the frontend baseline, what is decided and what is still open.
+
+| Read this | For |
+|---|---|
+| [`CLAUDE.md`](CLAUDE.md) | The contract: invariants, architecture, commands, what must not change |
+| [`docs/dashboard.md`](docs/dashboard.md) | **Where the project is.** The one page that answers it |
+| [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) | The release-verification record — what was measured, when |
+| [`docs/architecture.md`](docs/architecture.md) · [`docs/domain-model.md`](docs/domain-model.md) | How it is built |
+| [`docs/constraint-model.md`](docs/constraint-model.md) · [`docs/scoring-and-explanation.md`](docs/scoring-and-explanation.md) | The solver and the score |
+| [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) · [`docs/UX_DECISIONS.md`](docs/UX_DECISIONS.md) | The interface, and why |
+| [`docs/API_OVERVIEW.md`](docs/API_OVERVIEW.md) | 33 endpoints, read from the live schema |
+| [`docs/AI_BEHAVIOR.md`](docs/AI_BEHAVIOR.md) | Grounding, fallback, and what the AI must never claim |
+| [`docs/TESTING.md`](docs/TESTING.md) | Commands and the coverage map |
+| [`docs/deployment.md`](docs/deployment.md) · [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) | Deploying it, and what is still unticked |
+| [`docs/supervisor/INTERFACE_WALKTHROUGH.md`](docs/supervisor/INTERFACE_WALKTHROUGH.md) | A non-technical guide to the screens |
+| [`docs/decisions/`](docs/decisions/) | Thirteen ADRs — read one before arguing with it |
 
 The three PDFs in `docs/specifications/` are the contractual specification. They are authoritative on
 *what was promised*, and the working documents in `docs/` are authoritative on *how it is built* —
@@ -139,115 +170,32 @@ catalogued in `docs/open-questions.md` rather than resolved silently.
 
 ## Status
 
-**Increment 1 · COMPLETE. Phases 1–13 delivered. Phase 14 alone remains CONDITIONAL on remaining
-time.** 23 of 25 requirements are `✓`.
+**Not deployed.** The application runs locally and is verified there; nothing has been deployed
+anywhere. See [`docs/deployment.md`](docs/deployment.md) for the shape a deployment would take, and
+[`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) for what is still unticked.
 
-📍 **A fresh session should read [`docs/dashboard.md`](docs/dashboard.md), then
-[`docs/project-roadmap.md`](docs/project-roadmap.md) — that is the handoff.**
+At the release freeze on **2026-08-13**: frontend **196/196** tests, typecheck and production build
+clean; backend **633** fast tests and **74** database tests against real PostgreSQL 17; **245**
+acceptance tests collected over 23 requirements; **0** contrast failures across 545 text nodes; **0**
+secrets tracked.
+
+> ⚠️ **This section deliberately carries no phase, progress or requirement count.**
+> [`docs/dashboard.md`](docs/dashboard.md) is the only place project state lives. This section said
+> something stale in **four** successive phases — twice found by an audit that then went stale itself,
+> because a closing audit cannot verify the sentence recording its own phase closing. The fix was to
+> stop keeping a second copy here.
+
+📍 **A fresh session should read [`CLAUDE.md`](CLAUDE.md), then
+[`docs/dashboard.md`](docs/dashboard.md), then [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md).**
 
 📍 **[`docs/project-roadmap.md`](docs/project-roadmap.md) is the phase view** — the whole project as one
-continuous sequence, with what the specification calls increment 1 and increment 2 mapped into it.
+continuous sequence.
 
-The decision layer is built: all twelve hard constraints, a conflict-free timetable on the reference
-instance in about three seconds, every constraint re-verified from the raw data rather than trusted
-from the solver's own status. The analysis layer sits on top: seven quality criteria, an exact
-weighted score, ranking, the term-by-term decomposition, Pareto dominance, and a portfolio returning
-three distinct candidates reproducibly. The engine is validated on the 21 published ITC-2007 instances.
-The web interface reaches all of it — availability grid, generation, four timetable views, comparison,
-the conflict report and published timetables with their trace. **Phase 9 added the way out of the
-screen** (FR-10): every timetable view prints as an identified sheet and downloads as a spreadsheet,
-both carrying the run, seed and full weight vector that produced them. **Phase 10 closed five
-requirements by evidence rather than by code** (FR-3, FR-4, FR-7, FR-14, FR-16), taking the count from
-10 `✓` to 15 of 25. **Phase 11 added the administrative surfaces** (FR-9, FR-11 → 18 of 25, and 21 once C-9 closed): an
-administrator configures the calendar — closed half-days, holidays and the shortened-day window — and
-manages the accounts, and a student reaches the published timetable of their own group and nothing
-else. **Phase 12 made the application independent of the files it shipped with** (FR-1 → 22 of 25): a
-department's data can be supplied, verified line by line and solved without editing anything by hand.
-**Phase 13 added the examination session** (FR-20 → 23 of 25): a CP-SAT model of the four examination
-rules with the spreading criterion as its objective, over examinations derived from the instance, and
-a calendar of the session by group and by room. ⚠️ **An examination may occupy several rooms at once**,
-so it has its own placement type beside the weekly one rather than widening it — the specification
-says so, and two import contracts hold the two models apart.
+⚠️ **Deployable only once configured, and it can no longer fail silently.** `OPTIEDT_SECRET_KEY`
+defaults to a value published in this repository, so tokens signed with it could be forged. Setting
+`OPTIEDT_ENVIRONMENT=production` makes start-up **refuse** that default, so the failure is loud instead
+of invisible. The seed command is a development and demonstration tool, not a provisioning mechanism.
 
-Phase 5 added the five pre-solve checks inside the application, a diagnosis run that names the rules
-in conflict, the run record in PostgreSQL, authentication with rights, and publication. Phase 6 added
-the acceptance suite — one test per requirement against its criterion — the instance generator and the
-demonstration script. **Phase 7 closed increment 1**: an accepted recommendation now changes one
-solver input and launches a **new run** through the same engine, and the language service explains,
-answers and reports from figures the analysis layer computed, with every number it writes checked
-against the context it was given.
-
-**All nine acceptance criteria are met**, the ninth on 2026-08-07. ⚠️ **That one was reworded rather
-than met as written** — it asked for the grid to be filled *"in under 5 minutes without training"* and
-the run measured no time, so the wording dropped the clause the evidence could not support. The full
-record, including what the run did **not** establish, is in
-[`docs/demonstration.md`](docs/demonstration.md) §2.
-
-⚠️ **The language service is off by default, and everything works with it off** — only text
-disappears. **No test calls a live provider and none can**: a model's output is not fixed by a seed,
-so what the suite verifies is the application's behaviour *around* a provider, never that any
-particular one works. A first live call is a deployment step — **performed once, on 2026-08-07, and
-recorded in [`docs/demonstration.md`](docs/demonstration.md) §4**, which is what moved FR-24 to `✓`.
-That record is a dated observation, not automation: a green build is still no evidence about a model.
-
-⚠️ **`scripts/run-checks.ps1` is run by a person, not by a pipeline.** There is no CI configuration in
-this repository. The eleven `import-linter` contracts are real and do fire — but nothing runs them
-automatically, so a violation is caught when someone runs the script, not when they push.
-
-⚠️ **22 of 25 requirements are `✓`, and no open question remains.** The single remaining `WIP` is
-**FR-8**, and it is a decision rather than an omission: promoting it would need its criterion narrowed
-to match what the software cannot do, which this project refuses. The other two are **FR-20 and FR-21,
-both conditional** — so every requirement the project committed to delivering is delivered.
-
-⚠️ **Phase 12 added FR-1 on 2026-08-11: the department's data can now be supplied through the
-application.** Eleven CSVs at **Données** (person in charge only — SRS Table 2, C-8), verified for types
-and references, with every rejected line named by file, line, column and value; what is recorded becomes
-the dataset every screen reads and every run solves, and withdrawal restores the files the application
-shipped with. ⚠️ **A replacement that would orphan a teacher's declaration or the administrator's
-calendar is refused** — a project decision, **C-22 / ADR-012**, covering a case the specification never
-raises.
-
-⚠️ **C-9 closed on 2026-08-11 as a project decision from repository evidence, because the supervisor
-never answered** — the project owner granted that authority. FR-6's criterion turned out to be
-supervisor-written all along (SRS §6.7). **FR-10's and FR-18's are project-authored, labelled as such
-wherever cited, and therefore reversible**; a Table 35 row is still absent for both and none was
-invented. ⚠️ **FR-18's figure was not missing but mislaid**: C-4 had defined it in 2026-07-30 as
-occupied periods over open slots, and the screen had been showing exactly that.
-
-⚠️ **One limitation of Phase 11 is recorded rather than absorbed.** ADR-003 gives the shortened-day
-window one effect — *displayed and printed hours*. The window is configurable, persisted and previewed
-on the administration screen; **the timetable views and the CSV export still print the ordinary hours.**
-FR-9's acceptance criterion is exclusively about closing a half-day, so its `✓` stands on evidence — but
-a department that sets a Ramadan window and prints a timetable will see 08:30.
-
-⚠️ **Phase 10 found that four of its own five requirements had no acceptance criterion either**, and
-closed them honestly rather than inventing one: SRS Table 35 has no row for FR-4, FR-7, FR-14 or FR-16,
-but all four have a **detailed SRS §3.2 input/processing/output row**. That row is what each acceptance
-file quotes, and all four are now transcribed into
-[`docs/testing-strategy.md`](docs/testing-strategy.md) §4.
-
-⚠️ **A pre-Phase-11 audit then narrowed C-9 from four requirements to two**, by checking something
-nobody had: **SRS Table 36 names a specifying section for three of them**, and two of those sections
-state testable behaviour — **FR-6 → §6.7** and **FR-17 → §6.7 and §8.4**. FR-17 is now `✓`; FR-6 needs
-only an acceptance file. **FR-10 and FR-18 remain**, and FR-18's gap is the sharper one: no document
-anywhere defines what its occupancy figure *is*. Both decisions were taken from repository evidence
-because the supervisor was unavailable, and are labelled as such in
-[`docs/open-questions.md`](docs/open-questions.md).
-
-⚠️ *This Status section was two phases stale when Phase 6's audit found it, was corrected, and then
-went stale again the moment Phase 6 closed — because the audit ran before the phase's own final state
-was written. Phase 7's audit found it a second time. **A closing audit cannot verify the sentence that
-records its own phase closing**; that line has to be written after.*
-
-⚠️ **Still not deployable as it stands** — but it can no longer fail silently. `OPTIEDT_SECRET_KEY`
-defaults to a value published in this repository, so tokens signed with it could be forged. **Since
-2026-08-07, setting `OPTIEDT_ENVIRONMENT=production` makes start-up REFUSE that default**, so the
-failure is loud instead of invisible. What remains genuinely unbuilt is account management through the
-interface, and the seed command still gives every account the same password. Safe to demonstrate, not
-to expose.
-
-**[`docs/dashboard.md`](docs/dashboard.md) is the one page that answers "where is this project".**
-`docs/status.md` holds the detail, `docs/open-questions.md` what is still undecided.
 
 ## Author
 

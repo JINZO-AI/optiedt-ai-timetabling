@@ -618,7 +618,7 @@ a solver-validation harness that does not fit the project.
 | **Acceptance criteria** | **9 of 9 (100 %)** | The specification's actual gate |
 | **Requirements `✓`** | **23 of 25 (92 %)** | **10 → 15 in Phase 10, → 16 at the pre-Phase-11 audit, → 18 in Phase 11, → 21 when C-9 closed, → 22 in Phase 12, → 23 in Phase 13** |
 | **Open questions** | **22 of 22 resolved** | ✅ **None open.** ⚠️ Several were project decisions from repository evidence rather than supervisor answers — `docs/open-questions.md` is the authority on which. **C-22 is the newest, and the only one answering a question the specification never raises** |
-| **Tests** | **782 backend + 171 frontend** | ⚠️ **Derive these**: `uv run pytest --collect-only -q` and `npm run test` |
+| **Tests** | **782 backend + 196 frontend** | ⚠️ **Derive these**: `uv run pytest --collect-only -q` and `npm run test` |
 | **Mandatory work remaining** | **None** | By the nine-criteria gate |
 
 ⚠️ **Why 92 % still understates it.** Of the 2 requirements not `✓`, **1 has working software** —

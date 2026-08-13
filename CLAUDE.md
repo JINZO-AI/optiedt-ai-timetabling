@@ -22,18 +22,28 @@ a bug in the documentation to fix before continuing.
 | 1 | **`docs/dashboard.md`** | **The handoff page.** State, progress, roadmap, open questions, risks, next task, and the brief for the current phase. Usually the only file you need before starting work |
 | 2 | **`docs/project-roadmap.md`** | **"What phase are we in?"** — the whole project as ONE continuous phase sequence, Phase 1 to the final phase. The project owner's tracking view. Answers *what is left before Phase N is complete* without needing increments, milestones or requirement codes |
 | 3 | "The seven invariants" below | What you may never break |
-| 4 | `docs/open-questions.md` | What is **not** decided. Do not silently pick an answer |
-| 5 | `docs/status.md` | Detail behind the dashboard: blockers, measurements, phases, acceptance criteria |
+| 4 | **"The frontend" below** | **The V2 interface is a FROZEN baseline.** Read before touching anything under `frontend/` |
+| 5 | `docs/open-questions.md` | What is **not** decided. Do not silently pick an answer |
+| 6 | `docs/status.md` | Detail behind the dashboard: blockers, measurements, phases, acceptance criteria |
+| 7 | `docs/PROJECT_STATUS.md` | **The release-freeze record.** What was verified, when, and by what measurement. Not a second state page — see the note under the dashboard rule below |
 
 `docs/history.md` is the session-by-session archive. **Do not read it to get oriented** — it is long
 and it contains superseded conclusions kept on purpose. Open it only to check what was already tried
 before repeating an experiment, or to understand why a past decision was taken.
 
-⚠️ **Do not add a `PROJECT_STATE.md`, `PROJECT_STATUS.md` or `TODO.md`.** Their jobs are already taken:
-`docs/dashboard.md` is the state page and `docs/status.md`'s "Next, in order" is the task list. A
-fourth name for the same content does not make the project easier to resume — it makes it impossible
-to tell which of two files is lying when they disagree. **If the dashboard is hard to resume from, fix
-the dashboard.**
+⚠️ **Do not add a `PROJECT_STATE.md` or `TODO.md`.** Their jobs are already taken: `docs/dashboard.md`
+is the state page and `docs/status.md`'s "Next, in order" is the task list. A fourth name for the same
+content does not make the project easier to resume — it makes it impossible to tell which of two files
+is lying when they disagree. **If the dashboard is hard to resume from, fix the dashboard.**
+
+> ⚠️ **One documented exception, added at the release freeze on 2026-08-13 by the project owner:
+> `docs/PROJECT_STATUS.md` exists.** This rule named it as forbidden until then, and the exception is
+> recorded here rather than by quietly deleting the rule. It is admitted on one condition, which the
+> file itself repeats at its head: **it is a dated release-verification record, not a state page.** It
+> says what was measured and when. It does **not** carry phase, progress, next task or requirement
+> status — those stay in `docs/dashboard.md`, which remains the single place project state lives. If
+> `PROJECT_STATUS.md` ever starts answering "what phase are we in?", it has become the second state
+> page this rule exists to prevent, and the fix is to cut that content out of it.
 
 Then, on demand:
 
@@ -224,6 +234,97 @@ read the solver's objective and must recompute the score from the placements. Se
 
 ---
 
+## The frontend
+
+**React 18 + Vite 5 + react-router-dom 6 + TanStack Query 5. Plain CSS, no framework, no UI library.**
+`npm run dev` needs the API on `:8000`, which `vite.config.ts` proxies.
+
+### ⚠️ The V2 interface is a FROZEN baseline
+
+It was accepted by the project owner on **2026-08-13** after two full design passes and is **not** to be
+redesigned, restyled or migrated without their explicit instruction. That includes: do not introduce
+Tailwind, shadcn, Material, Bootstrap or Next.js; do not change the palette, the typeface pairing or the
+navigation model "to try something". `docs/DESIGN_SYSTEM.md` is what the system *is*;
+`docs/UX_DECISIONS.md` is *why* — and several of its entries record a specific defect that a plausible
+"improvement" would reintroduce. **Read `UX_DECISIONS.md` before changing a visual decision**; the
+reasons are not aesthetic preferences and they are not recoverable by looking at the screen.
+
+### The three rules a change must not break
+
+1. **`--mono` is for FIGURES, CODES AND IDENTIFIERS ONLY** — a score, an hour, a run id, `S2`, `H9`,
+   `X1`, a room code, an environment variable. Not labels, not headings, not navigation. V1 used mono
+   for all of those and the product read as a terminal.
+2. **`--ink-5` is borders, icons and marks. It is never text.** `--ink-4` is the faintest tone any text
+   may use (5.6:1 on white). V2 broke this rule on its own first write and five elements measured
+   2.55–2.64:1; an automated sweep caught them and visual judgement had not.
+3. **COMPUTED BY OPTIEDT and EXPLAINED BY AI must stay visibly different.** See invariant 4 and
+   `docs/AI_BEHAVIOR.md`. The assistant panel's origin label goes *above* the text it labels, never
+   beside or below it.
+
+### Layout
+
+| Piece | What it is |
+|---|---|
+| `src/App.tsx` | The shell: a 244 px grouped rail (Timetabling / Inputs / Institution) and the route table. `NAV` declares which roles are *offered* each entry — ⚠️ **display only; the API checks the role itself (FR-11)** |
+| `src/shell/Page.tsx` | Every screen's frame: a **sticky page bar** carrying the title, a one-line subtitle, live status, and **the screen's single primary action**. The header belongs to the screen, not the shell, so a screen rendered alone in a test is complete |
+| `src/shell/icons.tsx` | The icon set and the brand mark, drawn from the product's own subject (a week of slots with sessions placed in it) |
+| `src/styles.css` | A 33-line entry point. Six layers in `src/styles/`: `tokens` → `base` → `primitives` → `shell` → `patterns` → `print`. **Order is load-bearing** |
+
+### Screens, and the route each answers
+
+| Route | Screen | Roles offered it | Requirement |
+|---|---|---|---|
+| `/generate` | Launch a run; pipeline, run vitals, ranked candidates, pre-analysis | Officer | FR-13, FR-5, FR-6, FR-12 |
+| `/timetables` | Four views of a candidate — by teacher, group, room, room occupancy | Officer, Admin, Teacher | FR-7, FR-18, FR-10 |
+| `/compare` | Head-to-head, the decomposition ledger, dominance, regeneration, the assistant | Officer, Admin, Teacher | FR-14, FR-15, FR-17, FR-23 |
+| `/examinations` | Generate and read an examination session | Officer | FR-20 |
+| `/publications` | Published timetables with full provenance | Officer | FR-19 |
+| `/data` | Replace the department dataset; the rejected-line report | Officer | FR-1 |
+| `/availability` | A teacher's weekly declaration | Officer, Admin, Teacher | FR-2 |
+| `/administration` | Academic calendar and accounts, on two tabs | Admin | FR-9, FR-11 |
+| `/my-timetable` | A student's own group's published week | Student | SRS Table 2 |
+
+`landingFor(role)` decides where `/` sends each role. ⚠️ `App.tsx` waits for `useCurrentUser` to
+resolve before rendering the shell — the redirect used to fire on the fallback and land an officer on
+the availability screen.
+
+### Data flow
+
+```
+Screen (React)                      one hook per endpoint, in src/api/queries.ts
+   │  useRun / useComparison / useAskAssistant …
+   ▼
+src/api/client.ts                   the ONLY module that knows the API is at /api
+   │  bearer token from sessionStorage; ApiError on non-2xx
+   ▼
+Vite proxy (dev)  →  FastAPI  /api/*
+   │
+   ├─ api/routers/*        RBAC checked HERE, per endpoint (FR-11)
+   ├─ services/*           use cases
+   ├─ solver/ examination/ CP-SAT — the only thing that places a session
+   ├─ analysis/            scores, ranking, decomposition, dominance
+   ├─ assistant/           context in → text out. No database. No figure of its own
+   └─ db/                  PostgreSQL via SQLAlchemy + Alembic
+   ▼
+JSON  →  TanStack Query cache  →  screen
+```
+
+⚠️ **The presentation layer may "display, filter, print, ask" and may not "compute a score, decide an
+order"** (`docs/architecture.md`). Bar widths and the two ledger highlights are pixels and selections
+derived from figures the API already sent; nothing in `frontend/` computes one.
+
+### Long work: 202 and poll
+
+`POST /runs` and `POST /examinations` answer immediately with an id; the screen polls `GET`. A solve
+takes minutes and no HTTP request is held open for it (ADR-005). ⚠️ **Runs execute on a single-worker
+pool** — a second run sits in `PENDING` until the first finishes, and `RunPipeline` says so, because an
+unexplained "Queued" for two minutes reads as a hung application.
+
+⚠️ **Both `/generate` and `/examinations` fall back to the newest run on the server** when their
+component state is empty. Without it, navigating away and back loses a run the server still has.
+
+---
+
 ## Decided — do not reopen
 
 Read the ADR before arguing with any of these.
@@ -334,6 +435,60 @@ by wall clock passes on one machine and fails on another, and the failure looks 
   `docker exec optiedt-postgres psql -U optiedt -d optiedt -tAc "select version();"`. A refused
   connection is the lucky outcome; a local server that accepts `optiedt/optiedt` would take the
   migrations.
+
+---
+
+## Environment, and how to start the thing
+
+**Three processes.** PostgreSQL in Docker, the API on `:8000`, Vite on `:5173`.
+
+```
+docker compose up -d                                          # PostgreSQL 17
+cd backend  && uv run uvicorn optiedt.api.main:app --reload   # :8000
+cd frontend && npm run dev                                    # :5173, proxies /api
+```
+
+Seed the first accounts once, on an empty system: `uv run python -m optiedt.services.seed`
+(refuses if any account exists — C-18).
+
+### Variables — NAMES ONLY. ⚠️ Never write a value into a tracked file
+
+`backend/.env` and the root `.env` are gitignored and must stay so. Everything below is read by
+`core/config.py` with the `OPTIEDT_` prefix.
+
+| Variable | Side | Required | Controls |
+|---|---|---|---|
+| `OPTIEDT_DATABASE_URL` | backend | production | PostgreSQL DSN. Defaults to a local dev DSN |
+| `OPTIEDT_ENVIRONMENT` | backend | production | `production` arms `Settings.require_deployable()` |
+| `OPTIEDT_SECRET_KEY` | backend | production | Signs bearer tokens. ⚠️ **The default is published in this repository**; start-up REFUSES it when the environment is `production` |
+| `OPTIEDT_ACCESS_TOKEN_EXPIRE_MINUTES` | backend | optional | Token lifetime; default 480 |
+| `OPTIEDT_PERSISTENCE` | backend | optional | `database` (default) or in-memory, for tests |
+| `OPTIEDT_SOLVER_WORKERS` | backend | recommended | `0` = every core. **Cap it on a shared host** |
+| `OPTIEDT_SOLVER_DETERMINISTIC_BUDGET` | backend | optional | Work for a WHOLE run, split between profiles — not seconds (ADR-011) |
+| `OPTIEDT_SOLVER_WALL_CLOCK_CEILING_SECONDS` | backend | optional | Hang backstop, not the primary bound |
+| `OPTIEDT_SOLVER_SEED` | backend | optional | Default seed; the API takes one per run |
+| `OPTIEDT_INSTANCE_PATH` | backend | optional | Where the 13 reference CSVs live |
+| `OPTIEDT_CONSTRAINT_CATALOGUE_PATH` | backend | optional | The rule catalogue. ⚠️ Never importable (invariant 7) |
+| `OPTIEDT_ASSISTANT_ENABLED` | backend | optional | `false` by default. **Everything works with it off — only prose disappears** (invariant 5) |
+| `OPTIEDT_ASSISTANT_BASE_URL` | backend | with the assistant | Provider endpoint |
+| `OPTIEDT_ASSISTANT_API_KEY` | backend | with the assistant | ⚠️ **Secret. Never commit it, never expose it to the browser** |
+| `OPTIEDT_ASSISTANT_MODEL` | backend | with the assistant | Model name |
+| `OPTIEDT_ASSISTANT_TIMEOUT_SECONDS` | backend | optional | Default 10; past it the computed form is shown |
+| `OPTIEDT_POSTGRES_PORT` | root `.env` | local only | Host port for the container when 5432 is taken |
+| `OPTIEDT_SEED_PASSWORD` | backend | local only | Sets the seeded password instead of a random one printed once |
+
+**The frontend takes NO environment variables.** `src/api/client.ts` calls `/api` as a relative path.
+In production, serve the SPA and the API from one origin, or rewrite `/api/*` to the backend — a
+rewrite is preferable to a base URL because it keeps requests same-origin and leaves the client with
+nothing to configure.
+
+### ⚠️ Deployment status: NOT DEPLOYED
+
+Nothing has been deployed anywhere. `docs/deployment.md` is a *plan* that has never been executed, and
+`docs/RELEASE_CHECKLIST.md` records what is still unticked. **Do not describe the product as deployed,
+live or in production.** ⚠️ The backend **cannot** run on short-lived serverless functions — a solve
+takes minutes in an in-process background thread on a single-worker pool. `docs/deployment.md` §1 gives
+the three reasons.
 
 ---
 
