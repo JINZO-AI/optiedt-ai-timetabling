@@ -40,11 +40,14 @@ Everything in this section was run on **2026-08-13** and the figure is the outpu
 | `.env` tracked? | `git ls-files --error-unmatch` | **not tracked**, both root and `backend/` |
 | API surface | `GET /api/openapi.json` | **33 endpoints** |
 
-⚠️ **The solver-marked tests were not run at the freeze**, and were still not completed on the
-re-verification pass. They are the remaining ~75 of the suite and take minutes each; the last full
-sweep was `scripts/run-acceptance.ps1` on 2026-08-12 — **245 passed in 23 min 49 s**. Nothing in the V2
-pass touched a backend source file that a solver test covers, but that is an argument, not a
-measurement.
+✅ **The solver-marked tests HAVE now been run** — **75 passed in 21 min 23 s**, on the re-verification
+pass of 2026-08-13. They had been skipped at the freeze itself, and that gap is now closed by
+measurement rather than by the argument that nothing in the V2 pass touched a file they cover.
+
+✅ **Every backend test ran, and nothing was skipped.** 787 collected; the three tiers partition it
+exactly — **638 fast + 74 database + 75 solver = 787**, and each tier's passed + deselected is also 787.
+⚠️ That arithmetic is the point: a tier that silently skipped would not add up, which is the check
+worth doing after the database suite once reported `74 skipped` and exit code 0.
 
 ⚠️ The database suite **skipped silently** on the first attempt because Docker Desktop was not running —
 `74 skipped`, exit code 0. A skipped suite reporting success is exactly the trap `CLAUDE.md` warns
@@ -77,6 +80,8 @@ Everything in §2 was re-run rather than carried forward. Two figures moved and 
 | Frontend | typecheck clean, **196 / 196**, build clean |
 | Backend fast | **638 passed** (was 633 — five new CORS tests) |
 | Backend database | **74 passed**, Docker confirmed up first |
+| Backend solver-marked | **75 passed**, 21 min 23 s |
+| **Whole backend suite** | **787 / 787, nothing skipped** — 638 + 74 + 75, each tier summing to 787 |
 | Alembic | `1e28bf61664e (head)`, **exactly one head**, 6 migrations, linear |
 | Endpoints | **33**, matching `API_OVERVIEW.md` |
 | Settings documented | 17 of 17 in `CLAUDE.md` |

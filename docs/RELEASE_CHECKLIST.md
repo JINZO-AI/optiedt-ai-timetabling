@@ -34,8 +34,11 @@ re-established it was **downgraded**, not carried forward.
 - [✓] **Frontend** — **196 / 196** passed, 21 files
 - [✓] **Backend fast** — **638 passed**, 149 deselected (was 633; +5 new CORS tests)
 - [✓] **Backend database** — **74 passed** against real PostgreSQL 17 with Docker confirmed up
-- [ ] **Backend solver-marked** — the remaining ~75 of 787. Started in this session and not completed;
-      each takes minutes
+- [✓] **Backend solver-marked** — **75 passed** in 21 min 23 s
+- [✓] **THE WHOLE BACKEND SUITE RAN, WITH NOTHING SKIPPED** — 787 collected, and the three tiers
+      partition it exactly: 638 + 74 + 75 = 787, with each tier's passed + deselected also 787. That
+      arithmetic is the proof every test ran **exactly once**; a tier that silently skipped would not
+      add up
 - [ ] **`scripts/run-acceptance.ps1`** — full sweep 16–26 min. Last complete run 2026-08-12, 245 passed
 - [✓] **New guard verified to fire** — reverting `api/main.py` to the hard-coded origin list fails
       `test_the_middleware_is_installed_with_the_configured_origins`, as this project requires of a guard
