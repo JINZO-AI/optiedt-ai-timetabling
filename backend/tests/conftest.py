@@ -30,6 +30,26 @@ import pytest
 # `@pytest.mark.database` and take an explicit session factory.
 os.environ.setdefault("OPTIEDT_PERSISTENCE", "memory")
 
+# ⚠️ Every test runs with the LANGUAGE SERVICE OFF, whatever `backend/.env` says.
+#
+# Same failure as the one above, found on 2026-08-13 at the release freeze.
+# `Settings` reads `backend/.env`, which is a developer's private file — so
+# switching the assistant on for a demonstration turned five acceptance tests
+# red: `test_fr22`, `test_fr24` and `test_fr25` all assert the DEGRADED path
+# ("with the service off, an explanation is still returned"), and they were
+# obtaining that state from the developer's machine rather than establishing
+# it. The suite was passing for a reason it did not control.
+#
+# A hard assignment rather than `setdefault`: an environment variable beats the
+# dotenv file in pydantic-settings, and NO test wants the service on. The ones
+# that exercise a working provider inject a stub adapter, so nothing here is
+# weakened by forcing the flag off - what changes is that the tests now
+# establish the state they claim to be testing.
+#
+# ⚠️ This is also why no test can reach a real provider by accident, which is
+# the property C-21 depends on.
+os.environ["OPTIEDT_ASSISTANT_ENABLED"] = "false"
+
 
 from optiedt.domain.entities import (
     ConstraintDefinition,
