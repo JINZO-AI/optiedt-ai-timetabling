@@ -88,7 +88,7 @@ describe('removal', () => {
   it('removes the account the button names', () => {
     const { onDelete } = renderPanel()
 
-    fireEvent.click(screen.getByLabelText('Supprimer t001'))
+    fireEvent.click(screen.getByLabelText('Remove t001'))
 
     expect(onDelete).toHaveBeenCalledWith('t001')
   })
@@ -100,7 +100,7 @@ describe('removal', () => {
     renderPanel()
 
     expect(screen.queryByLabelText('Supprimer administrateur')).toBeNull()
-    expect(screen.getByText('compte courant')).toBeTruthy()
+    expect(screen.getByText('your account')).toBeTruthy()
   })
 })
 
@@ -108,11 +108,11 @@ describe('creating an account', () => {
   it('asks for a teacher when the role is TEACHER and sends it', () => {
     const { onCreate } = renderPanel()
 
-    fireEvent.change(screen.getByLabelText('Identifiant'), { target: { value: 'nouveau' } })
-    fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'assez-long-1234' } })
-    fireEvent.change(screen.getByLabelText('Rôle'), { target: { value: 'TEACHER' } })
-    fireEvent.change(screen.getByLabelText('Enseignant'), { target: { value: 'T001' } })
-    fireEvent.click(screen.getByText('Créer le compte'))
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'nouveau' } })
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'assez-long-1234' } })
+    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'TEACHER' } })
+    fireEvent.change(screen.getByLabelText('Teacher'), { target: { value: 'T001' } })
+    fireEvent.click(screen.getByText('Create account'))
 
     expect(onCreate).toHaveBeenCalledWith({
       username: 'nouveau',
@@ -128,11 +128,11 @@ describe('creating an account', () => {
     // whose timetable it owns, and `/me/timetable` refuses it.
     const { onCreate } = renderPanel()
 
-    fireEvent.change(screen.getByLabelText('Identifiant'), { target: { value: 'etudiant2' } })
-    fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'assez-long-1234' } })
-    fireEvent.change(screen.getByLabelText('Rôle'), { target: { value: 'STUDENT' } })
-    fireEvent.change(screen.getByLabelText('Groupe'), { target: { value: '3' } })
-    fireEvent.click(screen.getByText('Créer le compte'))
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'etudiant2' } })
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'assez-long-1234' } })
+    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'STUDENT' } })
+    fireEvent.change(screen.getByLabelText('Group'), { target: { value: '3' } })
+    fireEvent.click(screen.getByText('Create account'))
 
     expect(onCreate).toHaveBeenCalledWith({
       username: 'etudiant2',
@@ -148,10 +148,10 @@ describe('creating an account', () => {
     // it silently; asking for one here would invite that refusal.
     renderPanel()
 
-    fireEvent.change(screen.getByLabelText('Rôle'), { target: { value: 'ADMINISTRATOR' } })
+    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'ADMINISTRATOR' } })
 
-    expect(screen.queryByLabelText('Enseignant')).toBeNull()
-    expect(screen.queryByLabelText('Groupe')).toBeNull()
+    expect(screen.queryByLabelText('Teacher')).toBeNull()
+    expect(screen.queryByLabelText('Group')).toBeNull()
   })
 
   it('surfaces the API refusal rather than paraphrasing it', () => {

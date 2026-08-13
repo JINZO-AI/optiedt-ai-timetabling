@@ -111,7 +111,7 @@ def test_the_fallback_says_the_question_was_not_answered(application, run) -> No
 
     answer = _ask(application, run, "Combien d'étudiants sont inscrits en L3 ?")
 
-    assert "n’a pas reçu de réponse rédigée" in answer["text"]
+    assert "received no written answer" in answer["text"]
 
 
 def test_with_the_service_off_the_question_is_still_answered_honestly(application, run) -> None:
@@ -120,8 +120,8 @@ def test_with_the_service_off_the_question_is_still_answered_honestly(applicatio
     answer = _ask(application, run, "Pourquoi ce candidat est-il le premier ?")
 
     assert answer["generated"] is False
-    assert "indisponible ou désactivé" in answer["text"]
-    assert "n’a pas reçu de réponse rédigée" in answer["text"]
+    assert "unavailable or switched off" in answer["text"]
+    assert "received no written answer" in answer["text"]
 
 
 def test_a_service_failure_does_not_reach_the_caller(application, run) -> None:

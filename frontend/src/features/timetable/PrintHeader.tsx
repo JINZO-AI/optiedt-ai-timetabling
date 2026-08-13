@@ -29,7 +29,7 @@ export function PrintHeader({
     <header className="print-only print-header">
       <div className="print-header__top">
         <span className="print-header__brand">OptiEDT</span>
-        <span className="print-header__date">Imprimé le {printedOn}</span>
+        <span className="print-header__date">Printed {printedOn}</span>
       </div>
       <h2 className="print-header__title">{title}</h2>
       <dl className="print-header__trace">

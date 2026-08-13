@@ -44,20 +44,20 @@ describe('Answer', () => {
 
   it('says a generated sentence was written by the language service', () => {
     render(<Answer answer={GENERATED} />)
-    expect(screen.getByText(/rédigé par le service de langage/i)).toBeTruthy()
+    expect(screen.getByText(/Written by the language service/i)).toBeTruthy()
   })
 
   it('says a generated sentence had its figures checked', () => {
     /** Otherwise "written by a language model" reads as a warning with no
      * mitigation, and a reader has no reason to believe any of it. */
     render(<Answer answer={GENERATED} />)
-    expect(screen.getByText(/vérifiés présents dans le contexte/i)).toBeTruthy()
+    expect(screen.getByText(/checked against the context/i)).toBeTruthy()
   })
 
   it('says the computed form was produced by the application, not by a model', () => {
     render(<Answer answer={COMPUTED} />)
-    expect(screen.getByText(/Forme calculée par l’application/i)).toBeTruthy()
-    expect(screen.queryByText(/rédigé par le service de langage/i)).toBeNull()
+    expect(screen.getByText(/Computed by the application/i)).toBeTruthy()
+    expect(screen.queryByText(/Written by the language service/i)).toBeNull()
   })
 
   it('presents the computed form as an answer rather than as a failure', () => {
@@ -65,7 +65,7 @@ describe('Answer', () => {
      * Invariant 5 says only TEXT disappears - not correctness - so wording it
      * as an error would misdescribe a working application. */
     render(<Answer answer={COMPUTED} />)
-    expect(screen.getByText(/les chiffres ci-dessous sont ceux de la couche d’analyse/i)).toBeTruthy()
+    expect(screen.getByText(/figures below come straight from the analysis layer/i)).toBeTruthy()
     expect(screen.queryByText(/erreur/i)).toBeNull()
     expect(screen.queryByText(/échec/i)).toBeNull()
   })
@@ -102,7 +102,7 @@ describe('Answer', () => {
 
   it('shows no reason at all on a generated answer', () => {
     render(<Answer answer={GENERATED} />)
-    expect(screen.queryByText(/^Raison/)).toBeNull()
+    expect(screen.queryByText(/^Reason/)).toBeNull()
   })
 
   it('never shows the invented figure itself, only that one existed', () => {

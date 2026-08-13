@@ -24,39 +24,39 @@ export function TraceTable({ published }: { published: PublishedTimetable }) {
     <table className="trace">
       <tbody>
         <tr>
-          <th scope="row">Exécution</th>
+          <th scope="row">Run</th>
           <td className="num">{published.run}</td>
         </tr>
         <tr>
-          <th scope="row">Candidat</th>
+          <th scope="row">Candidate</th>
           <td className="num">
-            {published.candidate.id} — profil {published.candidate.profileName}
+            {published.candidate.id} — profile {published.candidate.profileName}
           </td>
         </tr>
         <tr>
-          <th scope="row">Graine</th>
+          <th scope="row">Seed</th>
           <td className="num">{published.seed}</td>
         </tr>
         <tr>
-          <th scope="row">Budget déterministe</th>
+          <th scope="row">Search budget</th>
           <td className="num">
-            {published.deterministicBudget} <span className="hint">(pas des secondes)</span>
+            {published.deterministicBudget} <span className="hint">(deterministic units, not seconds)</span>
           </td>
         </tr>
         <tr>
-          <th scope="row">Version du modèle</th>
+          <th scope="row">Model version</th>
           <td className="num">{published.modelVersion}</td>
         </tr>
         <tr>
-          <th scope="row">Pondération en vigueur</th>
+          <th scope="row">Weights in force</th>
           <td className="num">
             {weights.map(([code, weight]) => `${code} ${weight}`).join(' · ')}
           </td>
         </tr>
         <tr>
-          <th scope="row">Publié le</th>
+          <th scope="row">Published on</th>
           <td className="num">
-            {published.publishedAt} par {published.publishedBy}
+            {published.publishedAt} by {published.publishedBy}
           </td>
         </tr>
       </tbody>

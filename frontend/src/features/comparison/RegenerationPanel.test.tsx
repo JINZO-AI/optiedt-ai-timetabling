@@ -73,15 +73,15 @@ function renderPanel(overrides: Partial<Parameters<typeof RegenerationPanel>[0]>
 }
 
 const accept = () =>
-  fireEvent.click(screen.getByRole('button', { name: /Accepter et régénérer|Lancement/i }))
+  fireEvent.click(screen.getByRole('button', { name: /Accept and regenerate|Starting/i }))
 
 describe('RegenerationPanel', () => {
   afterEach(cleanup)
 
   it('says in as many words that this candidate is not modified', () => {
     renderPanel()
-    expect(screen.getByText(/ne modifie/i)).toBeTruthy()
-    expect(screen.getByText(/nouvelle exécution/i)).toBeTruthy()
+    expect(screen.getByText(/Accepting a recommendation/i)).toBeTruthy()
+    expect(screen.getByText(/new run/i)).toBeTruthy()
   })
 
   it('states why the guarantee carries over rather than only asserting it', () => {
@@ -89,7 +89,7 @@ describe('RegenerationPanel', () => {
      * DECLARED IDENTICALLY, not that something re-checked them. A reader who
      * is told only "it is still valid" has been asked to take it on trust. */
     renderPanel()
-    expect(screen.getByText(/H1–H12 sont déclarées à l’identique/i)).toBeTruthy()
+    expect(screen.getByText(/declared identically/i)).toBeTruthy()
   })
 
   it('offers exactly the three catalogue actions and no free-text field', () => {
@@ -104,7 +104,7 @@ describe('RegenerationPanel', () => {
 
   it('sends a weight_delta with the criterion and the new weight', () => {
     const onAccept = renderPanel()
-    fireEvent.change(screen.getByLabelText(/Nouveau poids/i), { target: { value: '0.3' } })
+    fireEvent.change(screen.getByLabelText(/New weight/i), { target: { value: '0.3' } })
     accept()
     expect(onAccept).toHaveBeenCalledWith({
       kind: 'weight_delta',
@@ -115,7 +115,7 @@ describe('RegenerationPanel', () => {
 
   it('refuses to send a negative weight rather than letting the API reject it', () => {
     const onAccept = renderPanel()
-    fireEvent.change(screen.getByLabelText(/Nouveau poids/i), { target: { value: '-1' } })
+    fireEvent.change(screen.getByLabelText(/New weight/i), { target: { value: '-1' } })
     accept()
     expect(onAccept).not.toHaveBeenCalled()
   })
@@ -132,7 +132,7 @@ describe('RegenerationPanel', () => {
   it('excludes the slot the session actually occupies in this candidate', () => {
     const onAccept = renderPanel()
     fireEvent.change(screen.getByLabelText(/Action/i), { target: { value: 'exclude_slot' } })
-    fireEvent.change(screen.getByLabelText(/Séance/i), { target: { value: 'S0002' } })
+    fireEvent.change(screen.getByLabelText(/Session/i), { target: { value: 'S0002' } })
     accept()
     expect(onAccept).toHaveBeenCalledWith({ kind: 'exclude_slot', session: 'S0002', slot: 3 })
   })
@@ -140,7 +140,7 @@ describe('RegenerationPanel', () => {
   it('names the new run after launching, and repeats that this one is unchanged', () => {
     renderPanel({ launched: 'run-2' })
     expect(screen.getByText(/run-2/)).toBeTruthy()
-    expect(screen.getByText(/inchangé/i)).toBeTruthy()
+    expect(screen.getByText(/This candidate is unchanged/i)).toBeTruthy()
   })
 
   it('says when the run is itself the result of an earlier recommendation', () => {
@@ -157,13 +157,13 @@ describe('RegenerationPanel', () => {
         },
       },
     })
-    expect(screen.getByText(/issue d’une recommandation acceptée/i)).toBeTruthy()
-    expect(screen.getByText(/conservées/i)).toBeTruthy()
+    expect(screen.getByText(/came from a recommendation accepted on/i)).toBeTruthy()
+    expect(screen.getByText(/Constraints already accepted are kept/i)).toBeTruthy()
   })
 
   it('disables the control while a run is being launched', () => {
     renderPanel({ pending: true })
-    expect(screen.getByRole('button', { name: /Lancement/i })).toHaveProperty("disabled", true)
+    expect(screen.getByRole('button', { name: /Starting/i })).toHaveProperty("disabled", true)
   })
 
   it('shows a refusal from the API rather than swallowing it', () => {

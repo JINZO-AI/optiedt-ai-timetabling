@@ -53,41 +53,41 @@ describe('a named conflict', () => {
 
   it('claims minimality only when the solver decided every removal', () => {
     renderReport(diagnosis({ isMinimal: true }))
-    expect(screen.getByText('minimal')).toBeTruthy()
-    expect(screen.getByText(/Retirer l’une quelconque/)).toBeTruthy()
+    expect(screen.getByText('Minimal')).toBeTruthy()
+    expect(screen.getByText(/Removing any one of/)).toBeTruthy()
     // Minimal among the four withdrawable rules only — never in general.
-    expect(screen.getByText(/quatre règles retirables seulement/)).toBeTruthy()
+    expect(screen.getByText(/four withdrawable rules only/)).toBeTruthy()
   })
 
   it('says so plainly when a removal could not be decided', () => {
     /** ⚠️ A rule kept for want of evidence must not pass for one shown to be
      *  needed — that is the whole distinction C-17 required. */
     renderReport(diagnosis({ isMinimal: false }))
-    expect(screen.getByText('suffisant mais non minimal')).toBeTruthy()
-    expect(screen.getByText(/faute de\s+preuve/)).toBeTruthy()
-    expect(screen.getByText(/budget déterministe/)).toBeTruthy()
-    expect(screen.queryByText('minimal')).toBeNull()
+    expect(screen.getByText('Sufficient but not minimal')).toBeTruthy()
+    expect(screen.getByText(/for want of proof/)).toBeTruthy()
+    expect(screen.getByText(/Increase the search budget/)).toBeTruthy()
+    expect(screen.queryByText('Minimal')).toBeNull()
   })
 
   it('does not present the named rules as the only possible explanation', () => {
     renderReport(diagnosis())
-    expect(screen.getByText(/ce n’est pas la seule réponse vraie/)).toBeTruthy()
+    expect(screen.getByText(/not the only true answer/)).toBeTruthy()
   })
 })
 
 describe('an empty conflict set is not reassurance', () => {
   it('conclusive and empty points at the data and the pre-analysis', () => {
     renderReport(diagnosis({ conflictingCodes: [] }))
-    expect(screen.getByText(/Aucune règle relaxable/)).toBeTruthy()
-    expect(screen.getByText(/vérification préalable/)).toBeTruthy()
+    expect(screen.getByText(/No withdrawable rule explains/)).toBeTruthy()
+    expect(screen.getByText(/the checks above name the/)).toBeTruthy()
   })
 
   it('inconclusive says the instance is NOT thereby sound', () => {
     /** The C-13 inference, guarded on screen. */
     renderReport(diagnosis({ conflictingCodes: [], isConclusive: false }))
-    expect(screen.getByText(/non concluant/)).toBeTruthy()
-    expect(screen.getByText(/n’établit pas que l’instance est saine/)).toBeTruthy()
-    expect(screen.getByText(/budget déterministe plus élevé/)).toBeTruthy()
+    expect(screen.getByText(/Diagnosis inconclusive/)).toBeTruthy()
+    expect(screen.getByText(/does not establish that the data is sound/)).toBeTruthy()
+    expect(screen.getByText(/try again with a longer search/)).toBeTruthy()
   })
 
   it('never shows an empty set as a clean result', () => {

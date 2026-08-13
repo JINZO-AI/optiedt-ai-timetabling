@@ -37,33 +37,31 @@ export function ExamCalendar({ run }: { run: ExamRun }) {
   return (
     <section className="exam-calendar">
       <header className="exam-calendar__header">
-        <h3>Calendrier de la session d’examens</h3>
-        <div className="exam-calendar__tabs" role="tablist" aria-label="Regroupement">
+        <h3>Examination session calendar</h3>
+        <div className="exam-calendar__tabs" role="tablist" aria-label="Grouping">
           <button
             role="tab"
             aria-selected={grouping === 'group'}
             onClick={() => setGrouping('group')}
           >
-            Par groupe
+            By group
           </button>
           <button
             role="tab"
             aria-selected={grouping === 'room'}
             onClick={() => setGrouping('room')}
           >
-            Par salle
+            By room
           </button>
         </div>
       </header>
 
       <p className="exam-calendar__summary">
-        {run.examinationCount} examens placés sur {run.slotCount} créneaux
-        disponibles.{' '}
+        {run.examinationCount} examinations placed across {run.slotCount} available slots.{' '}
         {run.spreadPenalty !== null && (
           <>
-            Étalement (SX1) : <strong>{run.spreadPenalty}</strong> — nombre
-            d’examens d’une même promotion partageant un jour, au-delà du
-            premier.
+            Spread (SX1): <strong>{run.spreadPenalty}</strong> — the number of
+            examinations of one promotion sharing a day, beyond the first.
           </>
         )}
       </p>
@@ -79,16 +77,19 @@ function ByGroup({ days }: { days: [string, ExamPlacement[]][] }) {
       {days.map(([day, placements]) => (
         <article key={day} className="exam-calendar__day">
           <h4>{formatDay(day)}</h4>
+          {/* Wide tables scroll inside their own box rather than pushing the
+              page sideways on a narrow screen. */}
+          <div className="table-scroll">
           <table>
             <thead>
               <tr>
-                <th scope="col">Période</th>
-                <th scope="col">Examen</th>
+                <th scope="col">Period</th>
+                <th scope="col">Examination</th>
                 <th scope="col">Promotion</th>
-                <th scope="col">Candidats</th>
-                <th scope="col">Salles</th>
-                <th scope="col">Capacité</th>
-                <th scope="col">Surveillant</th>
+                <th scope="col">Candidates</th>
+                <th scope="col">Rooms</th>
+                <th scope="col">Capacity</th>
+                <th scope="col">Supervisor</th>
               </tr>
             </thead>
             <tbody>
@@ -105,7 +106,7 @@ function ByGroup({ days }: { days: [string, ExamPlacement[]][] }) {
                     {placement.rooms.length > 1 && (
                       <span className="exam-calendar__split">
                         {' '}
-                        ({placement.rooms.length} salles)
+                        ({placement.rooms.length} rooms)
                       </span>
                     )}
                   </td>
@@ -114,6 +115,7 @@ function ByGroup({ days }: { days: [string, ExamPlacement[]][] }) {
               ))}
             </tbody>
           </table>
+          </div>
         </article>
       ))}
     </div>
@@ -137,13 +139,14 @@ function ByRoom({ run }: { run: ExamRun }) {
   }, [run.placements])
 
   return (
+    <div className="table-scroll">
     <table className="exam-calendar__rooms">
       <thead>
         <tr>
-          <th scope="col">Salle</th>
-          <th scope="col">Jour</th>
-          <th scope="col">Période</th>
-          <th scope="col">Examen</th>
+          <th scope="col">Room</th>
+          <th scope="col">Day</th>
+          <th scope="col">Period</th>
+          <th scope="col">Examination</th>
           <th scope="col">Promotion</th>
         </tr>
       </thead>
@@ -159,6 +162,7 @@ function ByRoom({ run }: { run: ExamRun }) {
         ))}
       </tbody>
     </table>
+    </div>
   )
 }
 
@@ -178,7 +182,7 @@ export function byDay(placements: ExamPlacement[]): [string, ExamPlacement[]][] 
 export function formatDay(iso: string): string {
   const parsed = new Date(`${iso}T00:00:00`)
   if (Number.isNaN(parsed.getTime())) return iso
-  return parsed.toLocaleDateString('fr-FR', {
+  return parsed.toLocaleDateString('en-GB', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

@@ -52,15 +52,15 @@ logger = logging.getLogger(__name__)
 
 _PROMPTS = {
     RequestKind.EXPLAIN_CANDIDATE: (
-        "Explique en trois à cinq phrases pourquoi ce candidat obtient ce score "
-        "et où sont ses faiblesses."
+        "In three to five sentences, explain why this candidate obtains this "
+        "score and where its weaknesses are. Answer in English."
     ),
     RequestKind.COMPARE_CANDIDATES: (
-        "Explique en trois à cinq phrases ce qui distingue ces deux candidats, "
-        "en t'appuyant sur les contributions fournies."
+        "In three to five sentences, explain what distinguishes these two "
+        "candidates, using the contributions supplied. Answer in English."
     ),
     RequestKind.PRODUCE_REPORT: (
-        "Rédige un compte rendu court et lisible de cette exécution et du candidat retenu."
+        "Write a short, readable report on this run and the candidate retained. Answer in English."
     ),
 }
 
@@ -106,9 +106,9 @@ class DefaultAssistant:
             fallback=lambda: computed.answer_question(facts, question),
             question=question,
             prompt=(
-                "Réponds à la question de l'utilisateur en t'appuyant uniquement sur "
-                "le contexte. Si le contexte ne contient pas de quoi répondre, dis-le "
-                "et ne propose aucun chiffre.\n\nQuestion : " + question
+                "Answer the user's question using ONLY the context supplied. If the "
+                "context does not contain what is needed to answer, say so and offer "
+                "no figure. Answer in English.\n\nQuestion: " + question
             ),
         )
 

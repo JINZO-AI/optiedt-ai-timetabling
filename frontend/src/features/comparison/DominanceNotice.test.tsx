@@ -55,24 +55,24 @@ describe('DominanceNotice', () => {
 
     // The finding itself, not blank space. A reader must be able to tell that
     // the check ran and returned nothing.
-    expect(screen.getByText(/Aucun candidat de cette exécution n’est dominé/)).toBeTruthy()
+    expect(screen.getByText(/No candidate in this run is dominated/)).toBeTruthy()
   })
 
   it('states the rule, in both the empty and the non-empty case', () => {
     renderNotice([{ candidate: 'cand-1', dominatedBy: null }])
-    expect(screen.getByText(/au moins aussi bien sur/)).toBeTruthy()
-    expect(screen.getByText(/strictement mieux sur au moins un/)).toBeTruthy()
+    expect(screen.getByText(/at least as well on/)).toBeTruthy()
+    expect(screen.getByText(/strictly better on at least one/)).toBeTruthy()
 
     cleanup()
 
     renderNotice([{ candidate: 'cand-2', dominatedBy: 'cand-1' }])
-    expect(screen.getByText(/strictement mieux sur au moins un/)).toBeTruthy()
+    expect(screen.getByText(/strictly better on at least one/)).toBeTruthy()
   })
 
   it('says the test uses no weights, because that is what makes it a complement', () => {
     renderNotice([{ candidate: 'cand-1', dominatedBy: null }])
 
-    expect(screen.getByText(/n’utilise aucun poids/)).toBeTruthy()
+    expect(screen.getByText(/uses no weights/)).toBeTruthy()
   })
 
   it('names the dominated candidate and its dominator, with their ranks', () => {
@@ -84,7 +84,7 @@ describe('DominanceNotice', () => {
 
     expect(screen.getByText(/cand-2 \(rang 2\)/)).toBeTruthy()
     expect(screen.getByText(/cand-1 \(rang 1\)/)).toBeTruthy()
-    expect(screen.getByText(/1 candidat est dominé/)).toBeTruthy()
+    expect(screen.getByText(/1 candidate is dominated/)).toBeTruthy()
   })
 
   it('warns that the top rank can never be dominated, so its silence is not a result', () => {
@@ -93,20 +93,20 @@ describe('DominanceNotice', () => {
     // The clause the specification asked for is unreachable (C-14). If the
     // screen stayed quiet about that, a reader would take "the winner is not
     // flagged" as evidence the winner is sound.
-    expect(screen.getByText(/Le candidat de tête n’est jamais dominé/)).toBeTruthy()
+    expect(screen.getByText(/top-ranked candidate is never dominated/)).toBeTruthy()
   })
 
   it('says when the finding concerns candidates other than the two on screen', () => {
     renderNotice([{ candidate: 'cand-3', dominatedBy: 'cand-1' }], ['cand-1', 'cand-2'])
 
-    expect(screen.getByText(/Aucun des deux candidats comparés ici n’est concerné/)).toBeTruthy()
+    expect(screen.getByText(/Neither of the two candidates compared here is affected/)).toBeTruthy()
   })
 
   it('does not add that remark when a compared candidate is the dominated one', () => {
     renderNotice([{ candidate: 'cand-2', dominatedBy: 'cand-1' }], ['cand-1', 'cand-2'])
 
-    expect(screen.queryByText(/Aucun des deux candidats comparés ici n’est concerné/)).toBeNull()
-    expect(screen.getByText(/affiché ci-dessous/)).toBeTruthy()
+    expect(screen.queryByText(/Neither of the two candidates compared here is affected/)).toBeNull()
+    expect(screen.getByText(/shown below/)).toBeTruthy()
   })
 
   it('never phrases an empty result as reassurance about the timetable', () => {

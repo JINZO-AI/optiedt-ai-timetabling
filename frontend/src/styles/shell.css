@@ -1,0 +1,418 @@
+/* The shell — the rail, the page bar and the content region.
+ *
+ * A rail carries WHERE YOU ARE, a page bar carries WHAT THIS SCREEN IS and
+ * THE ONE THING TO DO ON IT, and the content region is then free to have a
+ * real layout instead of an order.
+ *
+ * ⚠️ **V2 gave the chrome a tint and the content pure white**, the opposite of
+ * V1. Content on a tinted ground needed a white card under everything to be
+ * legible, which is where the card soup came from. White content needs no
+ * card at all, so panels can go back to meaning something.
+ */
+
+.app {
+  display: grid;
+  grid-template-columns: var(--rail-w) minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--page);
+}
+
+.app--bare {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ── the rail ─────────────────────────────────────────────────────────── */
+.rail {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--chrome);
+  border-right: 1px solid var(--line);
+}
+
+.rail__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  height: var(--bar-h);
+  padding: 0 var(--s5);
+  flex-shrink: 0;
+}
+
+.rail__mark {
+  flex-shrink: 0;
+  display: block;
+}
+
+.rail__word {
+  display: block;
+  font-size: var(--t-md);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-tight);
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+/* The one deliberate small-caps lockup in the product. It is a wordmark's
+   descender line, not a UI label — which is why it is allowed to be tracked
+   and why nothing else is. */
+.rail__tag {
+  display: block;
+  font-size: 0.625rem;
+  font-weight: var(--w-medium);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+.rail__nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s4) var(--s3) var(--s6);
+}
+
+.rail__group + .rail__group {
+  margin-top: var(--s6);
+}
+
+/* ⚠️ Sentence case at readable size. V1 set this in 11 px uppercase mono, and
+   with three of them down the rail it read as a config file. */
+.rail__group-label {
+  padding: 0 var(--s3);
+  margin-bottom: var(--s2);
+  font-size: var(--t-xs);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-snug);
+  color: var(--ink-4);
+}
+
+.rail__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: 0 var(--s3);
+  height: 34px;
+  border-radius: var(--r2);
+  color: var(--ink-3);
+  font-size: var(--t-base);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--track-snug);
+  text-decoration: none;
+  transition:
+    background var(--dur-1) var(--ease),
+    color var(--dur-1) var(--ease);
+}
+
+.rail__link:hover {
+  background: var(--sunk-2);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+/* ⚠️ The current position is a FILL plus a marker, not a colour change alone.
+   A link distinguished only by hue disappears for a reader who cannot see the
+   hue, and this rail is the only thing telling them where they are. */
+.rail__link.active {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: var(--w-semi);
+  box-shadow: var(--shadow-1);
+}
+
+.rail__link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: var(--r-full);
+  background: var(--accent);
+}
+
+.rail__icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--ink-4);
+}
+
+.rail__link.active .rail__icon {
+  color: var(--accent);
+}
+
+.rail__foot {
+  flex-shrink: 0;
+  padding: var(--s4) var(--s5);
+  border-top: 1px solid var(--line);
+}
+
+.rail__who {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: var(--s3);
+  min-width: 0;
+}
+
+/* A username is an identifier, so it keeps the mono face — one of the few
+   places V2 still allows it. */
+.rail__user {
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  font-weight: var(--w-medium);
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button.rail__signout {
+  width: 100%;
+}
+
+/* ── boot ─────────────────────────────────────────────────────────────── */
+.boot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s4);
+  min-height: 100vh;
+}
+
+.boot__text {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--ink-4);
+  animation: boot-fade 1.4s var(--ease) infinite;
+}
+
+@keyframes boot-fade {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot__text {
+    animation: none;
+  }
+}
+
+/* ── the workspace ────────────────────────────────────────────────────── */
+.workspace {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--page);
+}
+
+/* ⚠️ **The primary action lives here and nowhere else**, and the bar is
+   sticky — so the one action a screen exists for is on screen at every scroll
+   position. Opaque, because a translucent bar with a backdrop filter puts the
+   title's contrast at the mercy of whatever scrolls under it. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-bar);
+  display: flex;
+  align-items: center;
+  gap: var(--s6);
+  min-height: var(--bar-h);
+  padding: var(--s3) var(--s8);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar__titles {
+  min-width: 0;
+  flex: 1;
+}
+
+.topbar__title {
+  margin: 0;
+  font-size: var(--t-xl);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-tight);
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.topbar__sub {
+  margin: 0;
+  max-width: none;
+  font-size: var(--t-sm);
+  color: var(--ink-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex-shrink: 0;
+}
+
+.content {
+  flex: 1;
+  width: 100%;
+  max-width: var(--content-max);
+  padding: var(--s8);
+  margin: 0 auto;
+}
+
+/* ── content layouts ──────────────────────────────────────────────────── */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 372px;
+  gap: var(--s8);
+  align-items: start;
+}
+
+.split__main {
+  min-width: 0;
+}
+
+/* ⚠️ The aside scrolls inside itself rather than growing the page — a sticky
+   element taller than the viewport stops being sticky and its bottom becomes
+   unreachable, which is what clipped the assistant's answer mid-sentence. */
+.split__aside {
+  position: sticky;
+  top: calc(var(--bar-h) + var(--s6));
+  max-height: calc(100vh - var(--bar-h) - var(--s9));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.duo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s6);
+}
+
+.trio {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--s5);
+}
+
+@media (max-width: 1240px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s7);
+  }
+
+  .split__aside {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+/* ── narrow ───────────────────────────────────────────────────────────────
+   The rail becomes a scrolling strip above the content rather than a drawer
+   behind a button: no state to manage, nothing to trap focus in, and every
+   destination stays one press away. */
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rail {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .rail__nav {
+    display: flex;
+    gap: var(--s1);
+    overflow-x: auto;
+    padding: 0 var(--s5) var(--s2);
+  }
+
+  .rail__group + .rail__group {
+    margin-top: 0;
+  }
+
+  .rail__group {
+    display: flex;
+    gap: var(--s1);
+  }
+
+  .rail__group-label {
+    display: none;
+  }
+
+  .rail__link.active::before {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: -2px;
+    width: auto;
+    height: 2px;
+  }
+
+  .rail__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s3);
+    padding: var(--s2) var(--s5);
+  }
+
+  .rail__who {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--s2);
+    margin-bottom: 0;
+  }
+
+  button.rail__signout {
+    width: auto;
+  }
+
+  .topbar {
+    padding: var(--s3) var(--s5);
+  }
+
+  .content {
+    padding: var(--s6) var(--s5);
+  }
+
+  .duo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    flex-wrap: wrap;
+    gap: var(--s2);
+    padding: var(--s3) var(--s4);
+  }
+
+  .topbar__actions {
+    width: 100%;
+  }
+
+  .content {
+    padding: var(--s5) var(--s4);
+  }
+
+  .panel {
+    padding: var(--s4);
+  }
+}

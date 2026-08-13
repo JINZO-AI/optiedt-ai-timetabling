@@ -103,8 +103,8 @@ describe('the week an administrator sees', () => {
     // "Réinitialiser" becomes a button whose effect has to be guessed.
     renderEditor(calendar({ slots: slots([1]), loadedOpenSlots: [0, 1] }))
 
-    expect(within(screen.getByTestId('calendar-slot-1')).getByText('modifié')).toBeTruthy()
-    expect(within(screen.getByTestId('calendar-slot-0')).queryByText('modifié')).toBeNull()
+    expect(within(screen.getByTestId('calendar-slot-1')).getByText('changed')).toBeTruthy()
+    expect(within(screen.getByTestId('calendar-slot-0')).queryByText('changed')).toBeNull()
   })
 
   it('does not mark a slot the loaded files themselves close', () => {
@@ -112,7 +112,7 @@ describe('the week an administrator sees', () => {
     // this administrator took.
     renderEditor(calendar({ slots: slots([1]), loadedOpenSlots: [0] }))
 
-    expect(within(screen.getByTestId('calendar-slot-1')).queryByText('modifié')).toBeNull()
+    expect(within(screen.getByTestId('calendar-slot-1')).queryByText('changed')).toBeNull()
   })
 })
 
@@ -143,7 +143,7 @@ describe('what is saved', () => {
     const onSave = renderEditor(calendar())
 
     fireEvent.click(screen.getByTestId('calendar-slot-0'))
-    fireEvent.click(screen.getByText('Enregistrer le calendrier'))
+    fireEvent.click(screen.getByText('Save calendar'))
 
     expect(savedBy(onSave).slots).toEqual([
       { slot: 0, isOpen: false },
@@ -153,11 +153,11 @@ describe('what is saved', () => {
 
   it('marks the form as unsaved while an edit is pending', () => {
     renderEditor(calendar())
-    expect(screen.queryByText('non enregistré')).toBeNull()
+    expect(screen.queryByText('unsaved')).toBeNull()
 
     fireEvent.click(screen.getByTestId('calendar-slot-0'))
 
-    expect(screen.getByText('non enregistré')).toBeTruthy()
+    expect(screen.getByText('unsaved')).toBeTruthy()
   })
 })
 
@@ -167,7 +167,7 @@ describe('holidays', () => {
     // and expects the week to change would find out only after a run.
     renderEditor(calendar())
 
-    expect(screen.getByText(/ne ferme pas de/i)).toBeTruthy()
+    expect(screen.getByText(/does not close a slot on its own/i)).toBeTruthy()
   })
 
   it('distinguishes an unstated list from one stating there are none', () => {
@@ -201,9 +201,9 @@ describe('holidays', () => {
     const onSave = renderEditor(calendar({ holidaysStated: true }))
 
     fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2026-03-20' } })
-    fireEvent.change(screen.getByLabelText('Intitulé'), { target: { value: 'Aid el-Fitr' } })
-    fireEvent.click(screen.getByText('Ajouter'))
-    fireEvent.click(screen.getByText('Enregistrer le calendrier'))
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Aid el-Fitr' } })
+    fireEvent.click(screen.getByText('Add'))
+    fireEvent.click(screen.getByText('Save calendar'))
 
     expect(savedBy(onSave).holidays).toEqual([
       { date: '2026-03-20', label: 'Aid el-Fitr', lunar: false, approximate: false, blocking: true },

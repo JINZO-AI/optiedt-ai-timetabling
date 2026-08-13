@@ -21,7 +21,15 @@ import type {
   Slot,
 } from '@/types/domain'
 
-export const DAY_NAMES = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+/**
+ * Weekday names for the grid header.
+ *
+ * ⚠️ UI chrome, not instance data. `slots.csv` carries a `day_name` column the
+ * loader does not read, so translating here changes no data and breaks no
+ * `verify-instance` figure. Domain vocabulary that IS data — CM/TD/TP, Amphi,
+ * Salle, Lab_Info — stays verbatim (CLAUDE.md, Conventions).
+ */
+export const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 export interface Lookups {
   sessionById: Map<string, Session>

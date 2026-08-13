@@ -97,7 +97,7 @@ def test_the_report_says_plainly_when_nothing_was_published(application, run) ->
     not mention it". An absence has to be stated to be an absence."""
     text = _report(application, run["id"])["text"]
 
-    assert "Aucun candidat de cette exécution n’a été publié" in text
+    assert "No candidate from this run has been published" in text
 
 
 def test_the_report_marks_the_published_candidate(application, run) -> None:
@@ -112,9 +112,9 @@ def test_the_report_marks_the_published_candidate(application, run) -> None:
 
     text = _report(application, run["id"])["text"]
 
-    assert "publié" in text
+    assert "published" in text
     published_line = next(line for line in text.splitlines() if published in line)
-    assert "publié" in published_line
+    assert "published" in published_line
 
 
 # ── with a service ─────────────────────────────────────────────────────

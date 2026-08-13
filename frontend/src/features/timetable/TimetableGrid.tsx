@@ -15,6 +15,12 @@ import type { InstanceData, Placement } from '@/types/domain'
  * mysteriously absent. Closed-ness comes from `slot.isOpen`, which the
  * calendar configuration drives (ADR-003, invariant 7) — the grid never
  * decides for itself that a day is closed.
+ *
+ * ⚠️ **The grid is wrapped in `.gridwrap`, and that is load-bearing rather
+ * than cosmetic.** It is the scroll container and the rounded frame, which is
+ * what lets the header row stick to the top and the time axis stick to the
+ * left while a six-day week scrolls sideways on a narrow screen. A bare table
+ * inside a plain overflow div loses both.
  */
 export function TimetableGrid({
   placements,
@@ -31,12 +37,13 @@ export function TimetableGrid({
   const cells = occupancyBySlot(placements, lookups)
 
   return (
+    <div className="gridwrap">
     <table className="grid">
       <thead>
         <tr>
           <th className="grid__corner" />
           {days.map((day) => (
-            <th key={day}>{DAY_NAMES[day] ?? `Jour ${day}`}</th>
+            <th key={day}>{DAY_NAMES[day] ?? `Day ${day}`}</th>
           ))}
         </tr>
       </thead>
@@ -56,7 +63,7 @@ export function TimetableGrid({
                 if (!slot.isOpen)
                   return (
                     <td key={day} className="cell cell--closed">
-                      <span>fermé</span>
+                      <span>Closed</span>
                     </td>
                   )
 
@@ -91,5 +98,6 @@ export function TimetableGrid({
         })}
       </tbody>
     </table>
+    </div>
   )
 }

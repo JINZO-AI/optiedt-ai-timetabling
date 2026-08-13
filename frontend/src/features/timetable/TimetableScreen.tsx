@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
 
 import { useInstance, useRun, useRuns } from '@/api/queries'
+import { profileLabel } from '@/labels'
 import { OccupancyView } from '@/features/timetable/OccupancyView'
 import { PrintHeader } from '@/features/timetable/PrintHeader'
 import { TimetableGrid } from '@/features/timetable/TimetableGrid'
+import { GridKey } from '@/features/timetable/GridKey'
 import {
   downloadCsv,
   exportFilename,
@@ -17,14 +19,15 @@ import {
   roomOccupancy,
   type Dimension,
 } from '@/features/timetable/model'
+import { Page } from '@/shell/Page'
 
 type View = Dimension | 'occupancy'
 
 const VIEW_LABELS: Record<View, string> = {
-  teacher: 'Par enseignant',
-  group: 'Par groupe',
-  room: 'Par salle',
-  occupancy: 'Occupation des salles',
+  teacher: 'By teacher',
+  group: 'By group',
+  room: 'By room',
+  occupancy: 'Room occupancy',
 }
 
 /**
@@ -33,6 +36,11 @@ const VIEW_LABELS: Record<View, string> = {
  * A run is chosen rather than assumed: a candidate is immutable and belongs to
  * the run that produced it (invariant 6), so a view is always "this timetable,
  * from that run", never a free-floating timetable.
+ *
+ * ⚠️ **Print and export sit in the page bar** because they act on whatever is
+ * displayed, and the thing displayed is a full-width grid the reader scrolls.
+ * Buttons that scroll away from the artefact they export are buttons a reader
+ * has to hunt for.
  */
 export function TimetableScreen() {
   const runs = useRuns()
@@ -55,13 +63,30 @@ export function TimetableScreen() {
     [instance.data],
   )
 
-  if (instance.isLoading || runs.isLoading) return <p className="empty">Chargement…</p>
-  if (!instance.data || !lookups) return <p className="error">Instance indisponible.</p>
+  if (instance.isLoading || runs.isLoading)
+    return (
+      <Page title="Timetables">
+        <p className="empty">Loading…</p>
+      </Page>
+    )
+
+  if (!instance.data || !lookups)
+    return (
+      <Page title="Timetables">
+        <p className="error" role="alert">
+          The department data could not be loaded. Reload the page, or sign in again if the problem
+          continues.
+        </p>
+      </Page>
+    )
+
   if (completed.length === 0)
     return (
-      <p className="empty">
-        Aucune exécution ne comporte de candidat. Lancez une génération d’abord.
-      </p>
+      <Page title="Timetables" subtitle="A candidate's week, by teacher, group or room">
+        <p className="empty">
+          No run has produced a candidate yet. Generate a timetable first and it will appear here.
+        </p>
+      </Page>
     )
 
   const resources =
@@ -107,13 +132,30 @@ export function TimetableScreen() {
       : null
 
   return (
-    <>
-      <section className="panel no-print">
-        <h1>Emplois du temps</h1>
-
-        <div className="form-row">
+    <Page
+      title="Timetables"
+      subtitle={
+        candidate
+          ? `${profileLabel(candidate.profileName)} · ${candidate.score.toFixed(2)}/100 · ${outputs?.title ?? ''}`
+          : undefined
+      }
+      actions={
+        outputs && (
+          <>
+            <button className="secondary" onClick={() => window.print()}>
+              Print
+            </button>
+            <button className="secondary" onClick={outputs.download}>
+              Export CSV
+            </button>
+          </>
+        )
+      }
+    >
+      <section className="section no-print">
+        <div className="toolbar">
           <div className="field">
-            <label htmlFor="run">Exécution</label>
+            <label htmlFor="run">Run</label>
             <select
               id="run"
               value={selectedRunId ?? ''}
@@ -124,14 +166,14 @@ export function TimetableScreen() {
             >
               {completed.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.id} — {r.candidateCount} candidat(s)
+                  {r.id} — {r.candidateCount} candidates
                 </option>
               ))}
             </select>
           </div>
 
           <div className="field">
-            <label htmlFor="candidate">Candidat</label>
+            <label htmlFor="candidate">Candidate</label>
             <select
               id="candidate"
               value={candidate?.id ?? ''}
@@ -139,33 +181,16 @@ export function TimetableScreen() {
             >
               {candidates.map((c, index) => (
                 <option key={c.id} value={c.id}>
-                  Rang {index + 1} — {c.profileName} — {c.score.toFixed(2)}/100
+                  #{index + 1} · {profileLabel(c.profileName)} · {c.score.toFixed(2)}/100
                 </option>
               ))}
             </select>
           </div>
-        </div>
 
-        <div className="tabs">
-          {(Object.keys(VIEW_LABELS) as View[]).map((key) => (
-            <button
-              key={key}
-              className={`tab${view === key ? ' tab--active' : ''}`}
-              onClick={() => {
-                setView(key)
-                setResourceId(null)
-              }}
-            >
-              {VIEW_LABELS[key]}
-            </button>
-          ))}
-        </div>
-
-        {view !== 'occupancy' && (
-          <div className="form-row" style={{ marginTop: '0.9rem' }}>
-            <div className="field">
+          {view !== 'occupancy' && (
+            <div className="field toolbar__grow">
               <label htmlFor="resource">
-                {view === 'teacher' ? 'Enseignant' : view === 'group' ? 'Groupe' : 'Salle'}
+                {view === 'teacher' ? 'Teacher' : view === 'group' ? 'Group' : 'Room'}
               </label>
               <select
                 id="resource"
@@ -179,30 +204,35 @@ export function TimetableScreen() {
                 ))}
               </select>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        <div className="tabs">
+          {(Object.keys(VIEW_LABELS) as View[]).map((key) => (
+            <button
+              key={key}
+              className={`tab${view === key ? ' tab--active' : ''}`}
+              aria-current={view === key ? 'page' : undefined}
+              onClick={() => {
+                setView(key)
+                setResourceId(null)
+              }}
+            >
+              {VIEW_LABELS[key]}
+            </button>
+          ))}
+        </div>
 
         {view === 'group' && (
-          <p className="panel__note">
-            Un CM réunit toute la promotion : le tableau d’un groupe inclut donc les séances de ses
-            groupes parents, que ses étudiants suivent également.
+          <p className="hint">
+            A lecture (CM) gathers the whole promotion, so a group’s timetable also includes the
+            sessions of its parent groups — its students attend those too.
           </p>
         )}
-
-        {outputs && (
-          <div className="outputs">
-            <button className="outputs__action" onClick={() => window.print()}>
-              Imprimer
-            </button>
-            <button className="outputs__action" onClick={outputs.download}>
-              Exporter (CSV)
-            </button>
-            <span className="hint">
-              La vue affichée est imprimée seule, et le fichier exporté porte l’exécution, la graine
-              et la pondération qui l’ont produite.
-            </span>
-          </div>
-        )}
+        <p className="hint">
+          Only the view shown here is printed. The exported file carries the run, the seed and the
+          weights that produced it.
+        </p>
       </section>
 
       {candidate && (
@@ -211,23 +241,26 @@ export function TimetableScreen() {
             <PrintHeader
               title={outputs.title}
               entries={outputs.entries}
-              printedOn={new Date().toLocaleDateString('fr-FR')}
+              printedOn={new Date().toLocaleDateString('en-GB')}
             />
           )}
           {view === 'occupancy' ? (
             <OccupancyView candidate={candidate} instance={instance.data} lookups={lookups} />
           ) : selectedResource ? (
-            <TimetableGrid
-              placements={placementsFor(candidate, view, selectedResource, lookups)}
-              instance={instance.data}
-              lookups={lookups}
-              dimension={view}
-            />
+            <>
+              <TimetableGrid
+                placements={placementsFor(candidate, view, selectedResource, lookups)}
+                instance={instance.data}
+                lookups={lookups}
+                dimension={view}
+              />
+              <GridKey />
+            </>
           ) : (
-            <p className="empty">Aucune ressource à afficher.</p>
+            <p className="empty">Select a resource above to see its week.</p>
           )}
         </section>
       )}
-    </>
+    </Page>
   )
 }

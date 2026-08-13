@@ -74,10 +74,10 @@ export function RegenerationPanel({
   return (
     <>
       <p className="panel__note">
-        Accepter une recommandation ne modifie <b>pas</b> ce candidat. Elle change{' '}
-        <b>une seule donnée d’entrée</b> et lance une <b>nouvelle exécution</b> par le même solveur :
-        H1–H12 sont déclarées à l’identique, donc elles tiennent dans le nouveau candidat pour la
-        même raison qu’elles tenaient dans celui-ci. Le candidat affiché reste consultable.
+        Accepting a recommendation does <b>not</b> edit this candidate. It changes{' '}
+        <b>one single input</b> and launches a <b>new run</b> through the same solver: the twelve
+        hard rules are declared identically, so they hold in the new candidate for the same reason
+        they held in this one. The candidate shown here stays available.
       </p>
 
       <div className="form-row">
@@ -88,16 +88,16 @@ export function RegenerationPanel({
             value={kind}
             onChange={(e) => setKind(e.target.value as RegenerateRequest['kind'])}
           >
-            <option value="weight_delta">Modifier un poids (weight_delta)</option>
-            <option value="lock_session">Figer une séance (lock_session)</option>
-            <option value="exclude_slot">Écarter un créneau (exclude_slot)</option>
+            <option value="weight_delta">Change a criterion weight</option>
+            <option value="lock_session">Keep a session where it is</option>
+            <option value="exclude_slot">Move a session out of its slot</option>
           </select>
         </div>
 
         {kind === 'weight_delta' ? (
           <>
             <div className="field">
-              <label htmlFor="regen-criterion">Critère</label>
+              <label htmlFor="regen-criterion">Criterion</label>
               <select
                 id="regen-criterion"
                 value={criterion}
@@ -105,13 +105,13 @@ export function RegenerationPanel({
               >
                 {criteria.map((code) => (
                   <option key={code} value={code}>
-                    {code} — {catalogue.get(code)?.name ?? code} (actuel {run.weights[code]})
+                    {code} — {catalogue.get(code)?.name ?? code} (currently {run.weights[code]})
                   </option>
                 ))}
               </select>
             </div>
             <div className="field">
-              <label htmlFor="regen-weight">Nouveau poids</label>
+              <label htmlFor="regen-weight">New weight</label>
               <input
                 id="regen-weight"
                 type="number"
@@ -125,7 +125,7 @@ export function RegenerationPanel({
           </>
         ) : (
           <div className="field">
-            <label htmlFor="regen-session">Séance</label>
+            <label htmlFor="regen-session">Session</label>
             <select
               id="regen-session"
               value={session}
@@ -148,15 +148,15 @@ export function RegenerationPanel({
               RegenerationPanel.test, which could not find the button by name. */}
           <span className="field__label-spacer" aria-hidden="true" />
           <button id="regen-submit" type="button" onClick={submit} disabled={pending}>
-            {pending ? 'Lancement…' : 'Accepter et régénérer'}
+            {pending ? 'Starting…' : 'Accept and regenerate'}
           </button>
         </div>
       </div>
 
       {kind === 'exclude_slot' && (
         <p className="panel__note">
-          Le créneau écarté est celui que la séance occupe dans ce candidat. Le solveur devra lui en
-          trouver un autre.
+          The slot withdrawn is the one this session occupies in this candidate. The solver will
+          have to find it another.
         </p>
       )}
 
@@ -164,17 +164,17 @@ export function RegenerationPanel({
 
       {launched !== null && (
         <p className="panel__note">
-          <b>Nouvelle exécution lancée : {launched}.</b> Ce candidat-ci est inchangé. La nouvelle
-          exécution passe par les mêmes étapes que toute autre — vérifications, résolution,
-          notation — et apparaîtra dans le sélecteur d’exécutions ci-dessus une fois terminée.
+          <b>New run started: {launched}.</b> This candidate is unchanged. The new run goes
+          through the same stages as any other — data checks, solving, scoring — and will appear in
+          the run selector above once it finishes.
         </p>
       )}
 
       {run.origin !== null && (
         <p className="panel__note">
-          Cette exécution est elle-même issue d’une recommandation acceptée sur{' '}
-          <b>{run.origin.run}</b> : {run.origin.actionDetail}. Les contraintes déjà acceptées sont
-          conservées et la nouvelle s’y ajoute.
+          This run itself came from a recommendation accepted on <b>{run.origin.run}</b>:{' '}
+          {run.origin.actionDetail}. Constraints already accepted are kept, and a new one is added
+          to them.
         </p>
       )}
     </>

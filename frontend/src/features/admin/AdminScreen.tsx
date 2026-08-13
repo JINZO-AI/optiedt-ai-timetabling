@@ -10,14 +10,16 @@ import {
   useResetCalendar,
   useSaveCalendar,
 } from '@/api/queries'
+import { userMessage } from '@/api/errors'
 import { AccountsPanel } from '@/features/admin/AccountsPanel'
 import { CalendarEditor } from '@/features/admin/CalendarEditor'
+import { Page } from '@/shell/Page'
 
 type Tab = 'calendar' | 'accounts'
 
 const TAB_LABELS: Record<Tab, string> = {
-  calendar: 'Calendrier',
-  accounts: 'Comptes',
+  calendar: 'Academic calendar',
+  accounts: 'Accounts',
 }
 
 /**
@@ -47,56 +49,67 @@ export function AdminScreen() {
   const createAccount = useCreateAccount()
   const deleteAccount = useDeleteAccount()
 
-  if (me.isLoading) return <p className="empty">Chargement…</p>
+  if (me.isLoading)
+    return (
+      <Page title="Administration">
+        <p className="empty">Loading…</p>
+      </Page>
+    )
+
   if (!isAdministrator)
     return (
-      <p className="warning">
-        L’administration du calendrier et des comptes est réservée au rôle ADMINISTRATOR (tableau 2
-        de la SRS).
-      </p>
+      <Page title="Administration">
+        <p className="warning">
+          Calendar and account administration belongs to the Administrator role. Your account does
+          not hold it.
+        </p>
+      </Page>
     )
 
   return (
-    <>
-      <section className="panel no-print">
-        <h1>Administration</h1>
-        <div className="tabs">
-          {(Object.keys(TAB_LABELS) as Tab[]).map((key) => (
-            <button
-              key={key}
-              className={`tab${tab === key ? ' tab--active' : ''}`}
-              onClick={() => setTab(key)}
-            >
-              {TAB_LABELS[key]}
-            </button>
-          ))}
-        </div>
-      </section>
+    <Page
+      title="Administration"
+      subtitle="The academic calendar and the accounts — the two things the institution sets"
+    >
+      <div className="tabs">
+        {(Object.keys(TAB_LABELS) as Tab[]).map((key) => (
+          <button
+            key={key}
+            className={`tab${tab === key ? ' tab--active' : ''}`}
+            aria-current={tab === key ? 'page' : undefined}
+            onClick={() => setTab(key)}
+          >
+            {TAB_LABELS[key]}
+          </button>
+        ))}
+      </div>
 
       {tab === 'calendar' &&
         (calendar.isLoading ? (
-          <p className="empty">Chargement du calendrier…</p>
+          <p className="empty">Loading the calendar…</p>
         ) : calendar.data ? (
           <CalendarEditor
             calendar={calendar.data}
             saving={saveCalendar.isPending || resetCalendar.isPending}
             error={
               saveCalendar.isError
-                ? String(saveCalendar.error)
+                ? userMessage(saveCalendar.error, 'save')
                 : resetCalendar.isError
-                  ? String(resetCalendar.error)
+                  ? userMessage(resetCalendar.error, 'save')
                   : null
             }
             onSave={(payload) => saveCalendar.mutate(payload)}
             onReset={() => resetCalendar.mutate()}
           />
         ) : (
-          <p className="error">Calendrier indisponible.</p>
+          <p className="error" role="alert">
+            The calendar could not be loaded.
+          </p>
         ))}
 
       {tab === 'accounts' &&
         (accounts.isLoading ? (
-          <p className="empty">Chargement des comptes…</p>
+          <p className="empty">Loading accounts…</p>
         ) : accounts.data ? (
           <AccountsPanel
             accounts={accounts.data}
@@ -105,9 +118,9 @@ export function AdminScreen() {
             creating={createAccount.isPending}
             error={
               createAccount.isError
-                ? String(createAccount.error)
+                ? userMessage(createAccount.error, 'save')
                 : deleteAccount.isError
-                  ? String(deleteAccount.error)
+                  ? userMessage(deleteAccount.error, 'save')
                   : null
             }
             currentUsername={me.data?.username}
@@ -115,8 +128,10 @@ export function AdminScreen() {
             onDelete={(username) => deleteAccount.mutate(username)}
           />
         ) : (
-          <p className="error">Comptes indisponibles.</p>
+          <p className="error" role="alert">
+            The accounts could not be loaded.
+          </p>
         ))}
-    </>
+    </Page>
   )
 }

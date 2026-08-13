@@ -88,33 +88,37 @@ export function CalendarEditor({
 
   return (
     <>
-      <section className="panel">
-        <h2>Calendrier</h2>
+      <section className="section">
+        <h2>Academic calendar</h2>
         <p className="panel__note">
-          Fermer une demi-journée retire ces créneaux de tous les emplois du temps produits
-          ensuite — sans modification du code. Les fichiers de l’instance ne sont pas touchés :
-          « Réinitialiser » rétablit le calendrier chargé.
+          Closing a half-day removes those slots from every timetable produced afterwards — with no
+          change to the code. The instance files are never touched: “Reset” restores the calendar as
+          it was loaded.
         </p>
 
         <div className="form-row">
           <button onClick={submit} disabled={saving}>
-            {saving ? 'Enregistrement…' : 'Enregistrer le calendrier'}
+            {saving ? 'Saving…' : 'Save calendar'}
           </button>
           <button className="link" onClick={onReset} disabled={saving}>
-            Réinitialiser
+            Reset
           </button>
-          {dirty && <span className="state state--running">non enregistré</span>}
+          {dirty && <span className="state state--running">unsaved</span>}
           {calendar.editedBy && (
             <span className="meta__item">
-              Dernière modification par <b>{calendar.editedBy}</b>
+              Last changed by <b>{calendar.editedBy}</b>
             </span>
           )}
         </div>
 
-        {error && <p className="error">Échec de l’enregistrement : {error}</p>}
+        {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       </section>
 
-      <section className="panel">
+      <section className="section">
         <table className="grid grid--availability">
           <thead>
             <tr>
@@ -148,7 +152,7 @@ export function CalendarEditor({
                         role="checkbox"
                         aria-checked={isOpen}
                         aria-label={`${DAY_NAMES[day] ?? day} ${sample?.startHour ?? period} ${
-                          isOpen ? 'ouvert' : 'fermé'
+                          isOpen ? 'open' : 'closed'
                         }`}
                         tabIndex={0}
                         data-testid={`calendar-slot-${slot.index}`}
@@ -161,8 +165,8 @@ export function CalendarEditor({
                           }
                         }}
                       >
-                        {isOpen ? 'Ouvert' : 'Fermé'}
-                        {changed && <span className="tag">modifié</span>}
+                        {isOpen ? 'Open' : 'Closed'}
+                        {changed && <span className="tag">changed</span>}
                       </td>
                     )
                   })}
@@ -174,10 +178,10 @@ export function CalendarEditor({
 
         <div className="meta">
           <span>
-            Créneaux ouverts <b data-testid="open-slot-count">{open.size}</b>
+            Open slots <b data-testid="open-slot-count">{open.size}</b>
           </span>
           <span>
-            Ouverts dans les fichiers chargés <b>{calendar.loadedOpenSlots.length}</b>
+            Open in the loaded files <b>{calendar.loadedOpenSlots.length}</b>
           </span>
         </div>
       </section>
@@ -220,15 +224,15 @@ function HolidayList({
   const [date, setDate] = useState('')
 
   return (
-    <section className="panel">
-      <h2>Jours fériés</h2>
+    <section className="section">
+      <h2>Holidays</h2>
       <p className="panel__note">
-        Enregistrer une liste remplace celle des fichiers chargés. ⚠️ Un jour férié ne ferme pas de
-        créneau à lui seul : fermez les demi-journées concernées dans la grille ci-dessus (ADR-003).
+        Saving a list replaces the one in the loaded files. ⚠️ A holiday does not close a slot on its
+        own: close the half-days concerned in the grid above (ADR-003).
       </p>
       {!stated && (
         <p className="panel__note" data-testid="holidays-not-stated">
-          Aucune liste n’a encore été saisie : celle de l’instance ({holidays.length}) fait foi.
+          No list has been entered yet, so the instance's own ({holidays.length}) applies.
         </p>
       )}
 
@@ -243,7 +247,7 @@ function HolidayList({
           />
         </div>
         <div className="field">
-          <label htmlFor="holiday-label">Intitulé</label>
+          <label htmlFor="holiday-label">Name</label>
           <input id="holiday-label" value={label} onChange={(e) => setLabel(e.target.value)} />
         </div>
         <button
@@ -257,26 +261,26 @@ function HolidayList({
             setLabel('')
           }}
         >
-          Ajouter
+          Add
         </button>
       </div>
 
       {holidays.length === 0 ? (
-        <p className="empty">Aucun jour férié.</p>
+        <p className="empty">No holidays listed.</p>
       ) : (
         <ul className="list">
           {holidays.map((h, index) => (
             <li key={`${h.date}-${h.label}`}>
               <span>
                 {h.date} — {h.label}
-                {h.approximate && <span className="tag">date approchée</span>}
+                {h.approximate && <span className="tag">approximate date</span>}
               </span>
               <button
                 className="link"
-                aria-label={`Retirer ${h.label}`}
+                aria-label={`Remove ${h.label}`}
                 onClick={() => onChange(holidays.filter((_, i) => i !== index))}
               >
-                Retirer
+                Remove
               </button>
             </li>
           ))}
@@ -307,16 +311,16 @@ function ShortenedDayFields({
   const preview = shifted.slice(0, 5)
 
   return (
-    <section className="panel">
-      <h2>Horaire décalé</h2>
+    <section className="section">
+      <h2>Shortened-day schedule</h2>
       <p className="panel__note">
-        Pendant cette période, les heures affichées et imprimées sont décalées. ⚠️ Les créneaux ne
-        changent pas de numéro : aucune variable ni contrainte n’est touchée (ADR-003).
+        During this period the hours shown and printed are shifted. ⚠️ Slot numbers do not change:
+        no variable and no constraint is affected (ADR-003).
       </p>
 
       <div className="form-row">
         <div className="field">
-          <label htmlFor="shortened-start">Début</label>
+          <label htmlFor="shortened-start">Start</label>
           <input
             id="shortened-start"
             type="date"
@@ -325,7 +329,7 @@ function ShortenedDayFields({
           />
         </div>
         <div className="field">
-          <label htmlFor="shortened-end">Fin</label>
+          <label htmlFor="shortened-end">End</label>
           <input
             id="shortened-end"
             type="date"
@@ -334,7 +338,7 @@ function ShortenedDayFields({
           />
         </div>
         <div className="field">
-          <label htmlFor="shortened-shift">Décalage (minutes)</label>
+          <label htmlFor="shortened-shift">Shift (minutes)</label>
           <input
             id="shortened-shift"
             type="number"
@@ -344,7 +348,7 @@ function ShortenedDayFields({
         </div>
         {value !== null && (
           <button className="link" onClick={() => onChange(null)}>
-            Retirer la période
+            Remove the period
           </button>
         )}
       </div>
@@ -353,8 +357,8 @@ function ShortenedDayFields({
         <table className="table" data-testid="shifted-preview">
           <thead>
             <tr>
-              <th>Créneau</th>
-              <th>Heures décalées</th>
+              <th>Slot</th>
+              <th>Shifted hours</th>
             </tr>
           </thead>
           <tbody>

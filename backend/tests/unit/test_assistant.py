@@ -431,7 +431,7 @@ def test_an_unknown_candidate_never_raises_out_of_the_service():
     answer = DefaultAssistant(adapter=ScriptedAdapter()).explain_candidate(_facts(), "nope")
 
     assert answer.generated is False
-    assert "ne fait pas partie" in answer.text
+    assert "is not part of run" in answer.text
 
 
 def test_the_model_is_told_it_may_not_compute_or_rank():
@@ -446,9 +446,12 @@ def test_the_model_is_told_it_may_not_compute_or_rank():
     # Whitespace-normalised: the prompt is wrapped for reading, so a phrase can
     # straddle a line break and a naive `in` would fail on correct text.
     prompt = " ".join(_SYSTEM_PROMPT.split())
-    assert "ne calcules aucun score" in prompt
-    assert "ne décides aucun classement" in prompt
-    assert "ne places aucune séance" in prompt
+    assert "compute no score" in prompt
+    assert "decide no ranking" in prompt
+    assert "place no session" in prompt
+    # ⚠️ The prompt is written in English since the interface was translated;
+    # the three prohibitions are what this test is about and they are unchanged.
+    assert "Answer in English" in prompt
 
 
 def test_the_adapter_receives_the_context_and_never_the_facts():

@@ -68,37 +68,37 @@ export function provenanceEntries(
   resourceLabel: string | null,
 ): [string, string][] {
   const entries: [string, string][] = [
-    ['Vue', viewLabel],
-    ...(resourceLabel === null ? [] : ([['Ressource', resourceLabel]] as [string, string][])),
-    ['Exécution', run.id],
-    ['Candidat', candidate.id],
-    ['Profil', candidate.profileName],
+    ['View', viewLabel],
+    ...(resourceLabel === null ? [] : ([['Resource', resourceLabel]] as [string, string][])),
+    ['Run', run.id],
+    ['Candidate', candidate.id],
+    ['Profile', candidate.profileName],
     ['Score', `${frNumber(candidate.score, 2)} / 100`],
-    ['Graine', String(run.seed)],
-    ['Version du modèle', run.modelVersion],
+    ['Seed', String(run.seed)],
+    ['Model version', run.modelVersion],
     // Deterministic time, never seconds (ADR-011). The parenthesis is the same
     // wording the generation screen uses; dropping it here would let a reader
     // take the figure for a duration.
-    ['Budget déterministe (pas des secondes)', frNumber(run.deterministicBudget, 2)],
+    ['Search budget (deterministic units, not seconds)', frNumber(run.deterministicBudget, 2)],
   ]
   // The whole weight vector, as `TraceTable` shows it on screen: one criterion
   // omitted would make the score unrecomputable from the file.
   for (const criterion of Object.keys(run.weights).sort()) {
-    entries.push([`Pondération ${criterion}`, frNumber(run.weights[criterion] ?? 0, 3)])
+    entries.push([`Weight ${criterion}`, frNumber(run.weights[criterion] ?? 0, 3)])
   }
   return entries
 }
 
 const TIMETABLE_HEADER = [
-  'Jour',
-  'Début',
-  'Fin',
-  'Périodes',
-  'Cours',
+  'Day',
+  'Start',
+  'End',
+  'Periods',
+  'Course',
   'Type',
-  'Groupe',
-  'Enseignant',
-  'Salle',
+  'Group',
+  'Teacher',
+  'Room',
 ]
 
 /**
@@ -140,11 +140,11 @@ export function timetableRows(placements: Placement[], lookups: Lookups): string
 }
 
 const OCCUPANCY_HEADER = [
-  'Salle',
+  'Room',
   'Type',
-  'Périodes occupées',
-  'Créneaux ouverts',
-  "Taux d'occupation (périodes occupées / créneaux ouverts, %)",
+  'Periods occupied',
+  'Open slots',
+  'Occupancy rate (periods occupied / open slots, %)',
 ]
 
 /**
@@ -168,12 +168,12 @@ export function occupancyRows(rows: RoomOccupancy[]): string[][] {
 }
 
 export const OCCUPANCY_CAVEAT =
-  "Taux d'occupation = périodes occupées / créneaux ouverts de la semaine. " +
-  "Il mesure le TEMPS d'utilisation, pas le remplissage en places : dans la " +
-  "terminologie internationale de gestion des espaces (cadre UFO) c'est un taux " +
-  "de fréquence, et « occupancy » y désigne le remplissage en places. " +
-  'Pour les laboratoires, la borne qui contraint réellement est le nombre de ' +
-  'fenêtres de deux périodes consécutives (C-13).'
+  'Occupancy rate = periods occupied / open slots in the week. ' +
+  'It measures TIME in use, not how full the seats are: in the international ' +
+  'space-management vocabulary (the UFO framework) this is a frequency rate, ' +
+  'and the word occupancy there means seats filled. For laboratories the ' +
+  'bound that ' +
+  'actually binds is the number of consecutive two-period windows (C-13).'
 /**
  * ⚠️ **The caveat names what the rate measures, and that is not decoration.**
  *

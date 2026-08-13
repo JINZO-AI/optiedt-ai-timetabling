@@ -72,7 +72,7 @@ describe('the examination calendar', () => {
       />,
     )
     expect(screen.getByText('4, 5, 11')).toBeTruthy()
-    expect(screen.getByText(/3 salles/)).toBeTruthy()
+    expect(screen.getByText(/3 rooms/)).toBeTruthy()
   })
 
   it('reports the assigned capacity so X2 can be checked on screen', () => {
@@ -94,8 +94,8 @@ describe('the examination calendar', () => {
     )
     const headings = screen.getAllByRole('heading', { level: 4 }).map((h) => h.textContent)
     expect(headings).toHaveLength(2)
-    expect(headings[0]).toMatch(/8 juin/)
-    expect(headings[1]).toMatch(/10 juin/)
+    expect(headings[0]).toMatch(/8 June/)
+    expect(headings[1]).toMatch(/10 June/)
   })
 
   it('offers the room view §5.5 asks for, with one row per room occupied', () => {
@@ -106,7 +106,7 @@ describe('the examination calendar', () => {
         run={run({ placements: [placement({ rooms: ['4', '5', '11'] })] })}
       />,
     )
-    fireEvent.click(screen.getByRole('tab', { name: 'Par salle' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'By room' }))
     const rows = screen.getAllByRole('row').slice(1) // drop the header
     expect(rows).toHaveLength(3)
   })
@@ -116,8 +116,8 @@ describe('the examination calendar', () => {
     // the occupancy rate: a number that reaches a reader stripped of the
     // sentence saying what it measures.
     render(<ExamCalendar run={run({ spreadPenalty: 3 })} />)
-    expect(screen.getByText(/Étalement \(SX1\)/)).toBeTruthy()
-    expect(screen.getByText(/même promotion partageant un jour/)).toBeTruthy()
+    expect(screen.getByText(/Spread \(SX1\)/)).toBeTruthy()
+    expect(screen.getByText(/sharing a day, beyond the first/)).toBeTruthy()
   })
 
   it('renders nothing when there are no placements, rather than an empty table', () => {

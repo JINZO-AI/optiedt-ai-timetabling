@@ -38,14 +38,13 @@ export function ConflictReport({
     return (
       <>
         <p className="error">
-          Diagnostic non concluant : le solveur n’a ni trouvé d’emploi du temps ni prouvé qu’il
-          n’en existe aucun dans le budget accordé.
+          Diagnosis inconclusive: within the budget given, the solver neither found a timetable nor
+          proved that none exists.
         </p>
         <p className="panel__note">
-          ⚠️ Ceci n’établit pas que l’instance est saine. Une instance peut n’admettre aucune
-          solution sans que les propagateurs puissent en construire la preuve — c’est exactement
-          ce qui s’est produit sur C-13. Lisez la vérification préalable ci-dessus, puis relancez
-          avec un budget déterministe plus élevé.
+          ⚠️ This does not establish that the data is sound. An instance can have no solution at all
+          without the solver being able to construct the proof — which is exactly what happened on
+          C-13. Read the data checks above, then try again with a longer search.
         </p>
         <p className="panel__note">{diagnosis.detail}</p>
       </>
@@ -56,14 +55,13 @@ export function ConflictReport({
     return (
       <>
         <p className="warning">
-          Aucune règle relaxable n’explique le conflit.
+          No withdrawable rule explains the conflict.
         </p>
         <p className="panel__note">
-          Seules H1, H3, H7 et H12 sont des contraintes posées auxquelles une hypothèse peut être
-          attachée. H4 à H6 et H8 à H10 restreignent le domaine d’une variable avant même le début
-          de la recherche : elles ne peuvent pas être relaxées. Le conflit est donc dans les
-          données — la vérification préalable ci-dessus nomme la ressource et la quantité
-          manquante.
+          Only H1, H3, H7 and H12 are posted constraints that can be withdrawn one at a time. H4 to
+          H6 and H8 to H10 restrict a variable's domain before the search even begins, so they
+          cannot be relaxed. The conflict is therefore in the data — the checks above name the
+          resource and the quantity that is missing.
         </p>
         <p className="panel__note">{diagnosis.detail}</p>
       </>
@@ -73,7 +71,7 @@ export function ConflictReport({
   return (
     <>
       <p className="error">
-        Aucun emploi du temps n’existe. Les règles suivantes suffisent à expliquer le conflit.
+        No timetable exists. The rules below are enough to explain the conflict.
       </p>
 
       <ul className="conflicts">
@@ -87,25 +85,25 @@ export function ConflictReport({
 
       {diagnosis.isMinimal ? (
         <p className="panel__note">
-          Ensemble <b>minimal</b> : chaque règle a été retirée puis le modèle résolu à nouveau.
-          Retirer l’une quelconque d’entre elles suffit à rendre l’instance solvable, et toutes
-          les autres règles retirables l’ont été sans lever le conflit. ⚠️ Minimal parmi les
-          quatre règles retirables seulement — H4 à H6 et H8 à H10 restreignent le domaine avant
-          la recherche et restent toujours en vigueur.
+          <b>Minimal</b> set: each rule was withdrawn and the model re-solved. Removing any one of
+          them makes the instance solvable, and every other withdrawable rule was removed without
+          lifting the conflict. ⚠️ Minimal among the four withdrawable rules only — H4 to H6 and H8
+          to H10 restrict the domain before
+          the search begins and are always in force.
         </p>
       ) : (
         <p className="warning">
-          ⚠️ Ensemble <b>suffisant mais non minimal</b> : le retrait d’au moins une règle n’a pas
-          pu être tranché dans le budget accordé, et cette règle a donc été conservée faute de
-          preuve, non parce qu’elle s’est révélée nécessaire. Augmentez le budget déterministe
-          pour resserrer le diagnostic.
+          ⚠️ <b>Sufficient but not minimal</b>: at least one removal could not be decided within
+          the budget given, so that rule was kept for want of proof rather than because it turned
+          out to be necessary. Increase the search budget
+          to narrow the diagnosis.
         </p>
       )}
 
       <p className="panel__note">
-        ⚠️ Lorsque deux règles interdisent le même placement, chacune suffit à elle seule à
-        expliquer le conflit : le rapport en nomme une, toujours la même — les règles sont
-        retirées dans l’ordre du catalogue — mais ce n’est pas la seule réponse vraie.
+        ⚠️ When two rules forbid the same placement, either one on its own explains the conflict.
+        The report names one of them, always the same one — rules are withdrawn in catalogue order —
+        but that is not the only true answer.
       </p>
     </>
   )

@@ -74,91 +74,101 @@ export function DatasetPanel({
   onWithdraw,
 }: DatasetPanelProps) {
   return (
-    <section className="screen">
-      <h2>Données du département</h2>
-      <p className="hint">
-        Les {DEPARTMENT_FILES.length} fichiers attendus&nbsp;:{' '}
-        {DEPARTMENT_FILES.join(', ')}. Le catalogue des contraintes n’en fait
-        pas partie&nbsp;: il appartient à l’application.
-      </p>
+    <>
+      {inForce ? <InForce dataset={inForce} /> : <p className="empty">Loading…</p>}
 
-      {inForce ? (
-        <InForce dataset={inForce} />
-      ) : (
-        <p className="empty">Chargement…</p>
-      )}
+      <section className="section">
+        <div className="section__head">
+          <h2 className="section__title">
+            Replace the dataset<span className="section__code">FR-1</span>
+          </h2>
+        </div>
+        <p className="panel__note">
+          The {DEPARTMENT_FILES.length} files expected: {DEPARTMENT_FILES.join(', ')}. The
+          constraint catalogue is not among them: it belongs to the application, not to a
+          department. Every line is verified before anything is recorded, and a file that would
+          orphan an existing declaration or closure is refused rather than allowed to delete one.
+        </p>
 
-      <div className="controls">
-        <input
-          type="file"
-          multiple
-          accept=".csv,text/csv"
-          aria-label="Fichiers du département"
-          data-testid="dataset-files"
-          onChange={(event) => onChoose(Array.from(event.target.files ?? []))}
-        />
-        <button
-          type="button"
-          onClick={onImport}
-          disabled={chosen === 0 || importing}
-          data-testid="dataset-import"
-        >
-          {importing ? 'Vérification…' : `Charger ${chosen} fichier(s)`}
-        </button>
-        {inForce?.imported ? (
+        <div className="controls">
+          <input
+            type="file"
+            multiple
+            accept=".csv,text/csv"
+            aria-label="Department data files"
+            data-testid="dataset-files"
+            onChange={(event) => onChoose(Array.from(event.target.files ?? []))}
+          />
           <button
             type="button"
-            className="secondary"
-            onClick={onWithdraw}
-            disabled={withdrawing}
-            data-testid="dataset-withdraw"
+            onClick={onImport}
+            disabled={chosen === 0 || importing}
+            data-testid="dataset-import"
           >
-            {withdrawing ? 'Retrait…' : 'Retirer le jeu de données importé'}
+            {importing
+              ? 'Verifying…'
+              : chosen === 0
+                ? 'Upload files'
+                : `Upload ${chosen} ${chosen === 1 ? 'file' : 'files'}`}
           </button>
-        ) : null}
-      </div>
+          {inForce?.imported ? (
+            <button
+              type="button"
+              className="danger"
+              onClick={onWithdraw}
+              disabled={withdrawing}
+              data-testid="dataset-withdraw"
+            >
+              {withdrawing ? 'Withdrawing…' : 'Withdraw the imported dataset'}
+            </button>
+          ) : null}
+        </div>
 
-      {failed ? (
-        <p className="error" role="alert">
-          La requête a échoué. Vérifiez la connexion et vos droits.
-        </p>
-      ) : null}
+        {failed ? (
+          <p className="error" role="alert">
+            The request failed. Check your connection and that you have permission to load data.
+          </p>
+        ) : null}
+      </section>
 
       {outcome ? <Outcome result={outcome} /> : null}
-    </section>
+    </>
   )
 }
 
 function InForce({ dataset }: { dataset: DatasetSummary }) {
   return (
-    <div className="panel" data-testid="dataset-in-force">
-      <h3>
-        {dataset.imported
-          ? 'Jeu de données importé'
-          : 'Jeu de données de référence (aucun import)'}
-      </h3>
+    <div className="section" data-testid="dataset-in-force">
+      <div className="section__head">
+        <h2 className="section__title">
+          {dataset.imported ? 'Imported dataset' : 'Reference dataset'}
+        </h2>
+        <span className={`badge badge--${dataset.imported ? 'ok' : 'idle'}`}>
+          {dataset.imported ? 'Department supplied' : 'Shipped with the application'}
+        </span>
+      </div>
       {dataset.imported ? (
         <p className="hint" data-testid="dataset-provenance">
-          Chargé par {dataset.importedBy ?? '—'}
+          Uploaded by {dataset.importedBy ?? '—'}
           {dataset.importedAt
-            ? ` le ${new Date(dataset.importedAt).toLocaleString('fr-FR')}`
+            ? ` on ${new Date(dataset.importedAt).toLocaleString('en-GB')}`
             : ''}
           .
         </p>
       ) : (
         <p className="hint">
-          Les fichiers livrés avec l’application sont en vigueur. Charger un jeu
-          de données les remplace&nbsp;; le retrait les rétablit.
+          The files shipped with the application are in force. Uploading a
+          dataset replaces them; withdrawing it restores them.
         </p>
       )}
       <dl className="figures">
-        <Figure label="Séances" value={dataset.sessions} />
-        <Figure label="Groupes" value={dataset.groups} />
-        <Figure label="Enseignants" value={dataset.teachers} />
-        <Figure label="Matières" value={dataset.courses} />
-        <Figure label="Salles" value={dataset.rooms} />
-        <Figure label="Créneaux" value={dataset.slots} />
-        <Figure label="Jours fériés" value={dataset.holidays} />
+        <Figure label="Sessions" value={dataset.sessions} />
+        <Figure label="Groups" value={dataset.groups} />
+        <Figure label="Teachers" value={dataset.teachers} />
+        <Figure label="Courses" value={dataset.courses} />
+        <Figure label="Rooms" value={dataset.rooms} />
+        <Figure label="Slots" value={dataset.slots} />
+        <Figure label="Holidays" value={dataset.holidays} />
       </dl>
     </div>
   )
@@ -177,8 +187,7 @@ function Outcome({ result }: { result: DatasetImportResult }) {
   if (result.accepted) {
     return (
       <p className="ok" role="status" data-testid="dataset-accepted">
-        Données enregistrées. Elles sont désormais celles que les écrans et les
-        générations utilisent.
+        Data recorded. Every screen and every new run now uses it.
       </p>
     )
   }
@@ -186,7 +195,7 @@ function Outcome({ result }: { result: DatasetImportResult }) {
   return (
     <div data-testid="dataset-refused">
       <p className="error" role="alert">
-        Rien n’a été enregistré. Le jeu de données précédent reste en vigueur.
+        Nothing was recorded. The previous dataset stays in force.
       </p>
       {result.incompatibilities.length > 0 ? (
         <Incompatibilities result={result} />
@@ -200,27 +209,27 @@ function Outcome({ result }: { result: DatasetImportResult }) {
 
 function Incompatibilities({ result }: { result: DatasetImportResult }) {
   return (
-    <div className="panel" data-testid="dataset-incompatibilities">
-      <h3>Déclarations et calendrier existants</h3>
+    <div className="section" data-testid="dataset-incompatibilities">
+      <h3>Existing declarations and calendar</h3>
       <p className="hint">
-        Ces fichiers sont corrects. Le remplacement laisserait sans objet des
-        données déjà enregistrées, qui ne sont jamais supprimées
-        automatiquement.
+        These files are correct. Replacing the dataset would leave already
+        recorded data with nothing to refer to, and nothing is ever deleted
+        automatically.
       </p>
-      <table>
+      <table className="data-table">
         <thead>
           <tr>
-            <th>Origine</th>
-            <th>Concerne</th>
-            <th>Raison</th>
-            <th>Que faire</th>
+            <th>Source</th>
+            <th>Concerns</th>
+            <th>Reason</th>
+            <th>What to do</th>
           </tr>
         </thead>
         <tbody>
           {result.incompatibilities.map((found) => (
             <tr key={`${found.overlay}-${found.subject}`}>
               <td>
-                {found.overlay === 'calendar' ? 'Calendrier' : 'Disponibilités'}
+                {found.overlay === 'calendar' ? 'Calendar' : 'Availability'}
               </td>
               <td>{found.subject}</td>
               <td>{found.reason}</td>
@@ -235,23 +244,23 @@ function Incompatibilities({ result }: { result: DatasetImportResult }) {
 
 function RejectedLines({ result }: { result: DatasetImportResult }) {
   return (
-    <div className="panel" data-testid="dataset-rejected">
-      <h3>Lignes refusées ({result.rejectedLines.length})</h3>
+    <div className="section" data-testid="dataset-rejected">
+      <h3>Rejected lines ({result.rejectedLines.length})</h3>
       {!result.referencesChecked ? (
         <p className="hint" data-testid="dataset-references-pending">
-          Les références entre fichiers n’ont pas encore été vérifiées&nbsp;:
-          elles le sont une fois que toutes les lignes se lisent. Corriger ces
-          lignes peut donc en révéler d’autres.
+          References between files have not been checked yet: they are checked
+          once every line parses. Fixing these lines may therefore reveal
+          others.
         </p>
       ) : null}
-      <table>
+      <table className="data-table">
         <thead>
           <tr>
-            <th>Fichier</th>
-            <th>Ligne</th>
-            <th>Colonne</th>
-            <th>Valeur</th>
-            <th>Raison</th>
+            <th>File</th>
+            <th>Line</th>
+            <th>Column</th>
+            <th>Value</th>
+            <th>Reason</th>
           </tr>
         </thead>
         <tbody>

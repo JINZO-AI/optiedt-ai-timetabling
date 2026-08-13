@@ -72,12 +72,12 @@ describe('the trace is complete', () => {
      *  promise the system does not make — the wall-clock cost of one unit is
      *  machine-dependent. */
     render(<TraceTable published={published()} />)
-    expect(screen.getByText(/pas des secondes/)).toBeTruthy()
+    expect(screen.getByText(/deterministic units, not seconds/)).toBeTruthy()
     expect(screen.queryByText('90 s')).toBeNull()
   })
 
   it('shows the candidate and the profile that produced it', () => {
     render(<TraceTable published={published()} />)
-    expect(screen.getByText(/run-1-cand-0 — profil balanced/)).toBeTruthy()
+    expect(screen.getByText(/run-1-cand-0 — profile balanced/)).toBeTruthy()
   })
 })

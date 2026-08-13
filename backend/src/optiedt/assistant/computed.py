@@ -58,26 +58,26 @@ def explain_candidate(facts: RunFacts, candidate_id: CandidateId) -> str:
     """The sub-scores, in the order the analysis layer reported them."""
     candidate = _candidate(facts, candidate_id)
     if candidate is None:
-        return f"Le candidat {candidate_id} ne fait pas partie de l’exécution {facts.run_id}."
+        return f"Candidate {candidate_id} is not part of run {facts.run_id}."
 
     lines = [
-        f"Candidat {candidate.id}, profil « {candidate.profile_name} », "
+        f"Candidate {candidate.id}, profile \u201c{candidate.profile_name}\u201d, "
         f"score {candidate.score:.{SCORE_DIGITS}f}/100.",
-        f"{len(candidate.placements)} séances placées.",
+        f"{len(candidate.placements)} sessions placed.",
         "",
-        "Sous-scores, valeur mesurée puis valeur normalisée (1 = le meilleur) :",
+        "Sub-scores, measured value then normalised value (1 = best):",
     ]
     for sub in candidate.sub_scores:
         weight = facts.weights.get(sub.criterion)
-        weight_text = "" if weight is None else f", poids {weight}"
+        weight_text = "" if weight is None else f", weight {weight}"
         lines.append(
             f"  {_label(facts, sub.criterion)} : {_raw(sub.raw_value)} "
             f"→ {sub.normalised:.{SCORE_DIGITS}f}{weight_text}"
         )
     lines.append("")
     lines.append(
-        "Le score est la somme pondérée de ces valeurs normalisées, multipliée par 100. "
-        "Il se recalcule à la main."
+        "The score is the weighted sum of these normalised values, multiplied by 100. "
+        "It can be recomputed by hand."
     )
     return "\n".join(lines)
 
@@ -86,30 +86,30 @@ def compare_candidates(facts: RunFacts, a_id: CandidateId, b_id: CandidateId) ->
     """The decomposition, term by term. It IS the score calculation read out."""
     if facts.decomposition is None:
         return (
-            f"Aucune décomposition n’a été fournie pour {a_id} et {b_id}. "
-            "La comparaison est calculée par la couche d’analyse."
+            f"No decomposition was supplied for {a_id} and {b_id}. "
+            "The comparison is computed by the analysis layer."
         )
 
     decomposition = facts.decomposition
     difference = f"{decomposition.score_difference:.{SCORE_DIGITS}f}"
     lines = [
-        f"Différence de score entre {decomposition.candidate_a} et "
-        f"{decomposition.candidate_b} : {difference} point(s).",
+        f"Score difference between {decomposition.candidate_a} and "
+        f"{decomposition.candidate_b}: {difference} point(s).",
         "",
-        "Contribution de chaque critère, 100 × poids × (n(A) − n(B)) :",
+        "Contribution of each criterion, 100 x weight x (n(A) - n(B)):",
     ]
     for contribution in decomposition.contributions:
         lines.append(
             f"  {_label(facts, contribution.criterion)} : "
             f"{contribution.value:.{SCORE_DIGITS}f} "
-            f"(poids {contribution.weight}, "
-            f"{contribution.normalised_a:.{SCORE_DIGITS}f} contre "
+            f"(weight {contribution.weight}, "
+            f"{contribution.normalised_a:.{SCORE_DIGITS}f} against "
             f"{contribution.normalised_b:.{SCORE_DIGITS}f})"
         )
     lines.append("")
     lines.append(
-        "La somme de ces contributions est exactement la différence des scores : "
-        "ce n’est pas un résumé du calcul, c’est le calcul."
+        "These contributions sum exactly to the difference in score: this is not a "
+        "summary of the calculation, it is the calculation."
     )
     return "\n".join(lines)
 
@@ -124,13 +124,13 @@ def answer_question(facts: RunFacts, question: str) -> str:
     """
     del question  # Recorded by the caller; repeating it here answers nothing.
     lines = [
-        "Le service de langage est indisponible ou désactivé : cette question n’a pas "
-        "reçu de réponse rédigée.",
+        "The language service is unavailable or switched off, so this question "
+        "received no written answer.",
         "",
-        f"Ce qui est connu de l’exécution {facts.run_id} :",
-        f"  graine {facts.seed}, budget déterministe {facts.deterministic_budget}, "
-        f"modèle {facts.model_version}",
-        f"  {len(facts.candidates)} candidat(s) :",
+        f"What is known about run {facts.run_id}:",
+        f"  seed {facts.seed}, search budget {facts.deterministic_budget}, "
+        f"model {facts.model_version}",
+        f"  {len(facts.candidates)} candidate(s):",
     ]
     for candidate in facts.candidates:
         lines.append(
@@ -148,27 +148,27 @@ def produce_report(facts: RunFacts) -> str:
     is why the reduction is survivable at all.
     """
     lines = [
-        f"Exécution {facts.run_id}",
-        f"  graine : {facts.seed}",
-        f"  budget déterministe : {facts.deterministic_budget}",
-        f"  version du modèle : {facts.model_version}",
+        f"Run {facts.run_id}",
+        f"  seed: {facts.seed}",
+        f"  search budget: {facts.deterministic_budget}",
+        f"  model version: {facts.model_version}",
         "",
-        "Poids en vigueur — un seul vecteur valorise tous les candidats :",
+        "Weights in force - one vector prices every candidate:",
     ]
     for code in sorted(facts.weights):
         lines.append(f"  {_label(facts, code)} : {facts.weights[code]}")
 
     lines.append("")
-    lines.append(f"Candidats ({len(facts.candidates)}), du meilleur au moins bon :")
+    lines.append(f"Candidates ({len(facts.candidates)}), best first:")
     for index, candidate in enumerate(facts.candidates):
-        published = " — publié" if candidate.id == facts.published else ""
+        published = " - published" if candidate.id == facts.published else ""
         lines.append(
             f"  {index + 1}. {candidate.id} — {candidate.profile_name} — "
             f"{candidate.score:.{SCORE_DIGITS}f}/100 — "
-            f"{len(candidate.placements)} séances placées{published}"
+            f"{len(candidate.placements)} sessions placed{published}"
         )
 
     if facts.published is None:
         lines.append("")
-        lines.append("Aucun candidat de cette exécution n’a été publié.")
+        lines.append("No candidate from this run has been published.")
     return "\n".join(lines)

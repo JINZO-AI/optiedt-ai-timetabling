@@ -159,7 +159,7 @@ describe('a field that contains the separator cannot split a row', () => {
   })
 
   it('leaves an ordinary field unquoted', () => {
-    expect(toCsv([['Lundi', '08:30']])).toBe('Lundi;08:30')
+    expect(toCsv([['Monday', '08:30']])).toBe('Monday;08:30')
   })
 
   it('keeps a course code carrying a semicolon on one row', () => {
@@ -207,15 +207,15 @@ describe('one row per session, never one per period', () => {
   it('orders rows by day and then period', () => {
     const rows = timetableRows(candidate().placements, lookups())
     expect(rows.map((r) => [r[0], r[1]])).toEqual([
-      ['Lundi', '08:30'],
-      ['Lundi', '13:00'],
+      ['Monday', '08:30'],
+      ['Monday', '13:00'],
     ])
   })
 
   it('names the course, type, group, teacher and room', () => {
     const rows = timetableRows(candidate().placements, lookups())
     expect(rows[0]).toEqual([
-      'Lundi',
+      'Monday',
       '08:30',
       '11:45',
       '2',
@@ -252,13 +252,13 @@ describe('the exported file says what produced it', () => {
     const entries = provenanceEntries(run(), candidate(), 'Par groupe', 'L2-A1')
     const asObject = Object.fromEntries(entries)
 
-    expect(asObject['Exécution']).toBe('RUN-0001')
-    expect(asObject['Graine']).toBe('20260807')
-    expect(asObject['Version du modèle']).toBe('optiedt-1.0')
-    expect(asObject['Candidat']).toBe('CAND-0003')
-    expect(asObject['Profil']).toBe('teacher-favouring')
-    expect(asObject['Vue']).toBe('Par groupe')
-    expect(asObject['Ressource']).toBe('L2-A1')
+    expect(asObject['Run']).toBe('RUN-0001')
+    expect(asObject['Seed']).toBe('20260807')
+    expect(asObject['Model version']).toBe('optiedt-1.0')
+    expect(asObject['Candidate']).toBe('CAND-0003')
+    expect(asObject['Profile']).toBe('teacher-favouring')
+    expect(asObject['View']).toBe('Par groupe')
+    expect(asObject['Resource']).toBe('L2-A1')
   })
 
   it('carries the whole weight vector, including a criterion weighted zero', () => {
@@ -266,16 +266,18 @@ describe('the exported file says what produced it', () => {
     // file; S10 carries weight 0 and is exactly the one an "empty means absent"
     // shortcut would drop.
     const asObject = Object.fromEntries(provenanceEntries(run(), candidate(), 'Par salle', 'Lab 1'))
-    expect(asObject['Pondération S2']).toBe('0,200')
-    expect(asObject['Pondération S3']).toBe('0,150')
-    expect(asObject['Pondération S10']).toBe('0,000')
+    expect(asObject['Weight S2']).toBe('0,200')
+    expect(asObject['Weight S3']).toBe('0,150')
+    expect(asObject['Weight S10']).toBe('0,000')
   })
 
   it('never calls the deterministic budget a number of seconds', () => {
     const labels = provenanceEntries(run(), candidate(), 'Par salle', 'Lab 1').map(([l]) => l)
     // ADR-011: the budget is deterministic work, not wall clock. The screen
     // says so; a file that dropped the qualifier would invite the reading back.
-    expect(labels).toContain('Budget déterministe (pas des secondes)')
+    expect(labels).toContain('Search budget (deterministic units, not seconds)')
+    // The qualifier survives translation deliberately: it is the whole point of
+    // the label, and 'budget' alone would read as a duration.
   })
 
   it('omits the resource line on a view that has no single resource', () => {
@@ -286,12 +288,12 @@ describe('the exported file says what produced it', () => {
   })
 
   it('puts the provenance above the table, separated by a blank line', () => {
-    const lines = timetableCsv(candidate().placements, lookups(), [['Exécution', 'RUN-0001']]).split(
+    const lines = timetableCsv(candidate().placements, lookups(), [['Run', 'RUN-0001']]).split(
       '\r\n',
     )
-    expect(lines[0]).toBe('Exécution;RUN-0001')
+    expect(lines[0]).toBe('Run;RUN-0001')
     expect(lines[1]).toBe('')
-    expect(lines[2]).toBe('Jour;Début;Fin;Périodes;Cours;Type;Groupe;Enseignant;Salle')
+    expect(lines[2]).toBe('Day;Start;End;Periods;Course;Type;Group;Teacher;Room')
   })
 })
 
@@ -314,7 +316,7 @@ describe('the occupancy export keeps the warning that goes with the figure', () 
     // in the file it has to be a row or it does not travel.
     const csv = occupancyCsv(rows, [])
     expect(csv).toContain(OCCUPANCY_CAVEAT)
-    expect(OCCUPANCY_CAVEAT).toMatch(/deux périodes consécutives/)
+    expect(OCCUPANCY_CAVEAT).toMatch(/consecutive two-period windows/)
   })
 
   it('writes the reassuring period figure, and it is the one the screen shows', () => {

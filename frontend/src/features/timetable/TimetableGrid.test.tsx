@@ -132,8 +132,8 @@ describe('the weekly grid of a resource', () => {
   it('lays out every day of the week and every period of the day', () => {
     renderFor('group', 'G-TP1')
 
-    expect(screen.getByText('Lundi')).toBeTruthy()
-    expect(screen.getByText('Mardi')).toBeTruthy()
+    expect(screen.getByText('Monday')).toBeTruthy()
+    expect(screen.getByText('Tuesday')).toBeTruthy()
     // Four period rows, closed one included: the week keeps its shape.
     expect(screen.getByText(/^08:30/)).toBeTruthy()
     expect(screen.getByText(/^14:45/)).toBeTruthy()
@@ -175,7 +175,7 @@ describe('the weekly grid of a resource', () => {
     const lastPeriodMonday = periodRow('14:45')[0]
 
     expect(lastPeriodMonday!.className).toContain('cell--closed')
-    expect(lastPeriodMonday!.textContent).toContain('fermé')
+    expect(lastPeriodMonday!.textContent).toContain('Closed')
   })
 
   it('shows a group its ancestors sessions, which is what its students attend', () => {
@@ -207,7 +207,7 @@ describe('the weekly grid of a resource', () => {
     // Empty, not absent, and not everyone else's timetable.
     renderFor('teacher', 'T-NOBODY')
 
-    expect(screen.getByText('Lundi')).toBeTruthy()
+    expect(screen.getByText('Monday')).toBeTruthy()
     expect(screen.queryByText('INF101')).toBeNull()
     expect(screen.queryByText('MAT202')).toBeNull()
   })

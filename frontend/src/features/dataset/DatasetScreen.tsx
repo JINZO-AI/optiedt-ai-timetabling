@@ -20,6 +20,7 @@ import {
   useWithdrawDataset,
 } from '@/api/queries'
 import { DatasetPanel } from '@/features/dataset/DatasetPanel'
+import { Page } from '@/shell/Page'
 
 export function DatasetScreen() {
   const dataset = useDataset(true)
@@ -29,40 +30,44 @@ export function DatasetScreen() {
 
   if (dataset.isError) {
     return (
-      <section className="screen">
-        <h2>Données du département</h2>
-        <p className="empty">
-          Seul le responsable des emplois du temps peut charger les données du
-          département.
+      <Page title="Department data">
+        <p className="warning">
+          Loading a department dataset belongs to the Timetable Officer role. Your account does not
+          hold it.
         </p>
-      </section>
+      </Page>
     )
   }
 
   const outcome = importing.data ?? withdrawing.data ?? null
 
   return (
-    <DatasetPanel
-      inForce={outcome?.dataset ?? dataset.data ?? null}
-      outcome={outcome}
-      chosen={chosen.length}
-      importing={importing.isPending}
-      withdrawing={withdrawing.isPending}
-      failed={importing.isError || withdrawing.isError}
-      onChoose={setChosen}
-      onImport={() => {
-        if (chosen.length === 0) return
-        withdrawing.reset()
-        importing.mutate(chosen, {
-          onSuccess: (result) => {
-            if (result.accepted) setChosen([])
-          },
-        })
-      }}
-      onWithdraw={() => {
-        importing.reset()
-        withdrawing.mutate()
-      }}
-    />
+    <Page
+      title="Department data"
+      subtitle="The files every timetable is solved against — verified line by line before anything is recorded"
+    >
+      <DatasetPanel
+        inForce={outcome?.dataset ?? dataset.data ?? null}
+        outcome={outcome}
+        chosen={chosen.length}
+        importing={importing.isPending}
+        withdrawing={withdrawing.isPending}
+        failed={importing.isError || withdrawing.isError}
+        onChoose={setChosen}
+        onImport={() => {
+          if (chosen.length === 0) return
+          withdrawing.reset()
+          importing.mutate(chosen, {
+            onSuccess: (result) => {
+              if (result.accepted) setChosen([])
+            },
+          })
+        }}
+        onWithdraw={() => {
+          importing.reset()
+          withdrawing.mutate()
+        }}
+      />
+    </Page>
   )
 }

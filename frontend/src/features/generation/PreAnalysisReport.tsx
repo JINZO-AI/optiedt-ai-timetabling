@@ -22,11 +22,7 @@ export function PreAnalysisReport({ checks }: { checks: CheckResult[] }) {
   if (checks.length === 0) {
     // ⚠️ Not "everything is fine". An empty list means the stage did not run —
     // a run still PENDING, or one that failed before stage 1.
-    return (
-      <p className="panel__note">
-        Vérification préalable non exécutée pour cette exécution.
-      </p>
-    )
+    return <p className="empty empty--inline">The data checks have not run for this run yet.</p>
   }
 
   const failed = checks.filter((c) => !c.passed)
@@ -35,58 +31,66 @@ export function PreAnalysisReport({ checks }: { checks: CheckResult[] }) {
     <>
       {failed.length > 0 ? (
         <p className="error">
-          {failed.length} vérification(s) en échec. Une couverture de créneaux en échec est une
-          preuve par tiroirs qu’aucun emploi du temps n’existe : ce n’est pas une question de
-          performance du solveur.
+          <b>
+            {failed.length} of {checks.length} {checks.length === 1 ? 'check' : 'checks'} failed.
+          </b>{' '}
+          A failed slot-coverage check is a pigeonhole proof that no timetable exists — not a
+          question of solver performance.
         </p>
       ) : (
-        <p className="panel__note">
-          Les cinq vérifications passent. Réussir n’est pas être à l’aise : lisez la ressource
-          contraignante ci-dessous.
+        <p className="note">
+          <b>
+            {checks.length === 1 ? 'The check passes.' : `All ${checks.length} checks pass.`}
+          </b>{' '}
+          Passing is not the same as having room to spare —
+          read the occupancy figures below, and read the two-period window rate rather than the
+          period rate. The period bound is necessary and not sufficient.
         </p>
       )}
 
-      <table className="checks">
-        <thead>
-          <tr>
-            <th scope="col">Vérification</th>
-            <th scope="col">Résultat</th>
-            <th scope="col">Ressource</th>
-            <th scope="col">Manquant</th>
-            <th scope="col">Détail</th>
-          </tr>
-        </thead>
-        <tbody>
-          {checks.map((check) => (
-            <tr key={check.name} className={check.passed ? undefined : 'checks__row--failed'}>
-              <th scope="row">{LABELS[check.name] ?? check.name}</th>
-              <td>
-                <span className={`state state--${check.passed ? 'done' : 'bad'}`}>
-                  {check.passed ? 'OK' : 'ÉCHEC'}
-                </span>
-              </td>
-              <td>{check.resource ?? '—'}</td>
-              <td className="num">
-                {check.missingQuantity === null ? '—' : check.missingQuantity}
-              </td>
-              <td className="checks__detail">{check.detail}</td>
+      <div className="table-scroll">
+        <table className="checks">
+          <thead>
+            <tr>
+              <th scope="col">Check</th>
+              <th scope="col">Result</th>
+              <th scope="col">Resource</th>
+              <th scope="col">Short by</th>
+              <th scope="col">Measured</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {checks.map((check) => (
+              <tr key={check.name} className={check.passed ? undefined : 'checks__row--failed'}>
+                <th scope="row">{LABELS[check.name] ?? check.name}</th>
+                <td>
+                  <span className={`state state--${check.passed ? 'done' : 'bad'}`}>
+                    {check.passed ? 'Pass' : 'Fail'}
+                  </span>
+                </td>
+                <td>{check.resource ?? '—'}</td>
+                <td className="num">{check.missingQuantity === null ? '—' : check.missingQuantity}</td>
+                <td className="checks__detail">{check.detail}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   )
 }
 
 /**
- * French labels for the five codes. The CODE is what the API sends and what
- * the documentation names, so it is kept as the fallback rather than mapped
- * away — an unknown code must show as itself, not vanish.
+ * The five codes, in words.
+ *
+ * The CODE is what the API sends and what the documentation names, so it is
+ * kept as the fallback rather than mapped away — an unknown code must show as
+ * itself, not vanish.
  */
 const LABELS: Record<string, string> = {
-  ROOM_SUITABILITY: 'Salle adaptée pour chaque séance',
-  SLOT_COVERAGE: 'Couverture des créneaux par type de salle',
-  TEACHER_LOAD: 'Charge maximale par grade',
-  TEACHER_FREE_SLOTS: 'Créneaux libres suffisants par enseignant',
-  GROUP_HIERARCHY: 'Cohérence de la hiérarchie des groupes',
+  ROOM_SUITABILITY: 'A suitable room exists for every session',
+  SLOT_COVERAGE: 'Slot coverage by room type',
+  TEACHER_LOAD: 'Teaching load within each rank’s limit',
+  TEACHER_FREE_SLOTS: 'Enough free slots for every teacher',
+  GROUP_HIERARCHY: 'The group hierarchy is consistent',
 }

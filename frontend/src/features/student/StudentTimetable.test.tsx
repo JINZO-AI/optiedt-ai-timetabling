@@ -42,20 +42,20 @@ describe('what a printed sheet says about itself', () => {
     const entries = provenanceOf(timetable())
     const labels = entries.map(([label]) => label)
 
-    expect(labels).toContain('Groupe')
-    expect(labels).toContain('Publié par')
-    expect(labels).toContain('Candidat')
-    expect(entries.find(([label]) => label === 'Groupe')?.[1]).toBe('INFO-L1-G1.1')
+    expect(labels).toContain('Group')
+    expect(labels).toContain('Published by')
+    expect(labels).toContain('Candidate')
+    expect(entries.find(([label]) => label === 'Group')?.[1]).toBe('INFO-L1-G1.1')
   })
 
   it('carries no publication line when nothing has been published', () => {
-    // An empty "Publié le" would read as a publication with a missing date -
+    // An empty "Published on" would read as a publication with a missing date -
     // the opposite of the truth, which is that there is none.
     const labels = provenanceOf(
       timetable({ publishedAt: null, publishedBy: null, run: null, candidate: null }),
     ).map(([label]) => label)
 
-    expect(labels).toEqual(['Groupe'])
+    expect(labels).toEqual(['Group'])
   })
 
   it('never carries a run the student was not shown', () => {
@@ -69,9 +69,9 @@ describe('what a printed sheet says about itself', () => {
 
 describe('where each role lands', () => {
   it('sends a student to their own timetable', () => {
-    // ⚠️ Landing on `/disponibilites` would make a 403 a student's first
+    // ⚠️ Landing on the availability screen would make a 403 a student's first
     // impression of the application, on a screen Table 2 never gave them.
-    expect(landingFor('STUDENT')).toBe('/mon-emploi-du-temps')
+    expect(landingFor('STUDENT')).toBe('/my-timetable')
   })
 
   it('sends an administrator to the surface Table 2 gives them', () => {
@@ -79,8 +79,13 @@ describe('where each role lands', () => {
   })
 
   it('leaves the other two roles where they were', () => {
-    expect(landingFor('PERSON_IN_CHARGE')).toBe('/generation')
-    expect(landingFor('TEACHER')).toBe('/disponibilites')
-    expect(landingFor(undefined)).toBe('/disponibilites')
+    expect(landingFor('PERSON_IN_CHARGE')).toBe('/generate')
+    expect(landingFor('TEACHER')).toBe('/availability')
+    expect(landingFor(undefined)).toBe('/availability')
   })
+
+  // ⚠️ The paths above were renamed from French to English when the interface
+  // was translated. The BEHAVIOUR under test is unchanged — each role still
+  // lands where SRS Table 2 puts it — and these assertions track a deliberate
+  // rename rather than being relaxed to accommodate one.
 })

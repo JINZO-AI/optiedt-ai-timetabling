@@ -287,3 +287,7 @@ Thumbs.db
 # the dev server, which CLAUDE.md already documents (`npm run dev`), so it is
 # tooling rather than a deliverable and does not belong in the repository.
 .claude/
+
+# TypeScript incremental build state. Machine-local, changes on every build,
+# and carries absolute paths from whoever built it last.
+*.tsbuildinfo

@@ -42,7 +42,7 @@ describe('the report shows figures, not verdicts', () => {
     // this check passes. If the component ever collapses to a tick, this fails.
     expect(screen.getByText(/90\.9%/)).toBeTruthy()
     expect(screen.getByText(/71\.4%/)).toBeTruthy()
-    expect(screen.getByText('OK')).toBeTruthy()
+    expect(screen.getByText('Pass')).toBeTruthy()
   })
 
   it('names the resource and the quantity missing when a check fails', () => {
@@ -60,10 +60,10 @@ describe('the report shows figures, not verdicts', () => {
       />,
     )
 
-    expect(screen.getByText('ÉCHEC')).toBeTruthy()
+    expect(screen.getByText('Fail')).toBeTruthy()
     expect(screen.getByText('Lab_Info')).toBeTruthy()
     expect(screen.getByText('14')).toBeTruthy()
-    expect(screen.getByText(/pigeonhole/)).toBeTruthy()
+    expect(screen.getByText(/short by 14 2-period windows/)).toBeTruthy()
   })
 
   it('shows a zero quantity rather than an em dash', () => {
@@ -78,7 +78,7 @@ describe('the report shows figures, not verdicts', () => {
         checks={[check({ name: 'TEACHER_LOAD' }), check({ name: 'FUTURE_CHECK' })]}
       />,
     )
-    expect(screen.getByText('Charge maximale par grade')).toBeTruthy()
+    expect(screen.getByText(/Teaching load within each rank/)).toBeTruthy()
     // A code with no label must show as itself rather than disappear.
     expect(screen.getByText('FUTURE_CHECK')).toBeTruthy()
   })
@@ -88,9 +88,9 @@ describe('an empty report means the stage did not run', () => {
   it('says so, and does not read as a clean result', () => {
     render(<PreAnalysisReport checks={[]} />)
 
-    expect(screen.getByText(/non exécutée/)).toBeTruthy()
+    expect(screen.getByText(/have not run/)).toBeTruthy()
     // The failure mode this guards: an empty list rendering as reassurance.
     expect(screen.queryByText('OK')).toBeNull()
-    expect(screen.queryByText(/vérifications passent/)).toBeNull()
+    expect(screen.queryByText(/All five checks pass/)).toBeNull()
   })
 })

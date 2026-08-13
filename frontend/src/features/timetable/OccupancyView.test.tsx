@@ -218,7 +218,7 @@ describe('what reaches the screen', () => {
     // vocabulary standard in higher-education space management, "occupancy"
     // means occupants over capacity and this figure is a *frequency* rate —
     // and the two readings INVERT on the reference instance. An unqualified
-    // "Taux" would be read as a seat statistic by anyone who knows the term.
+    // "rate" would be read as a seat statistic by anyone who knows the term.
     const data = instance()
     render(
       <OccupancyView candidate={candidate()} instance={data} lookups={buildLookups(data)} />,
@@ -227,11 +227,11 @@ describe('what reaches the screen', () => {
     // Asserted on the note's whole text: a regex query matches both the
     // paragraph and the <em> inside it, which is two nodes, not a failure.
     // Located by the C-13 phrase, which appears once and only in the note:
-    // "Taux d’occupation" is now also a column header.
-    const note = screen.getByText(/deux périodes consécutives/).closest('p')
-    expect(note?.textContent).toMatch(/Taux d’occupation = périodes occupées/)
-    expect(note?.textContent).toMatch(/temps/i)
-    expect(note?.textContent).toMatch(/remplissage en places/i)
+    // "Occupancy rate" is now also a column header.
+    const note = screen.getByText(/two-period windows/).closest('p')
+    expect(note?.textContent).toMatch(/Occupancy rate = periods occupied/)
+    expect(note?.textContent).toMatch(/time in use/i)
+    expect(note?.textContent).toMatch(/how full the seats are/i)
   })
 
   it('keeps the C-13 warning beside the figure', () => {
@@ -242,6 +242,6 @@ describe('what reaches the screen', () => {
       <OccupancyView candidate={candidate()} instance={data} lookups={buildLookups(data)} />,
     )
 
-    expect(screen.getByText(/deux périodes consécutives/)).toBeTruthy()
+    expect(screen.getByText(/two-period windows/)).toBeTruthy()
   })
 })

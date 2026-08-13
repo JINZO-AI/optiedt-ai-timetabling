@@ -257,7 +257,7 @@ describe('what leaves the screen is the displayed view', () => {
       expect(printed).toContain(label)
       expect(printed).toContain(value)
     }
-    expect(entries.map(([label]) => label)).toContain('Exécution')
+    expect(entries.map(([label]) => label)).toContain('Run')
   })
 })
 

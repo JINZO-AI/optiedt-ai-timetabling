@@ -66,16 +66,16 @@ export function AccountsPanel({
 
   return (
     <>
-      <section className="panel">
+      <section className="section">
         <h2>Comptes</h2>
         <p className="panel__note">
-          Les rôles suivent le tableau 2 de la SRS. Un enseignant ne voit que ses propres
-          disponibilités ; un étudiant, l’emploi du temps publié de son groupe.
+          Roles follow SRS Table 2. A teacher sees only their own availability; a student sees the
+          published timetable of their own group.
         </p>
 
         <div className="form-row">
           <div className="field">
-            <label htmlFor="account-username">Identifiant</label>
+            <label htmlFor="account-username">Username</label>
             <input
               id="account-username"
               value={username}
@@ -83,7 +83,7 @@ export function AccountsPanel({
             />
           </div>
           <div className="field">
-            <label htmlFor="account-password">Mot de passe</label>
+            <label htmlFor="account-password">Password</label>
             <input
               id="account-password"
               type="password"
@@ -92,7 +92,7 @@ export function AccountsPanel({
             />
           </div>
           <div className="field">
-            <label htmlFor="account-role">Rôle</label>
+            <label htmlFor="account-role">Role</label>
             <select
               id="account-role"
               value={role}
@@ -108,7 +108,7 @@ export function AccountsPanel({
 
           {role === 'TEACHER' && (
             <div className="field">
-              <label htmlFor="account-teacher">Enseignant</label>
+              <label htmlFor="account-teacher">Teacher</label>
               <select
                 id="account-teacher"
                 value={teacher}
@@ -126,7 +126,7 @@ export function AccountsPanel({
 
           {role === 'STUDENT' && (
             <div className="field">
-              <label htmlFor="account-group">Groupe</label>
+              <label htmlFor="account-group">Group</label>
               <select id="account-group" value={group} onChange={(e) => setGroup(e.target.value)}>
                 <option value="">—</option>
                 {groups.map((g) => (
@@ -139,22 +139,26 @@ export function AccountsPanel({
           )}
 
           <button onClick={submit} disabled={creating || !username.trim() || !password}>
-            {creating ? 'Création…' : 'Créer le compte'}
+            {creating ? 'Creating…' : 'Create account'}
           </button>
         </div>
 
-        {error && <p className="error">Échec de la création : {error}</p>}
+        {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       </section>
 
-      <section className="panel">
+      <section className="section">
         {accounts.length === 0 ? (
-          <p className="empty">Aucun compte.</p>
+          <p className="empty">No accounts yet.</p>
         ) : (
           <table className="table">
             <thead>
               <tr>
-                <th>Identifiant</th>
-                <th>Rôle</th>
+                <th>Username</th>
+                <th>Role</th>
                 <th>Rattachement</th>
                 <th />
               </tr>
@@ -172,14 +176,14 @@ export function AccountsPanel({
                         creates one. Hiding is the courtesy; the refusal is the
                         protection. */}
                     {account.username === currentUsername ? (
-                      <span className="meta__item">compte courant</span>
+                      <span className="meta__item">your account</span>
                     ) : (
                       <button
                         className="link"
-                        aria-label={`Supprimer ${account.username}`}
+                        aria-label={`Remove ${account.username}`}
                         onClick={() => onDelete(account.username)}
                       >
-                        Supprimer
+                        Remove
                       </button>
                     )}
                   </td>

@@ -55,11 +55,13 @@ export function OccupancyView({
   return (
     <>
       <p className="panel__note">
-        <b>Taux d’occupation = périodes occupées / {rows[0]?.openPeriods ?? 0} créneaux ouverts</b> de
-        la semaine. ⚠️ Il mesure le <em>temps</em> d’utilisation, et non le remplissage en places : une
-        salle peu occupée dans le temps peut être pleine à chaque séance. Pour les laboratoires, la
-        borne qui contraint réellement est le nombre de fenêtres de deux périodes consécutives — lire
-        le taux par période seul est ce qui a laissé passer une instance sans solution (C-13).
+        <b>
+          Occupancy rate = periods occupied / {rows[0]?.openPeriods ?? 0} open slots
+        </b>{' '}
+        in the week. ⚠️ It measures <em>time</em> in use, not how full the seats are: a room used
+        for few periods may be full in every one of them. For laboratories the bound that actually
+        binds is the number of consecutive two-period windows — reading the per-period rate alone is
+        what once let an instance with no solution pass (C-13).
       </p>
       {[...byType.entries()].map(([type, group]) => (
         <div key={type} className="occupancy">
@@ -67,10 +69,10 @@ export function OccupancyView({
           <table className="subscores">
             <thead>
               <tr>
-                <th>Salle</th>
-                <th>Périodes occupées</th>
-                <th>Créneaux ouverts</th>
-                <th>Taux d’occupation</th>
+                <th>Room</th>
+                <th>Periods occupied</th>
+                <th>Open slots</th>
+                <th>Occupancy rate</th>
               </tr>
             </thead>
             <tbody>

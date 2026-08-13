@@ -84,7 +84,7 @@ describe('what is in force', () => {
     renderPanel()
 
     expect(screen.getByTestId('dataset-in-force').textContent).toContain(
-      'référence',
+      'Reference dataset',
     )
     expect(screen.queryByTestId('dataset-provenance')).toBeNull()
   })
@@ -106,10 +106,10 @@ describe('what is in force', () => {
   it('shows the counts of what is actually loaded', () => {
     renderPanel({ inForce: summary({ sessions: 12, rooms: 3 }) })
 
-    expect(screen.getByTestId('dataset-count-Séances').textContent).toContain(
+    expect(screen.getByTestId('dataset-count-Sessions').textContent).toContain(
       '12',
     )
-    expect(screen.getByTestId('dataset-count-Salles').textContent).toContain(
+    expect(screen.getByTestId('dataset-count-Rooms').textContent).toContain(
       '3',
     )
   })
@@ -128,7 +128,7 @@ describe('what is in force', () => {
   it('names the files it expects, and excludes the constraint catalogue', () => {
     renderPanel()
 
-    const hint = screen.getByText(/fichiers attendus/)
+    const hint = screen.getByText(/files expected/)
     expect(hint.textContent).toContain('sessions.csv')
     expect(hint.textContent).toContain('calendar_config.csv')
     expect(hint.textContent).not.toContain('constraint_catalogue.csv')
@@ -191,10 +191,10 @@ describe('the report', () => {
     })
 
     expect(screen.getByTestId('dataset-refused').textContent).toContain(
-      'Rien n’a été enregistré',
+      'Nothing was recorded',
     )
     expect(screen.getByTestId('dataset-refused').textContent).toContain(
-      'reste en vigueur',
+      'The previous dataset stays in force',
     )
   })
 
@@ -313,7 +313,7 @@ describe('an incompatible replacement', () => {
 
     expect(
       screen.getByTestId('dataset-incompatibilities').textContent,
-    ).toContain('Ces fichiers sont corrects')
+    ).toContain('These files are correct')
   })
 
   it('names what is affected and what the person can do about it', () => {
@@ -322,7 +322,7 @@ describe('an incompatible replacement', () => {
     const row = within(
       screen.getByTestId('dataset-incompatibilities'),
     ).getAllByRole('row')[1]!
-    expect(row.textContent).toContain('Disponibilités')
+    expect(row.textContent).toContain('Availability')
     expect(row.textContent).toContain('T044')
     expect(row.textContent).toContain('clear that declaration first')
   })
@@ -345,7 +345,7 @@ describe('an incompatible replacement', () => {
     const row = within(
       screen.getByTestId('dataset-incompatibilities'),
     ).getAllByRole('row')[1]!
-    expect(row.textContent).toContain('Calendrier')
+    expect(row.textContent).toContain('Calendar')
     expect(row.textContent).toContain('27')
   })
 
@@ -377,7 +377,7 @@ describe('a request that never reached the server', () => {
     renderPanel({ failed: true })
 
     expect(screen.getByRole('alert').textContent).toContain(
-      'La requête a échoué',
+      'The request failed',
     )
     expect(screen.queryByTestId('dataset-refused')).toBeNull()
   })

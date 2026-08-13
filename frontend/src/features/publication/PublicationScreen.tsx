@@ -1,5 +1,7 @@
 import { useCurrentUser, usePublications } from '@/api/queries'
+import { userMessage } from '@/api/errors'
 import { TraceTable } from '@/features/publication/TraceTable'
+import { Page } from '@/shell/Page'
 
 /**
  * Published timetables and their provenance — FR-19's acceptance criterion.
@@ -14,54 +16,70 @@ export function PublicationScreen() {
 
   if (me.data && me.data.role !== 'PERSON_IN_CHARGE') {
     return (
-      <section className="panel">
-        <h1>Emplois du temps publiés</h1>
-        <p className="panel__note">
-          Seul le responsable des emplois du temps peut consulter les publications.
+      <Page title="Published timetables">
+        <p className="warning">
+          Publishing and reviewing publications belongs to the Timetable Officer role. Your account
+          does not hold it.
         </p>
-      </section>
+      </Page>
     )
   }
 
+  const entries = published.data ?? []
+
   return (
-    <section className="panel panel--printable">
-      <h1>Emplois du temps publiés</h1>
-      <p className="panel__note">
-        Chaque publication est présentée avec ce qui l’a produite — exécution, graine, pondération
-        et version du modèle — afin qu’un emploi du temps publié reste rattachable à son origine
-        sans avoir à recouper plusieurs écrans.
-      </p>
-
-      {/* FR-10. The trace is the part of a publication worth having on paper:
-          it is what makes a printed timetable answerable to the run that
-          produced it rather than to whoever is holding it. */}
-      {published.data !== undefined && published.data.length > 0 && (
-        <div className="outputs">
-          <button className="outputs__action" onClick={() => window.print()}>
-            Imprimer
+    <Page
+      title="Published timetables"
+      subtitle={
+        entries.length === 1
+          ? '1 publication, traceable to the run that produced it'
+          : entries.length > 1
+            ? `${entries.length} publications, each traceable to the run that produced it`
+            : 'Each publication carries the run, seed, weights and model version that produced it'
+      }
+      actions={
+        entries.length > 0 && (
+          <button className="secondary" onClick={() => window.print()}>
+            Print
           </button>
-        </div>
-      )}
-
-      {published.isPending && <p className="panel__note">Chargement…</p>}
+        )
+      }
+    >
+      {published.isPending && <p className="empty">Loading…</p>}
       {published.isError && (
-        <p className="error">La lecture des publications a échoué : {String(published.error)}</p>
+        <p className="error" role="alert">
+          {userMessage(published.error, 'load')}
+        </p>
       )}
 
       {published.data?.length === 0 && (
         <p className="empty">
-          Aucun emploi du temps publié. Publiez un candidat depuis l’écran de génération.
+          Nothing has been published yet. Publish a candidate from the Generate screen and it will
+          appear here with its full provenance.
         </p>
       )}
 
-      {published.data?.map((entry) => (
-        <div key={`${entry.run}:${entry.candidate.id}`} className="occupancy">
-          <h3>
-            {entry.candidate.id} — score {entry.candidate.score.toFixed(2)} / 100
-          </h3>
+      {/* FR-10. The trace is the part of a publication worth having on paper:
+          it is what makes a printed timetable answerable to the run that
+          produced it rather than to whoever is holding it. */}
+      {entries.map((entry) => (
+        <section
+          key={`${entry.run}:${entry.candidate.id}`}
+          className="panel panel--printable"
+        >
+          <div className="section__head">
+            <h2 className="section__title">
+              <span className="code">{entry.candidate.id}</span>
+              <span className="section__code">FR-19 · Provenance</span>
+            </h2>
+            <div className="stat">
+              <span className="stat__label">Score</span>
+              <span className="stat__value">{entry.candidate.score.toFixed(2)} / 100</span>
+            </div>
+          </div>
           <TraceTable published={entry} />
-        </div>
+        </section>
       ))}
-    </section>
+    </Page>
   )
 }

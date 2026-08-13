@@ -6,7 +6,9 @@ import {
   useDeclareAvailability,
   useInstance,
 } from '@/api/queries'
+import { userMessage } from '@/api/errors'
 import { DAY_NAMES, gridAxes } from '@/features/timetable/model'
+import { Page } from '@/shell/Page'
 import type { AvailabilityState } from '@/types/domain'
 
 /**
@@ -21,9 +23,9 @@ import type { AvailabilityState } from '@/types/domain'
  *
  * The acceptance criterion is **"filled in under 5 minutes without training"**,
  * which drives the whole design: click or drag to toggle, the whole week on one
- * screen with no scrolling, no save dialog to hunt for, and the generated rows
- * shown as generated so a teacher can see what the system assumed on their
- * behalf before they overwrite it.
+ * screen with no scrolling, the save button always in reach in the page bar,
+ * and the generated rows shown as generated so a teacher can see what the
+ * system assumed on their behalf before they overwrite it.
  *
  * A closed slot cannot be toggled. It is configuration (`slot.isOpen`,
  * ADR-003), and nothing is placed there whatever a teacher says — offering a
@@ -69,10 +71,25 @@ export function AvailabilityScreen() {
     setDirty(false)
   }, [selectedTeacher])
 
-  if (instance.isLoading) return <p className="empty">Chargement…</p>
-  if (!instance.data) return <p className="error">Instance indisponible.</p>
+  if (instance.isLoading)
+    return (
+      <Page title="Availability">
+        <p className="empty">Loading…</p>
+      </Page>
+    )
+
+  if (!instance.data)
+    return (
+      <Page title="Availability">
+        <p className="error" role="alert">
+          The department data could not be loaded. Reload the page, or sign in again if the problem
+          continues.
+        </p>
+      </Page>
+    )
 
   const { days, periods } = gridAxes(instance.data.slots)
+  const openSlots = instance.data.slots.filter((s) => s.isOpen).length
 
   function toggle(slotIndex: number, forced?: AvailabilityState) {
     setDirty(true)
@@ -99,20 +116,27 @@ export function AvailabilityScreen() {
   }
 
   return (
-    <>
-      <section className="panel">
-        <h1>Déclarer mes indisponibilités</h1>
-        <p className="panel__note">
-          Cliquez une case — ou faites glisser — pour basculer entre disponible et indisponible. Les
-          créneaux fermés par le calendrier ne sont pas modifiables : rien n’y est jamais placé.
-        </p>
-
-        <div className="form-row">
-          <div className="field">
-            <label htmlFor="teacher">Enseignant</label>
-            {mayChooseTeacher ? (
+    <Page
+      title="Availability"
+      subtitle={
+        selectedTeacher
+          ? `${selectedTeacher} · ${unavailable.size} of ${openSlots} open slots declared unavailable`
+          : undefined
+      }
+      status={
+        dirty ? (
+          <span className="badge badge--warn">Unsaved</span>
+        ) : save.isSuccess ? (
+          <span className="badge badge--ok">Saved</span>
+        ) : undefined
+      }
+      actions={
+        <>
+          {mayChooseTeacher && (
+            <label className="bar-field">
+              <span>Teacher</span>
               <select
-                id="teacher"
+                aria-label="Teacher"
                 value={selectedTeacher ?? ''}
                 onChange={(e) => setTeacherId(e.target.value)}
               >
@@ -122,106 +146,127 @@ export function AvailabilityScreen() {
                   </option>
                 ))}
               </select>
-            ) : (
-              <input id="teacher" value={selectedTeacher ?? ''} readOnly />
-            )}
-          </div>
+            </label>
+          )}
           <button onClick={submit} disabled={!dirty || save.isPending}>
-            {save.isPending ? 'Enregistrement…' : 'Enregistrer'}
+            {save.isPending ? 'Saving…' : 'Save availability'}
           </button>
-          {dirty && <span className="state state--running">non enregistré</span>}
-        </div>
+        </>
+      }
+    >
+      {isSynthetic && !dirty && (
+        <p className="warning">
+          <b>This declaration was generated, not entered by you.</b> It exists only so the instance
+          can be solved before anyone signs in. Saving replaces it with your own.
+        </p>
+      )}
 
-        {isSynthetic && !dirty && (
-          <p className="warning">
-            Cette déclaration a été <b>générée</b>, pas saisie par l’enseignant. Elle existe seulement
-            pour que l’instance soit résoluble avant toute connexion. Enregistrer la remplacera.
-          </p>
-        )}
+      {save.isError && (
+        <p className="error" role="alert">
+          {userMessage(save.error, 'save')}
+        </p>
+      )}
 
-        {save.isError && <p className="error">Échec de l’enregistrement : {String(save.error)}</p>}
-      </section>
+      <section className="section">
+        <p className="screen__lead">
+          Click a cell — or drag across several — to switch it between available and unavailable.
+          Slots the academic calendar closes cannot be changed: nothing is ever scheduled in them.
+        </p>
 
-      <section className="panel">
-        <table
-          className="grid grid--availability"
-          onPointerUp={() => setPainting(null)}
-          onPointerLeave={() => setPainting(null)}
-        >
-          <thead>
-            <tr>
-              <th className="grid__corner" />
-              {days.map((day) => (
-                <th key={day}>{DAY_NAMES[day] ?? `Jour ${day}`}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {periods.map((period) => {
-              const sample = instance.data.slots.find((s) => s.periodIndex === period)
-              return (
-                <tr key={period}>
-                  <th className="grid__hour">
-                    {sample ? `${sample.startHour}–${sample.endHour}` : `P${period}`}
-                  </th>
-                  {days.map((day) => {
-                    const slot = instance.data.slots.find(
-                      (s) => s.dayIndex === day && s.periodIndex === period,
-                    )
-                    if (!slot) return <td key={day} className="cell cell--none" />
-                    if (!slot.isOpen)
+        <div className="gridwrap">
+          <table
+            className="grid grid--availability"
+            onPointerUp={() => setPainting(null)}
+            onPointerLeave={() => setPainting(null)}
+          >
+            <thead>
+              <tr>
+                <th className="grid__corner" />
+                {days.map((day) => (
+                  <th key={day}>{DAY_NAMES[day] ?? `Day ${day}`}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {periods.map((period) => {
+                const sample = instance.data.slots.find((s) => s.periodIndex === period)
+                return (
+                  <tr key={period}>
+                    <th className="grid__hour">
+                      {sample ? `${sample.startHour}–${sample.endHour}` : `P${period}`}
+                    </th>
+                    {days.map((day) => {
+                      const slot = instance.data.slots.find(
+                        (s) => s.dayIndex === day && s.periodIndex === period,
+                      )
+                      if (!slot) return <td key={day} className="cell cell--none" />
+                      if (!slot.isOpen)
+                        return (
+                          <td key={day} className="cell cell--closed">
+                            <span>Closed</span>
+                          </td>
+                        )
+
+                      const off = unavailable.has(slot.index)
                       return (
-                        <td key={day} className="cell cell--closed">
-                          <span>fermé</span>
+                        <td
+                          key={day}
+                          role="checkbox"
+                          aria-checked={!off}
+                          aria-label={`${DAY_NAMES[day] ?? day} ${sample?.startHour ?? period} ${
+                            off ? 'Unavailable' : 'Available'
+                          }`}
+                          tabIndex={0}
+                          data-testid={`slot-${slot.index}`}
+                          className={`cell cell--toggle ${off ? 'cell--off' : 'cell--on'}`}
+                          title={off ? 'Unavailable — click to make available' : 'Available — click to declare unavailable'}
+                          onPointerDown={() => {
+                            const target: AvailabilityState = off ? 'AVAILABLE' : 'UNAVAILABLE'
+                            setPainting(target)
+                            toggle(slot.index, target)
+                          }}
+                          onPointerEnter={() => {
+                            if (painting) toggle(slot.index, painting)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === ' ' || e.key === 'Enter') {
+                              e.preventDefault()
+                              toggle(slot.index)
+                            }
+                          }}
+                        >
+                          {/* ⚠️ **Only the DECLARED state is written.** V1
+                              printed "AVAILABLE" into every cell, so a normal
+                              week — a teacher free almost everywhere — shouted
+                              the same word thirty times and the four cells
+                              that actually carried a decision vanished into
+                              it. Available is now a quiet fill; the accessible
+                              name above still says both, so a screen-reader
+                              user loses nothing. */}
+                          {off ? 'Unavailable' : ''}
                         </td>
                       )
+                    })}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
 
-                    const off = unavailable.has(slot.index)
-                    return (
-                      <td
-                        key={day}
-                        role="checkbox"
-                        aria-checked={!off}
-                        aria-label={`${DAY_NAMES[day] ?? day} ${sample?.startHour ?? period} ${
-                          off ? 'indisponible' : 'disponible'
-                        }`}
-                        tabIndex={0}
-                        data-testid={`slot-${slot.index}`}
-                        className={`cell cell--toggle ${off ? 'cell--off' : 'cell--on'}`}
-                        onPointerDown={() => {
-                          const target: AvailabilityState = off ? 'AVAILABLE' : 'UNAVAILABLE'
-                          setPainting(target)
-                          toggle(slot.index, target)
-                        }}
-                        onPointerEnter={() => {
-                          if (painting) toggle(slot.index, painting)
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === ' ' || e.key === 'Enter') {
-                            e.preventDefault()
-                            toggle(slot.index)
-                          }
-                        }}
-                      >
-                        {off ? 'Indisponible' : 'Disponible'}
-                      </td>
-                    )
-                  })}
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-
-        <div className="meta">
-          <span>
-            Indisponibilités déclarées <b>{unavailable.size}</b>
+        <div className="grid-key">
+          <span className="grid-key__item">
+            <span className="grid-key__swatch grid-key__swatch--on" /> Available for teaching
           </span>
-          <span>
-            Créneaux ouverts <b>{instance.data.slots.filter((s) => s.isOpen).length}</b>
+          <span className="grid-key__item">
+            <span className="grid-key__swatch grid-key__swatch--off" /> Declared unavailable
+          </span>
+          <span className="grid-key__item">
+            <span className="grid-key__swatch grid-key__swatch--closed" /> Closed by the calendar —
+            cannot be changed
           </span>
         </div>
       </section>
-    </>
+    </Page>
   )
 }

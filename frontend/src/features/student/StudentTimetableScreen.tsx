@@ -1,10 +1,13 @@
 import { useMemo } from 'react'
 
 import { useCurrentUser, useInstance, useMyTimetable } from '@/api/queries'
+import { userMessage } from '@/api/errors'
+import { GridKey } from '@/features/timetable/GridKey'
 import { PrintHeader } from '@/features/timetable/PrintHeader'
 import { TimetableGrid } from '@/features/timetable/TimetableGrid'
 import { downloadCsv, exportFilename, timetableCsv } from '@/features/timetable/export'
 import { buildLookups } from '@/features/timetable/model'
+import { Page } from '@/shell/Page'
 import type { StudentTimetable } from '@/types/domain'
 
 /**
@@ -21,6 +24,11 @@ import type { StudentTimetable } from '@/types/domain'
  * by which the department says which one people follow. Showing a draft would
  * tell students to organise their week around a timetable nobody adopted.
  *
+ * ⚠️ **No specification reference is printed at a student.** This screen used
+ * to answer a wrong role with "(SRS Table 2 of SRS Table 2)" — a duplicated
+ * citation, and one that means nothing to the person reading it. What a user
+ * needs is what they may do, in their own words.
+ *
  * Printing and CSV reuse `features/timetable` unchanged (FR-10). The exporter
  * re-serialises figures the API already sent — it computes no score and decides
  * no order, which is the boundary `docs/architecture.md` draws.
@@ -36,74 +44,125 @@ export function StudentTimetableScreen() {
     [instance.data],
   )
 
-  if (me.isLoading || instance.isLoading) return <p className="empty">Chargement…</p>
+  if (me.isLoading || instance.isLoading)
+    return (
+      <Page title="My timetable">
+        <p className="empty">Loading…</p>
+      </Page>
+    )
+
   if (!isStudent)
     return (
-      <p className="warning">
-        Cet écran est celui du rôle STUDENT : l’emploi du temps publié de son groupe (tableau 2 de
-        la SRS).
-      </p>
+      <Page title="My timetable">
+        <p className="warning">
+          This screen shows a student their own group’s published timetable. Your account is not a
+          student account.
+        </p>
+      </Page>
     )
-  if (!instance.data || !lookups) return <p className="error">Instance indisponible.</p>
-  if (timetable.isLoading) return <p className="empty">Chargement de l’emploi du temps…</p>
+
+  if (!instance.data || !lookups)
+    return (
+      <Page title="My timetable">
+        <p className="error" role="alert">
+          The department data could not be loaded.
+        </p>
+      </Page>
+    )
+
+  if (timetable.isLoading)
+    return (
+      <Page title="My timetable">
+        <p className="empty">Loading your timetable…</p>
+      </Page>
+    )
+
   if (timetable.isError)
-    return <p className="error">Emploi du temps indisponible : {String(timetable.error)}</p>
-  if (!timetable.data) return <p className="error">Emploi du temps indisponible.</p>
+    return (
+      <Page title="My timetable">
+        <p className="error" role="alert">
+          {userMessage(timetable.error, 'load')}
+        </p>
+      </Page>
+    )
+
+  if (!timetable.data)
+    return (
+      <Page title="My timetable">
+        <p className="error" role="alert">
+          Your timetable could not be loaded.
+        </p>
+      </Page>
+    )
 
   const data: StudentTimetable = timetable.data
   const entries = provenanceOf(data)
-  const title = `Emploi du temps — ${data.groupLabel}`
+  const title = `Timetable — ${data.groupLabel}`
+  const published = data.publishedAt !== null
 
   return (
-    <>
-      <section className="panel no-print">
-        <h1>{title}</h1>
-        {data.publishedAt === null ? (
-          // ⚠️ An absence, stated. "Nothing has been published yet" and "an
-          // error occurred" read completely differently to a student, and only
-          // the first is true — the same judgement the run report makes.
-          <p className="empty" data-testid="nothing-published">
-            Aucun emploi du temps n’a encore été publié pour votre groupe.
-          </p>
+    <Page
+      title="My timetable"
+      subtitle={
+        published
+          ? `${data.groupLabel} · published ${formatDate(data.publishedAt as string)} by ${data.publishedBy}`
+          : data.groupLabel
+      }
+      status={
+        published ? (
+          <span className="badge badge--ok">Published</span>
         ) : (
+          <span className="badge badge--idle">Not published</span>
+        )
+      }
+      actions={
+        published && (
           <>
-            <p className="panel__note">
-              Emploi du temps publié le {formatDate(data.publishedAt)} par {data.publishedBy}.
-            </p>
-            <div className="form-row">
-              <button
-                onClick={() => window.print()}
-                aria-label="Imprimer l’emploi du temps"
-              >
-                Imprimer
-              </button>
-              <button
-                onClick={() =>
-                  downloadCsv(
-                    exportFilename('Par groupe', data.groupLabel, data.candidate ?? 'publie'),
-                    timetableCsv(data.placements, lookups, entries),
-                  )
-                }
-              >
-                Exporter en CSV
-              </button>
-            </div>
+            <button className="secondary" onClick={() => window.print()}>
+              Print
+            </button>
+            <button
+              className="secondary"
+              onClick={() =>
+                downloadCsv(
+                  exportFilename('By group', data.groupLabel, data.candidate ?? 'published'),
+                  timetableCsv(data.placements, lookups, entries),
+                )
+              }
+            >
+              Export CSV
+            </button>
           </>
-        )}
-      </section>
-
-      {data.publishedAt !== null && (
-        <section className="panel">
-          <PrintHeader title={title} entries={entries} printedOn={formatDate(new Date().toISOString())} />
-          <TimetableGrid
-            placements={data.placements}
-            instance={instance.data}
-            lookups={lookups}
-            dimension="group"
+        )
+      }
+    >
+      {!published ? (
+        // ⚠️ An absence, stated. "Nothing has been published yet" and "an error
+        // occurred" read completely differently to a student, and only the
+        // first is true — the same judgement the run report makes.
+        <p className="empty" data-testid="nothing-published">
+          No timetable has been published for your group yet. Once your department publishes one, it
+          will appear here.
+        </p>
+      ) : (
+        <section className="panel panel--printable">
+          <PrintHeader
+            title={title}
+            entries={entries}
+            printedOn={formatDate(new Date().toISOString())}
           />
+          <div className="table-scroll">
+            <TimetableGrid
+              placements={data.placements}
+              instance={instance.data}
+              lookups={lookups}
+              dimension="group"
+            />
+          </div>
+          <GridKey />
         </section>
       )}
-    </>
+    </Page>
   )
 }
 
@@ -116,15 +175,18 @@ export function StudentTimetableScreen() {
  * timetable: the group, the publication and the candidate it points at.
  */
 export function provenanceOf(data: StudentTimetable): [string, string][] {
-  const entries: [string, string][] = [['Groupe', data.groupLabel]]
-  if (data.publishedAt !== null) entries.push(['Publié le', formatDate(data.publishedAt)])
-  if (data.publishedBy !== null) entries.push(['Publié par', data.publishedBy])
-  if (data.candidate !== null) entries.push(['Candidat', data.candidate])
-  if (data.run !== null) entries.push(['Exécution', data.run])
+  const entries: [string, string][] = [['Group', data.groupLabel]]
+  if (data.publishedAt !== null) entries.push(['Published on', formatDate(data.publishedAt)])
+  if (data.publishedBy !== null) entries.push(['Published by', data.publishedBy])
+  if (data.candidate !== null) entries.push(['Candidate', data.candidate])
+  if (data.run !== null) entries.push(['Run', data.run])
   return entries
 }
 
+/** ⚠️ `en-GB` rather than `fr-FR`: the interface is English throughout, and a
+ * date rendered in one locale beside prose in another is the kind of detail
+ * that makes a product look assembled from parts. */
 function formatDate(iso: string): string {
   const date = new Date(iso)
-  return Number.isNaN(date.getTime()) ? iso : date.toLocaleString('fr-FR')
+  return Number.isNaN(date.getTime()) ? iso : date.toLocaleString('en-GB')
 }
