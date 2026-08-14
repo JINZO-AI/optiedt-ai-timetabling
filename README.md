@@ -166,7 +166,6 @@ Honest, and specific to the free hosting tier — none of these are limits of th
 
 ## 12. Project documentation
 
-- [`docs/supervisor/`](docs/supervisor/) — a plain-language guide to the interface
 - [`docs/architecture.md`](docs/architecture.md) · [`docs/domain-model.md`](docs/domain-model.md) — how it's built
 - [`docs/constraint-model.md`](docs/constraint-model.md) — the solver's rules
 - [`docs/scoring-and-explanation.md`](docs/scoring-and-explanation.md) — how the score works
