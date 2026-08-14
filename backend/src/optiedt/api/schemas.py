@@ -14,7 +14,7 @@ Two rules the frontend depends on:
 
 2. **Enum values are the French literals**, unchanged: `Amphi`, `Salle`,
    `Lab_Info`, `Lab_Sciences`, `CM`, `TD`, `TP`, `PROMO`. They are the literals
-   in the instance CSVs (CLAUDE.md, "Conventions"), and translating them at the
+   in the instance CSVs, and translating them at the
    API boundary would create the mapping layer the project exists without.
    `StrEnum` gives this for free, and `tests/unit/test_api_schemas.py` pins it
    so a later "tidy-up" cannot quietly anglicise the wire format.

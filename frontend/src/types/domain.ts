@@ -15,7 +15,7 @@ export type SessionType = 'CM' | 'TD' | 'TP'
  * Lecture theatre · classroom · computer lab · science lab.
  *
  * These are the literals in rooms.csv and the values the API sends, kept in
- * French verbatim (CLAUDE.md, "Conventions"). They were English constants
+ * French verbatim (docs/domain-model.md). They were English constants
  * until Phase 4 — which matched nothing the API can send, so any room filter
  * written against them would have matched zero rows while looking correct.
  * Pinned on the wire by backend tests/unit/test_api_schemas.py.

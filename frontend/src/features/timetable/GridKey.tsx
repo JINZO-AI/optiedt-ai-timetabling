@@ -5,8 +5,8 @@
  * encoding.** Every cell also prints `CM`, `TD` or `TP` as text, so a reader
  * who cannot separate the three hues loses nothing. The key is here so that a
  * reader who *can* does not have to work the mapping out from context — and
- * because the domain vocabulary is kept verbatim (CLAUDE.md), a visitor who has
- * never met "Amphi" or "TD" needs it said once.
+ * because the domain vocabulary is kept verbatim in French (docs/domain-model.md),
+ * a visitor who has never met "Amphi" or "TD" needs it said once.
  */
 export function GridKey() {
   return (

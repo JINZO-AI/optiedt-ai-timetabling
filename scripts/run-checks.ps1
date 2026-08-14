@@ -68,7 +68,7 @@ try {
     # report tests that actually passed. That also covers the case a container
     # check would miss - `docker compose up -d` succeeds while another
     # PostgreSQL owns the port, so a running container is not proof that the
-    # suite reached the database this repository ships (see CLAUDE.md).
+    # suite reached the database this repository ships.
     $dockerUp = $false
     try { docker info 2>&1 | Out-Null; $dockerUp = ($LASTEXITCODE -eq 0) } catch { $dockerUp = $false }
 
@@ -116,7 +116,7 @@ if ($failed.Count -gt 0) {
     if ($failed -contains 'layer boundaries') {
         Write-Host ""
         Write-Host "A layer boundary was violated. Do not relax .importlinter to make" -ForegroundColor Yellow
-        Write-Host "this pass - those contracts are the system's invariants. See CLAUDE.md." -ForegroundColor Yellow
+        Write-Host "this pass - those contracts are the system's invariants. See docs/architecture.md." -ForegroundColor Yellow
     }
     if ($failed -contains 'instance') {
         Write-Host ""

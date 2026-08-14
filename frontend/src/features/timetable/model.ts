@@ -27,7 +27,7 @@ import type {
  * ⚠️ UI chrome, not instance data. `slots.csv` carries a `day_name` column the
  * loader does not read, so translating here changes no data and breaks no
  * `verify-instance` figure. Domain vocabulary that IS data — CM/TD/TP, Amphi,
- * Salle, Lab_Info — stays verbatim (CLAUDE.md, Conventions).
+ * Salle, Lab_Info — stays verbatim (docs/domain-model.md).
  */
 export const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 

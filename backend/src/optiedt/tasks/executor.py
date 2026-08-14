@@ -15,7 +15,7 @@ the second is the one that bites:
 2. Each solve uses every CPU core (`solver_workers = 0`). Overlapping two runs
    would oversubscribe the machine badly enough to make unrelated shell
    commands stall for minutes - a failure that looks exactly like broken
-   tooling rather than like contention (CLAUDE.md, "Three traps").
+   tooling rather than like contention.
 """
 
 from __future__ import annotations

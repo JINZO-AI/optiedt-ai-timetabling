@@ -8,7 +8,7 @@
  *
  * ⚠️ **Domain vocabulary is NOT translated and must not be.** `CM`, `TD`, `TP`,
  * `Amphi`, `Salle`, `Lab_Info`, `Lab_Sciences` and the teacher ranks are the
- * values the instance CSVs carry, and CLAUDE.md keeps them verbatim in code:
+ * values the instance CSVs carry, kept verbatim in code (docs/domain-model.md):
  * translating them would put a mapping layer between the application and its
  * own data for no benefit. What is translated here is interface chrome —
  * profile names, criterion names, run states — which no CSV contains.

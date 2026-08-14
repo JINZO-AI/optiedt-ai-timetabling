@@ -8,7 +8,7 @@ see the other (docs/architecture.md; backend/.importlinter enforces
 because a run IS the use case that needs both.
 
 It writes no placement of its own: every placement in a returned Candidate
-came from `Solver.solve`, unmodified (invariant 2, CLAUDE.md).
+came from `Solver.solve`, unmodified (invariant 2, docs/architecture.md, "The seven invariants").
 
 Four rules taken from docs/constraint-model.md, "Weight profiles and the
 portfolio", each of which is easy to get wrong in a way that looks harmless:

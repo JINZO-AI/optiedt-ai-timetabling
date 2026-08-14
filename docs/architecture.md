@@ -141,6 +141,29 @@ someone who never knew it was load-bearing. The file is the authority; this list
 
 ---
 
+## The seven invariants
+
+Each is a stated requirement, not a style preference. Breaking one is a correctness bug.
+
+1. **The analysis layer may not import the solver.** This is what turns an analysis bug into a
+   wrong *order* instead of an invalid *timetable*.
+2. **Nothing outside the solver ever writes a placement.** Not analysis, not recommendations, not
+   the assistant, not a user.
+3. **A recommendation is one of exactly three actions** — `weight_delta`, `lock_session`,
+   `exclude_slot`. Accepting one launches a new run through the same solver with one input
+   changed, never an in-place edit.
+4. **The assistant never receives a database connection and never produces a figure.** Every
+   number in its answer must appear in the context it was given, or the answer is discarded.
+5. **Everything works with the assistant switched off.** Only text disappears.
+6. **A candidate is immutable once recorded.** A regenerated timetable is a new candidate under a
+   new run.
+7. **Institutional calendar rules are configuration, never constraints.** A closed half-day sets
+   `slot.is_open = 0` and H9 does the rest; a shortened-day window shifts displayed hours only.
+
+Invariants 1 and 3 fail the build — see `backend/.importlinter` and the module map above.
+
+---
+
 ## The generation pipeline — three stages
 
 A run always passes through stage 1 and stage 2. It enters stage 3 **only** when stage 2 returns
