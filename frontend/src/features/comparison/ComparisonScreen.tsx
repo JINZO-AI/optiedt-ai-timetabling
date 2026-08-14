@@ -292,7 +292,11 @@ export function ComparisonScreen() {
             incomplete: the panel then shows the computed form, which is a
             complete answer (invariant 5). */}
         <aside className="split__aside">
-          <AssistantPanel runId={selectedRunId as string} candidateId={a?.id ?? null} />
+          <AssistantPanel
+            runId={selectedRunId as string}
+            candidateId={a?.id ?? null}
+            otherCandidateId={b?.id ?? null}
+          />
         </aside>
       </div>
     </Page>

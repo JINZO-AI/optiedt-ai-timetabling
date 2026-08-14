@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { useAskAssistant, useExplanation, useRunReport } from '@/api/queries'
+import { useAskAboutComparison, useAskAssistant, useExplanation, useRunReport } from '@/api/queries'
 import { userMessage } from '@/api/errors'
 import type { AssistantAnswer } from '@/types/domain'
 
@@ -41,36 +41,61 @@ import type { AssistantAnswer } from '@/types/domain'
  *
  * ⚠️ Short and contextual. V1 offered four full sentences as wrapped pills of
  * ragged widths, which read as an advertisement for a chatbot rather than as
- * things you can ask about the run in front of you. */
-const SUGGESTIONS = [
-  'Why is this candidate ranked first?',
-  'What trade-offs does it make?',
-  'Where is it weakest?',
-  'Explain the score in plain terms.',
+ * things you can ask about the run in front of you.
+ *
+ * ⚠️ **`comparative` decides which endpoint a suggestion goes through, and it
+ * matters.** `/question` is bounded to the run's own figures by design
+ * (FR-24) and carries no decomposition, so a comparative question sent there
+ * is correctly declined — the assistant is telling the truth about what it
+ * was given, not malfunctioning. The three questions below are about the
+ * TWO candidates already on screen, so they are answerable, just not through
+ * that route: they go through the comparison-grounded endpoint instead,
+ * which is handed the same decomposition the ledger renders. Only the last
+ * suggestion needs nothing but this candidate's own figures, so it keeps
+ * going through the free-text question path. */
+const SUGGESTIONS: { text: string; comparative: boolean }[] = [
+  { text: 'Why is this candidate ranked first?', comparative: true },
+  { text: 'What trade-offs does it make?', comparative: true },
+  { text: 'Where is it weakest?', comparative: true },
+  { text: 'Explain the score in plain terms.', comparative: false },
 ]
 
 export function AssistantPanel({
   runId,
   candidateId,
+  otherCandidateId,
 }: {
   runId: string
   candidateId: string | null
+  otherCandidateId: string | null
 }) {
   const explanation = useExplanation(runId, candidateId)
   const ask = useAskAssistant(runId)
+  const compareAsk = useAskAboutComparison(runId)
   const [question, setQuestion] = useState('')
   const [asked, setAsked] = useState<string | null>(null)
+  const [answer, setAnswer] = useState<AssistantAnswer | null>(null)
+  const [askError, setAskError] = useState<unknown>(null)
   const [wantsReport, setWantsReport] = useState(false)
 
   // Whether a provider actually wrote anything. Read from the answer the server
   // returned rather than from configuration, which the browser cannot see.
   const serviceOff = explanation.data?.generated === false
+  const isAsking = ask.isPending || compareAsk.isPending
 
-  function submit(text: string) {
+  function submit(text: string, comparative: boolean) {
     const trimmed = text.trim()
     if (trimmed === '') return
     setAsked(trimmed)
-    ask.mutate(trimmed)
+    setAskError(null)
+    if (comparative && candidateId !== null && otherCandidateId !== null) {
+      compareAsk.mutate(
+        { candidateId, otherId: otherCandidateId },
+        { onSuccess: setAnswer, onError: setAskError },
+      )
+    } else {
+      ask.mutate(trimmed, { onSuccess: setAnswer, onError: setAskError })
+    }
   }
 
   return (
@@ -121,15 +146,17 @@ export function AssistantPanel({
         <h3>Ask OptiEDT AI</h3>
 
         <div className="ai-suggestions">
-          {SUGGESTIONS.map((text) => (
+          {SUGGESTIONS.map(({ text, comparative }) => (
             <button
               key={text}
               type="button"
               className="secondary ai-suggestion"
-              disabled={ask.isPending}
+              disabled={
+                isAsking || (comparative && (candidateId === null || otherCandidateId === null))
+              }
               onClick={() => {
                 setQuestion(text)
-                submit(text)
+                submit(text, comparative)
               }}
             >
               {text}
@@ -141,7 +168,7 @@ export function AssistantPanel({
           className="ai-form"
           onSubmit={(event) => {
             event.preventDefault()
-            submit(question)
+            submit(question, false)
           }}
         >
           <div className="field ai-ask">
@@ -154,25 +181,25 @@ export function AssistantPanel({
               onChange={(e) => setQuestion(e.target.value)}
             />
           </div>
-          <button type="submit" disabled={ask.isPending || question.trim() === ''}>
-            {ask.isPending ? 'Asking…' : 'Ask'}
+          <button type="submit" disabled={isAsking || question.trim() === ''}>
+            {isAsking ? 'Asking…' : 'Ask'}
           </button>
         </form>
 
-        {ask.isError && (
+        {askError !== null && (
           <p className="error" role="alert">
-            {userMessage(ask.error, 'ask')}
+            {userMessage(askError, 'ask')}
           </p>
         )}
 
-        {ask.isPending && <ThinkingLine label="Composing an answer from the context" />}
+        {isAsking && <ThinkingLine label="Composing an answer from the context" />}
 
-        {asked !== null && !ask.isPending && ask.data && (
+        {asked !== null && !isAsking && answer && (
           <>
             <p className="ai__asked">
               You asked: <i>{asked}</i>
             </p>
-            <Answer answer={ask.data} />
+            <Answer answer={answer} />
           </>
         )}
 

@@ -33,10 +33,10 @@ from optiedt.api.deps import (
 from optiedt.api.schemas import AssistantAnswerOut, AssistantQuestionIn
 from optiedt.assistant.interfaces import RunFacts
 from optiedt.assistant.service import facts_from_run
-from optiedt.domain.entities import CandidateId
+from optiedt.domain.entities import Candidate, CandidateId
 from optiedt.domain.enums import ConstraintKind
 from optiedt.domain.instance import Instance
-from optiedt.services.runs import RunRecord
+from optiedt.services.runs import RunRecord, candidate_of, decomposition_for
 
 router = APIRouter(tags=["assistant"], prefix="/assistant")
 
@@ -46,6 +46,16 @@ def _require_run(store: RunStoreDep, run_id: str) -> RunRecord:
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No run {run_id!r}")
     return record
+
+
+def _require_candidate(record: RunRecord, candidate_id: str) -> Candidate:
+    candidate = candidate_of(record, candidate_id)
+    if candidate is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No candidate {candidate_id!r} in run {record.run.id!r}",
+        )
+    return candidate
 
 
 def _facts(
@@ -93,6 +103,47 @@ def explain_candidate(
     something is broken, when the application is working exactly as specified."""
     record = _require_run(store, run_id)
     answer = assistant.explain_candidate(_facts(record, instance), candidate_id)
+    return AssistantAnswerOut.of(answer)
+
+
+@router.get(
+    "/runs/{run_id}/candidates/{candidate_id}/compare/{other_id}",
+    response_model=AssistantAnswerOut,
+    summary="Explain why one candidate is favoured over another, grounded in the decomposition",
+)
+def compare_candidates(
+    store: RunStoreDep,
+    instance: InstanceDep,
+    assistant: AssistantDep,
+    _user: WorksOnTimetablesDep,
+    run_id: str,
+    candidate_id: str,
+    other_id: str,
+) -> AssistantAnswerOut:
+    """The counterpart to `explain_candidate` for a comparative question.
+
+    ⚠️ **This is why "why is this candidate ranked first?" used to be refused
+    even though the answer plainly exists on screen.** `/question` is bounded
+    to the run's own figures by design (FR-24) and carries no decomposition —
+    correctly declining a comparison it was never given the data for. The
+    Compare screen, however, already knows both candidates on screen, so this
+    route is handed the SAME `Decomposition` the ledger itself renders
+    (`decomposition_for`, `docs/scoring-and-explanation.md`) rather than
+    inventing a second way to compute it — invariant 4 still holds, the figure
+    comes from the analysis layer, never from the assistant.
+    """
+    record = _require_run(store, run_id)
+    left = _require_candidate(record, candidate_id)
+    right = _require_candidate(record, other_id)
+    if left.id == right.id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="A candidate cannot be compared with itself",
+        )
+    decomposition = decomposition_for(record, left, right)
+    answer = assistant.compare_candidates(
+        _facts(record, instance, decomposition=decomposition), candidate_id, other_id
+    )
     return AssistantAnswerOut.of(answer)
 
 

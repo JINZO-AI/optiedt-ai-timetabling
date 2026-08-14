@@ -291,3 +291,9 @@ Thumbs.db
 # TypeScript incremental build state. Machine-local, changes on every build,
 # and carries absolute paths from whoever built it last.
 *.tsbuildinfo
+
+# CLAUDE.md carries development-session instructions for an AI coding
+# assistant. It stays on this machine for local development but is not part
+# of the project the repository presents — kept out of the public history
+# from this point forward, on the project owner's instruction (2026-08-14).
+CLAUDE.md

@@ -153,6 +153,24 @@ export function useAskAssistant(runId: string | null) {
   })
 }
 
+/**
+ * A comparative question about the TWO candidates on screen — "why is this
+ * one ranked first", "what trade-offs does it make". `/question` cannot
+ * answer these: it is bounded to one run's own figures by design (FR-24) and
+ * carries no decomposition. This calls the comparison-grounded route
+ * instead, which is handed the same `Decomposition` the ledger itself
+ * renders, so the answer is not a guess about "this candidate" in the
+ * abstract — it is grounded in the exact two candidates being compared.
+ */
+export function useAskAboutComparison(runId: string | null) {
+  return useMutation({
+    mutationFn: ({ candidateId, otherId }: { candidateId: string; otherId: string }) =>
+      apiGet<AssistantAnswer>(
+        `/assistant/runs/${runId as string}/candidates/${encodeURIComponent(candidateId)}/compare/${encodeURIComponent(otherId)}`,
+      ),
+  })
+}
+
 /** The wire form of the three catalogue actions. Closed — see ADR-007. */
 export type RegenerateRequest =
   | { kind: 'weight_delta'; criterion: string; newWeight: number }

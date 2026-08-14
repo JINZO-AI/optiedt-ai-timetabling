@@ -21,6 +21,7 @@ const explanation = vi.hoisted(() => vi.fn())
 vi.mock('@/api/queries', () => ({
   useExplanation: () => explanation(),
   useAskAssistant: () => ({ mutate: vi.fn(), isPending: false, isError: false, error: null, data: undefined }),
+  useAskAboutComparison: () => ({ mutate: vi.fn(), isPending: false, isError: false, error: null, data: undefined }),
   useRunReport: () => ({ isLoading: false, isError: false, error: null, data: undefined }),
 }))
 
@@ -32,7 +33,7 @@ function panel() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <AssistantPanel runId="run-1" candidateId="c1" />
+      <AssistantPanel runId="run-1" candidateId="c1" otherCandidateId="c2" />
     </QueryClientProvider>,
   )
 }

@@ -151,7 +151,7 @@ the operational answer is to notice and re-run. Worth an ADR before real users.
 ## 3 · Environment variables
 
 Names only. ⚠️ **Never write a value into a tracked file.** The full table with descriptions is in
-`CLAUDE.md` → "Environment, and how to start the thing".
+`.env.example` at the repository root.
 
 **Required in production:** `OPTIEDT_DATABASE_URL`, `OPTIEDT_ENVIRONMENT=production`,
 `OPTIEDT_SECRET_KEY`.
