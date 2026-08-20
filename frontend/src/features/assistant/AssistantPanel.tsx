@@ -81,6 +81,21 @@ export function AssistantPanel({
   // Whether a provider actually wrote anything. Read from the answer the server
   // returned rather than from configuration, which the browser cannot see.
   const serviceOff = explanation.data?.generated === false
+
+  // ⚠️ **"Switched off" and "the provider refused" are different facts and must
+  // not share a message.** The browser cannot read the server's configuration,
+  // so the distinction is taken from the reason the server sent: only
+  // `DisabledAdapter` names OPTIEDT_ASSISTANT_ENABLED.
+  //
+  // Until 2026-08-20 every fallback showed "set OPTIEDT_ASSISTANT_ENABLED=true",
+  // including the one raised when Groq retired the configured model — so the
+  // panel advised setting a variable that was already set, beside a reason that
+  // said HTTP 404. Two contradictory sentences, and the actionable one was the
+  // one in small print.
+  const disabledByConfiguration =
+    serviceOff &&
+    (explanation.data?.fallbackReason ?? '').includes('OPTIEDT_ASSISTANT_ENABLED')
+
   const isAsking = ask.isPending || compareAsk.isPending
 
   function submit(text: string, comparative: boolean) {
@@ -123,11 +138,18 @@ export function AssistantPanel({
           <b>cannot invent a number</b>.
         </p>
 
-        {serviceOff && (
+        {disabledByConfiguration && (
           <p className="ai-off">
             <b>AI writing is currently switched off.</b> What follows is the application’s own
             computed answer — complete, just not written in prose. Set{' '}
             <code>OPTIEDT_ASSISTANT_ENABLED=true</code> to enable written answers.
+          </p>
+        )}
+        {serviceOff && !disabledByConfiguration && (
+          <p className="ai-off">
+            <b>No prose was written for this answer.</b> What follows is the application’s own
+            computed answer — complete, and unaffected by whatever the language service did. The
+            reason is stated under the answer.
           </p>
         )}
 

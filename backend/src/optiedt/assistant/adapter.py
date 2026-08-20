@@ -104,6 +104,29 @@ class HttpAssistantAdapter:
             with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
                 payload = json.loads(response.read())
             return str(payload["choices"][0]["message"]["content"])
+        except urllib.error.HTTPError as exc:
+            # ⚠️ Caught BEFORE URLError, which it subclasses, because "the
+            # language service is unreachable" is the wrong sentence for a
+            # provider that answered and refused - it sends an operator to look
+            # at networking when the answer is in the response body.
+            #
+            # Measured 2026-08-20: Groq retired `llama-3.3-70b-versatile` on
+            # 2026-08-16 and every request against it returns `model_not_found`
+            # behind an HTTP 404. Reported as "unreachable: HTTP Error 404", it
+            # read as a routing fault, and the routing was never at fault. The
+            # provider's own message says exactly which of the two settings is
+            # wrong, so it is carried through rather than discarded.
+            detail = ""
+            try:
+                body = json.loads(exc.read())
+                detail = str(body.get("error", {}).get("message", "")).strip()
+            except (ValueError, KeyError, TypeError, AttributeError, OSError):
+                detail = ""
+            raise AssistantUnavailableError(
+                f"the language service refused the request (HTTP {exc.code})"
+                + (f": {detail}" if detail else "")
+                + " - check OPTIEDT_ASSISTANT_MODEL and OPTIEDT_ASSISTANT_API_KEY"
+            ) from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise AssistantUnavailableError(f"the language service is unreachable: {exc}") from exc
         except (KeyError, IndexError, ValueError, TypeError) as exc:
