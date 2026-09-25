@@ -15,6 +15,9 @@ HTTP_LATENCY = Histogram(
 )
 SOLVER_RUNS = Gauge("optiedt_solver_runs", "Solver runs by status", ["status"])
 WORKERS_ALIVE = Gauge("optiedt_workers_alive", "Workers with a heartbeat in the last minute")
+QUEUE_OLDEST = Gauge(
+    "optiedt_queue_oldest_seconds", "Age of the oldest queued solver run (0 when none waits)"
+)
 
 
 def observe_request(method: str, route: str, status: int, seconds: float) -> None:
