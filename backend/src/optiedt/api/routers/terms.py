@@ -12,10 +12,20 @@ from fastapi import APIRouter, Path
 from optiedt.api.deps import DbSession, PageDep, PrincipalDep
 from optiedt.api.schemas import terms as s
 from optiedt.api.schemas.common import Page
+from optiedt.api.schemas.validation import IssueOut, ValidationOut
 from optiedt.models import AvailabilityGrid
 from optiedt.problem.catalog import OBJECTIVES, RULE_TYPES
+from optiedt.problem.issues import Issue
 from optiedt.security.permissions import Permission
-from optiedt.services import activities, availability, groups, rules, term_copy, terms
+from optiedt.services import (
+    activities,
+    availability,
+    groups,
+    rules,
+    term_copy,
+    terms,
+    validation_report,
+)
 from optiedt.services.activities import ActivityDetails, FixedSpec
 
 router = APIRouter(prefix="/terms", tags=["terms"])
@@ -516,4 +526,30 @@ def catalog(principal: PrincipalDep) -> s.CatalogOut:
             s.CatalogObjectiveOut(code=o.code, name=o.name, description=o.description, unit=o.unit)
             for o in OBJECTIVES.values()
         ],
+    )
+
+
+def _issue(issue: Issue) -> IssueOut:
+    return IssueOut(
+        severity=issue.severity,
+        code=issue.code,
+        message=issue.message,
+        entity_type=issue.entity_type,
+        entity_ids=list(issue.entity_ids),
+        figures=dict(issue.figures),
+    )
+
+
+@router.get("/{term_id}/validation", response_model=ValidationOut)
+def validate_term(term_id: uuid.UUID, db: DbSession, principal: PrincipalDep) -> ValidationOut:
+    """Data-quality checks and feasibility pre-checks on the term's current data."""
+    report = validation_report.build_report(db, principal, term_id)
+    return ValidationOut(
+        snapshot_hash=report.snapshot_hash,
+        counts=report.counts,
+        errors=report.errors,
+        warnings=report.warnings,
+        data_issues=[_issue(i) for i in report.data_issues],
+        feasibility_issues=[_issue(i) for i in report.feasibility_issues],
+        elapsed_ms=report.elapsed_ms,
     )
