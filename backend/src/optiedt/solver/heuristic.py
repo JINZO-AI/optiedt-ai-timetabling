@@ -20,6 +20,7 @@ def construct(
     seed: int,
     pins: dict[int, Placement] | None = None,
     keep: dict[int, Placement] | None = None,
+    absent: frozenset[int] = frozenset(),
 ) -> dict[int, Placement]:
     p = context.problem
     rng = random.Random(seed)  # noqa: S311 - reproducible tie-breaking, not security
@@ -74,6 +75,8 @@ def construct(
     for s, placement in (pins or {}).items():
         occupy(s, placement)
     for s, placement in sorted((keep or {}).items()):
+        if s in absent:
+            continue
         if s not in placements and 0 <= s < len(p.sessions) and fits(s, placement):
             occupy(s, placement)
 
@@ -83,7 +86,10 @@ def construct(
         activity = p.activities[p.sessions[s].activity]
         return (options, -p.sessions[s].duration, -activity.min_capacity, rng.random())
 
-    order = sorted((s.index for s in p.sessions if s.index not in placements), key=difficulty)
+    order = sorted(
+        (s.index for s in p.sessions if s.index not in placements and s.index not in absent),
+        key=difficulty,
+    )
     for s in order:
         session = p.sessions[s]
         domain = context.domains[s]

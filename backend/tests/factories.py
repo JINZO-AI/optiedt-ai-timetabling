@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import date, time
 
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from optiedt.models import (
@@ -17,6 +18,7 @@ from optiedt.models import (
     Course,
     Department,
     Instructor,
+    Period,
     Programme,
     RoleAssignment,
     Room,
@@ -26,6 +28,10 @@ from optiedt.models import (
 )
 from optiedt.security import passwords
 from optiedt.security.permissions import Principal
+from optiedt.services import activities as activity_service
+from optiedt.services import availability as availability_service
+from optiedt.services import groups as group_service
+from optiedt.services import rules as rule_service
 from optiedt.services import terms as terms_service
 from optiedt.services.auth import build_principal
 
@@ -183,3 +189,94 @@ def term(
         periods=[terms_service.PeriodSpec(*p) for p in TEACHING_PERIODS],
         availability_open_until=open_until,
     )
+
+
+def populated_term(db: Session) -> tuple[Institution, Term]:
+    """A term with a cohort and two tutorial groups, a lecture twice a week and a double
+    tutorial, one instructor's availability and one soft rule: small but schedulable."""
+    inst = institution(db)
+    new_term = term(db)
+    admin = admin_principal(db)
+    cohort = group_service.create_group(
+        db,
+        admin,
+        new_term.id,
+        {"code": "L2-CS", "name": "L2 CS", "size": 60, "programme_id": inst.programme.id},
+    )
+    g1 = group_service.create_group(
+        db,
+        admin,
+        new_term.id,
+        {
+            "code": "L2-CS-G1",
+            "name": "G1",
+            "size": 30,
+            "parent_id": cohort.id,
+            "partition_key": "tut",
+        },
+    )
+    group_service.create_group(
+        db,
+        admin,
+        new_term.id,
+        {
+            "code": "L2-CS-G2",
+            "name": "G2",
+            "size": 30,
+            "parent_id": cohort.id,
+            "partition_key": "tut",
+        },
+    )
+    activity_service.create_activity(
+        db,
+        admin,
+        new_term.id,
+        {
+            "course_id": inst.courses["CS201"].id,
+            "activity_type_id": inst.lecture.id,
+            "group_ids": [cohort.id],
+            "instructor_ids": [inst.instructors["T100"].id],
+            "sessions_per_week": 2,
+        },
+    )
+    activity_service.create_activity(
+        db,
+        admin,
+        new_term.id,
+        {
+            "course_id": inst.courses["CS201"].id,
+            "activity_type_id": inst.tutorial.id,
+            "group_ids": [g1.id],
+            "instructor_ids": [inst.instructors["T101"].id],
+            "duration": 2,
+        },
+    )
+    periods = list(
+        db.scalars(select(Period).where(Period.term_id == new_term.id).order_by(Period.position))
+    )
+    availability_service.put_grid(
+        db,
+        admin,
+        new_term.id,
+        "instructor",
+        inst.instructors["T100"].id,
+        version=None,
+        cells=[
+            availability_service.Cell(0, periods[0].id, "unavailable"),
+            availability_service.Cell(1, periods[3].id, "undesirable"),
+        ],
+        today=new_term.start_date,
+    )
+    rule_service.create_rule(
+        db,
+        admin,
+        new_term.id,
+        {
+            "rule_type": "break_in_window",
+            "enforcement": "soft",
+            "tier": 2,
+            "params": {"period_ids": [str(periods[1].id), str(periods[2].id)], "min_free": 1},
+            "scope": {"department_ids": [str(inst.cs.id)]},
+        },
+    )
+    return inst, new_term

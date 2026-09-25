@@ -37,8 +37,15 @@ SQLAlchemy 2), all mature and widely staffed.
 
 ## Consequences
 
-- A solver bug or out-of-memory kills a worker, not the API; the run lease expires and the run
-  is marked failed or retried.
+- Each run is solved in a child process the worker starts for it (`spawn`), so a native crash,
+  runaway memory or a hung search ends that child only: the worker records the failure with
+  its exit code and keeps serving the queue. The child receives the run's snapshot and
+  configuration and returns plain JSON; it never touches the database. (Measured need:
+  OR-Tools 9.15 aborts the process on one cancellation path; see ADR 0018 and
+  `solver/engine.py`.)
+- If the worker itself dies, the run lease expires and the run is requeued once, then
+  failed. A worker asked to stop (SIGTERM) stops its child and puts the run back in the
+  queue without counting the attempt.
 - Long computations are job-shaped everywhere: request → persisted job → progress → result.
 - Interactive operations that need optimization (move suggestions with chained repairs) run as
   short worker jobs; pure evaluations (validating a move) run in the API because they are

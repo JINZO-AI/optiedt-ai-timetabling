@@ -70,7 +70,7 @@ class Scenario(UuidPk, Timestamps, Versioned, Base):
     )
     minimize_changes: Mapped[bool] = mapped_column(Boolean, default=False)
     """Add the stability objective relative to the base solution in tier 1."""
-    solver_mode: Mapped[str] = mapped_column(String(16), default="reproducible")
+    solver_mode: Mapped[str] = mapped_column(String(16), default="fastest")
     time_limit_seconds: Mapped[int] = mapped_column(Integer, default=120)
     seed: Mapped[int] = mapped_column(Integer, default=1)
     created_by_id: Mapped[uuid.UUID | None] = mapped_column(

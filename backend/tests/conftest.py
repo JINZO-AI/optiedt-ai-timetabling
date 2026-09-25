@@ -9,7 +9,7 @@ rolled back afterwards; application commits become savepoint releases.
 from __future__ import annotations
 
 import os
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
 import pytest
 from argon2 import PasswordHasher
@@ -114,3 +114,21 @@ def app(settings: Settings, db: Session) -> FastAPI:
 def client(app: FastAPI) -> Iterator[TestClient]:
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def worker_sessions(connection: Connection) -> Callable[[], Session]:
+    """Sessions for an in-process solver worker. They share the test's connection, so the
+    worker sees the test's uncommitted data and everything is rolled back afterwards."""
+
+    def make() -> Session:
+        return Session(
+            bind=connection, join_transaction_mode="create_savepoint", expire_on_commit=False
+        )
+
+    return make
+
+
+@pytest.fixture
+def worker_settings(settings: Settings) -> Settings:
+    return settings.model_copy(update={"worker_heartbeat_seconds": 1})

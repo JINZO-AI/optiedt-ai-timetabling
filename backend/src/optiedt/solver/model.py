@@ -66,14 +66,18 @@ class ScheduleModel:
         context: Context,
         *,
         pins: dict[int, Placement] | None = None,
+        absent: frozenset[int] = frozenset(),
         reference: dict[int, Placement] | None = None,
         relaxed: bool = False,
     ) -> None:
-        """``relaxed`` leaves hard rules and the different-days requirement unposted, for a
+        """``pins`` keep sessions at a start (and room); ``absent`` sessions stay out of the
+        timetable (a scoped run leaves other departments' unscheduled sessions alone).
+        ``relaxed`` leaves hard rules and the different-days requirement unposted, for a
         diagnosis that prices breaking them instead (``solver.relaxation``)."""
         self.context = context
         self.p = context.problem
         self.pins = pins or {}
+        self.absent = absent
         self.reference = reference
         self.relaxed = relaxed
         self.model = cp_model.CpModel()
@@ -154,11 +158,11 @@ class ScheduleModel:
                         raise PinError(f"{p.describe_session(session)} cannot stay in {room}.")
                     rooms = (pin.room,)
             online = p.activities[session.activity].online
-            placeable = bool(starts) and (online or bool(rooms))
+            placeable = bool(starts) and (online or bool(rooms)) and s not in self.absent
             self.starts.append(tuple(starts) if placeable else ())
             self.rooms.append(tuple(rooms) if placeable and not online else ())
             if not placeable:
-                if pin is not None:
+                if pin is not None and s not in self.absent:
                     raise PinError(f"{p.describe_session(session)} has no room it may use.")
                 self.x.append({})
                 self.y.append({})
@@ -968,3 +972,24 @@ def _segments(joins_next: Sequence[bool]) -> list[list[int]]:
         if not joins:
             segments.append([])
     return [s for s in segments if s]
+
+
+def invalid_pins(context: Context, pins: dict[int, Placement]) -> list[str]:
+    """Why each pinned placement cannot be kept, in the order of the sessions."""
+    p = context.problem
+    problems = []
+    for s, pin in sorted(pins.items()):
+        session = p.sessions[s]
+        domain = context.domains[s]
+        online = p.activities[session.activity].online
+        if pin.slot not in domain.starts:
+            problems.append(
+                f"{p.describe_session(session)} cannot stay at {p.slot_label(pin.slot)}."
+            )
+        elif pin.room is not None and pin.room not in domain.compatible_rooms:
+            problems.append(
+                f"{p.describe_session(session)} cannot stay in {p.rooms[pin.room].code}."
+            )
+        elif pin.room is None and not online and not domain.compatible_rooms:
+            problems.append(f"{p.describe_session(session)} has no room it may use.")
+    return problems

@@ -70,6 +70,23 @@ def _create_admin(args: argparse.Namespace) -> int:
     return 0
 
 
+def _worker(args: argparse.Namespace) -> int:
+    from optiedt.config import get_settings
+    from optiedt.db.session import get_session_factory
+    from optiedt.logging_setup import configure_logging
+    from optiedt.worker.main import Worker
+
+    settings = get_settings()
+    configure_logging(settings.log_level, settings.log_format)
+    worker = Worker(settings, get_session_factory())
+    if args.once:
+        worker.run_once()
+        return 0
+    worker.install_signal_handlers()
+    worker.run_forever()
+    return 0
+
+
 def _check_config(_: argparse.Namespace) -> int:
     from optiedt.config import Settings
 
@@ -90,6 +107,10 @@ def main(argv: list[str] | None = None) -> int:
     admin.add_argument("--display-name", required=True)
     admin.add_argument("--email")
     admin.set_defaults(func=_create_admin)
+
+    worker = sub.add_parser("worker", help="run the solver worker")
+    worker.add_argument("--once", action="store_true", help="process at most one queued run")
+    worker.set_defaults(func=_worker)
 
     for register in _extra_commands():
         register(sub)

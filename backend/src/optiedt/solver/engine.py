@@ -291,6 +291,7 @@ class Engine:
         settings: SolveSettings,
         *,
         pins: dict[int, Placement] | None = None,
+        absent: frozenset[int] = frozenset(),
         reference: dict[int, Placement] | None = None,
         hint: dict[int, Placement] | None = None,
         on_progress: Callable[[ProgressEvent], None] | None = None,
@@ -300,6 +301,7 @@ class Engine:
         self.profiles = profiles
         self.settings = settings
         self.pins = pins or {}
+        self.absent = absent
         self.reference = reference
         self.hint = hint
         self.runner = Runner(settings, on_progress, should_stop)
@@ -307,7 +309,9 @@ class Engine:
     def run(self) -> EngineResult:
         runner = self.runner
         runner.started = time.monotonic()
-        base = ScheduleModel(self.context, pins=self.pins, reference=self.reference)
+        base = ScheduleModel(
+            self.context, pins=self.pins, absent=self.absent, reference=self.reference
+        )
         stats = {
             "variables": len(base.model.proto.variables),
             "constraints": len(base.model.proto.constraints),
@@ -317,7 +321,9 @@ class Engine:
         hint = (
             self.hint
             if self.hint is not None
-            else construct(self.context, self.settings.seed, self.pins, keep=self.reference)
+            else construct(
+                self.context, self.settings.seed, self.pins, keep=self.reference, absent=self.absent
+            )
         )
         stats["hint_placed"] = len(hint)
         runner.event("model_built")
@@ -346,7 +352,9 @@ class Engine:
                 # left unscheduled a large room is better than no room.
                 context, activities = widened
                 stats["widened_activities"] = activities
-                base = ScheduleModel(context, pins=self.pins, reference=self.reference)
+                base = ScheduleModel(
+                    context, pins=self.pins, absent=self.absent, reference=self.reference
+                )
                 tier0_objective = base.tier_expression(ObjectiveConfig({}), 0)
                 if tier0_objective is not None and not isinstance(tier0_objective, int):
                     retry = runner.solve(
