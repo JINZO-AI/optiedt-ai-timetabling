@@ -1,0 +1,57 @@
+[importlinter]
+root_package = optiedt
+include_external_packages = True
+
+[importlinter:contract:evaluator-independent-of-solver]
+name = The evaluator never uses solver code (ADR 0009)
+type = forbidden
+source_modules = optiedt.evaluation
+forbidden_modules =
+    optiedt.solver
+    ortools
+
+[importlinter:contract:solver-independent-of-evaluator]
+name = The solver never uses evaluator code (ADR 0009)
+type = forbidden
+source_modules = optiedt.solver
+forbidden_modules = optiedt.evaluation
+
+[importlinter:contract:problem-is-pure]
+name = The problem model has no persistence, web or engine dependencies
+type = forbidden
+source_modules = optiedt.problem
+forbidden_modules =
+    optiedt.db
+    optiedt.models
+    optiedt.services
+    optiedt.api
+    optiedt.solver
+    optiedt.evaluation
+    optiedt.worker
+    sqlalchemy
+    fastapi
+
+[importlinter:contract:engines-have-no-persistence]
+name = Solver and evaluator work on problem data only
+type = forbidden
+source_modules =
+    optiedt.solver
+    optiedt.evaluation
+forbidden_modules =
+    optiedt.db
+    optiedt.models
+    optiedt.services
+    optiedt.api
+    optiedt.worker
+    sqlalchemy
+    fastapi
+
+[importlinter:contract:models-below-services]
+name = ORM models do not depend on services or the web layer
+type = forbidden
+source_modules = optiedt.models
+forbidden_modules =
+    optiedt.services
+    optiedt.api
+    optiedt.solver
+    optiedt.evaluation
