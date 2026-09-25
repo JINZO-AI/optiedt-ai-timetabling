@@ -543,8 +543,8 @@ class Evaluator:
             units = 0
             for other in activities[1:]:
                 values = Counter(key(s) for s in other.sessions if s in placements)
-                expected = min(len(first.sessions), len(other.sessions))
-                units += expected - sum((base & values).values())
+                alignable = min(sum(base.values()), sum(values.values()))
+                units += alignable - sum((base & values).values())
             return units
         if rule.type == "different_days":
             present: dict[int, set[int]] = defaultdict(set)

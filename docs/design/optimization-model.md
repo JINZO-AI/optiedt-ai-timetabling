@@ -24,8 +24,9 @@ independently (ADR 0009); tests compare them on generated instances.
 For each group, its atoms are the combinations of one child per partition at every level
 below it; a leaf is its own single atom. Group `g`'s atom set is the union over its
 descendants. Two sessions conflict on students iff their atom sets intersect. Estimated atom
-size: `size(root) × Π (size(child)/size(parent))` along the chosen children, rounded, min 1.
-Atoms whose session sets are identical are merged (sizes added).
+size (for reports): `size(root) × Π (size(child)/size(parent))` along the chosen children.
+The solver merges atoms whose session sets are identical into one constraint set and counts
+the merged atom's objective terms once per atom it stands for.
 
 ## 2. Domains
 
@@ -44,7 +45,9 @@ required type (if any), whose features include the required features, whose capa
 least `need_s`, within the campus/building restriction and the allowed-room list, and equal
 to the fixed room if any. The solver additionally skips rooms more than `ratio × need_s`
 seats (term setting, default 4; ignored when it would empty the domain). This is a search
-restriction, not a rule: manual placement may use any compatible room.
+restriction, not a rule: manual placement may use any compatible room, and in a repair every
+compatible room the reference timetable uses stays available to all occurrences of that
+activity.
 
 ## 3. Variables and structural constraints
 
@@ -65,10 +68,12 @@ start[s] = Σ_t t·x[s,t]                      enforced when present
 | S5 | Occurrences on different days (when required) | ∀ activity, day `d`: Σ_{s∈a, t∈d} x[s,t] ≤ 1 |
 | S6 | Domains (§2) | Variables are created only for feasible values |
 
-Symmetry: non-fixed occurrences of one activity are interchangeable, so the solver orders them
-(`present` non-increasing, `start` increasing among present ones). Metrics that compare
-solutions per session (stability, diffs) are computed per activity on multisets of
-placements, so this ordering never changes a reported value.
+Symmetry: occurrences of one activity share groups, instructors, duration and domain, so the
+solver orders them (`present` non-increasing, `start` increasing among present ones). Pinned
+and fixed occurrences, and every occurrence of an activity named in a `precedence` or
+`consecutive` rule (those pair occurrence k with occurrence k), are left out of the ordering.
+Metrics that compare solutions per session (stability, diffs) are computed per activity on
+multisets of placements, so the ordering never changes a reported value.
 
 ## 4. Configurable rules
 
@@ -79,7 +84,7 @@ resource is enforced on each of its atoms). Violation units are what the soft pe
 | Code | Scope | Parameters | Meaning | Violation unit |
 |---|---|---|---|---|
 | `max_periods_per_day` | resources | `limit` | Occupied periods per day ≤ limit | periods above limit, per day |
-| `max_consecutive_periods` | resources | `limit` | No run of more than `limit` occupied periods; a run ends at a free period or a non-joinable boundary | periods above limit, per window |
+| `max_consecutive_periods` | resources | `limit` | No run of more than `limit` occupied periods; a run ends at a free period or a non-joinable boundary | periods above limit, per run |
 | `max_days_per_week` | resources | `limit` | Days with any session ≤ limit | days above limit |
 | `break_in_window` | resources | `periods`, `min_free` | Each day, at least `min_free` of the window's periods are free | missing free periods, per day |
 | `avoid_slots` | resources or activities | `slots` | No session occupies the slots | occupied periods in the slots |
@@ -87,9 +92,9 @@ resource is enforced on each of its atoms). Violation units are what the soft pe
 | `latest_end` | resources or activities | `period` | No session after this period | occupied periods after |
 | `min_days_between` | activities | `days` | Occurrences of the activity at least `days` apart | occurrence pairs too close |
 | `not_overlapping` | activities (≥2) | – | Listed activities never overlap in time | overlapping periods |
-| `same_start` | activities (≥2, equal sessions per week) | – | Occurrence k of each starts at the same slot | occurrences not aligned |
-| `same_day` | activities (≥2) | – | Occurrence k of each on the same day | occurrences not aligned |
-| `different_days` | activities (≥2) | – | No two listed activities on the same day | same-day pairs |
+| `same_start` | activities (≥2, equal sessions per week) | – | Each other activity's occurrences start at the same slots as the first activity's (compared as multisets) | per other activity: min(placed occurrences of the two) − matching starts |
+| `same_day` | activities (≥2) | – | Each other activity's occurrences fall on the same days as the first activity's (multisets) | per other activity: min(placed occurrences of the two) − matching days |
+| `different_days` | activities (≥2) | – | No two listed activities on the same day | per day: listed activities present beyond the first |
 | `precedence` | activities (ordered pair) | – | Occurrence k of the first ends before occurrence k of the second starts (week order) | violated pairs |
 | `consecutive` | activities (ordered pair) | – | Occurrence k of the second starts right after the first ends, same day | violated pairs |
 | `campus_travel` | resources | – | Sessions in adjacent periods are on campuses whose travel time fits the gap between the periods | violating transitions |
@@ -103,11 +108,11 @@ the others are posted as constraints. Soft rules add
 | Code | Definition (natural units) | Default tier (Balanced) |
 |---|---|---|
 | `unscheduled` | Σ L_s over unplaced sessions (periods) | 0 (always first) |
-| `student_idle` | Σ over atoms, days: free open slots strictly between the first and last occupied slot, × estimated atom size (student-periods) | 2 |
+| `student_idle` | Σ over atoms, days: free open slots strictly between the first and last occupied slot (idle periods; every kind of student counts once, whatever its size) | 2 |
 | `instructor_idle` | Same per instructor (periods) | 2 |
 | `instructor_undesirable` | Occupied instructor periods marked undesirable | 1 |
 | `instructor_preferred` | Occupied instructor periods outside the preferred slots, for instructors who declared any | 3 |
-| `undesirable_slots` | Σ over occupied (session, slot): slot penalty level × `need_s` (student-periods) | 2 |
+| `undesirable_slots` | Σ over occupied (session, slot): slot penalty level (weighted periods) | 2 |
 | `room_fit` | Σ L_s × (capacity − need_s) (empty seat-periods) | 3 |
 | `room_preferences` | Sessions outside preferred rooms (activities with preferences) + sessions in avoided rooms | 3 |
 | `room_stability` | Σ over activities: distinct rooms used − 1 | 3 |
@@ -115,18 +120,35 @@ the others are posted as constraints. Soft rules add
 | `instructor_days` | Σ over instructors: max(0, days used − ⌈load / \|P\|⌉) | 2 |
 | `stability` | Per activity: occurrences whose slot is not in the reference multiset + occurrences whose room is not in the reference multiset; only with a reference solution | 1 in repair profiles |
 
-Idle-period encoding per resource and day: `before[u] ≥ occ[u]`, `before[u] ≥ before[u−1]`,
-`after[u] ≥ occ[u]`, `after[u] ≥ after[u+1]`, `idle[u] ≥ before[u−1] + after[u+1] − 1 − occ[u]`
-over the day's open slots, where `occ[u]` is the at-most-one sum of covering start literals.
-Minimization makes the lower bounds tight.
+### Exact auxiliary variables
+
+Every auxiliary variable is defined in both directions, never only bounded from the side the
+objective pushes it. A solution that is feasible but not optimal therefore reports its true
+objective values, and the bound a finished tier leaves behind (`tier ≤ value`) constrains the
+true value, not an overestimate. Property tests fix random timetables in the model and check
+that the minimum and the maximum of every tier coincide with the evaluator's value.
+
+| Quantity | Encoding |
+|---|---|
+| Disjunction `f = ∨ l_i` (day used, room or period used, activity present on a day) | `l_i ⇒ f` for each i; `f ⇒ ∨ l_i` |
+| Conjunction `z = a ∧ b` of 0/1 expressions | `z ≤ a`, `z ≤ b`, `z ≥ a + b − 1` |
+| Excess `e = max(0, Σ − limit)` (soft caps, extra days, overlaps) | `e = max(0, Σ − limit)` (linear max) |
+| Capped count `k = min(c, Σ)` (stability, alignment) | `k = min(c, Σ)` (linear min) |
+| Idle periods of a resource on a day, over its open slots `u` with `occ[u]` = at-most-one sum of covering literals | `before[u] = before[u−1] ∨ occ[u]`, `after[u] = after[u+1] ∨ occ[u]`, `idle[u] = before[u−1] ∧ after[u+1] ∧ ¬occ[u]` |
+| Precedence lateness | `late ⇒ present_a ∧ present_b ∧ start_b ≤ start_a + L_a − 1`; `present_a ∧ present_b ∧ ¬late ⇒ start_b ≥ start_a + L_a` |
+| Consecutive miss | `(present_a ∧ present_b) − Σ_t (x[a,t] ∧ x[b,t+L_a])`, same day |
+| Occurrences too close | Σ_d `on_day(s₁, d) ∧ (Σ over starts of s₂ within the gap of d)` |
+| Campus transition | `in(s,t,c) = x[s,t] ∧ Σ_{r∈c} y[s,r]`; `at(u,c) = Σ in(s,t,c)` over covering starts; per boundary and campus pair too far apart: `at(u,a) ∧ at(u+1,b)` |
 
 ## 6. Solving procedure
 
 1. **Compile** the snapshot into the problem model: atoms, domains, rule instances.
 2. **Pre-check** (§7). Errors are reported; the solve still runs, because elastic placement
    produces the best partial timetable and per-session explanations.
-3. **Warm start**: a constructive heuristic places sessions in order of tightest domain,
-   choosing the slot and room that minimize immediate conflicts; the result is the hint.
+3. **Warm start**: a constructive heuristic keeps every pinned placement and, in a repair,
+   every reference placement that is still valid; it then places the other sessions in order
+   of tightest domain, each at the first start and smallest room that clash with nothing
+   placed so far. The result is the hint.
 4. **Tier 0**: minimize unscheduled periods.
 5. **For each selected profile**, tiers 1…k in order: minimize the tier's weighted sum subject
    to every earlier tier ≤ its best value; hint the incumbent.
@@ -134,9 +156,11 @@ Minimization makes the lower bounds tight.
    evaluator's; store the candidate with its metrics.
 7. **Explain** every unscheduled session (§8).
 
-Time budget: tier 0 may use up to 40 % of a profile's budget; the remainder is split evenly
-over the profile's non-empty tiers, and time left over by a tier proven optimal passes to the
-next. Reproducible mode uses deterministic time; fastest mode uses wall-clock time (ADR 0018).
+Time budget: tier 0 may use 30 % of the run's budget. What is left is shared evenly by the
+profiles still to solve, and inside a profile by its non-empty tiers still to solve, so time
+left over by a tier proven optimal passes to the next. Every solve gets at least half a
+second. Reproducible mode limits and counts deterministic time, so the budget is divided the
+same way on every machine; fastest mode uses wall-clock time (ADR 0018).
 
 ## 7. Pre-checks
 
@@ -170,6 +194,10 @@ result lists the data changes that together admit a complete timetable.
 
 ## 9. Repair
 
-Repair is a run with a reference solution, `stability` in tier 1, the current draft as hint,
-and optionally a scope that fixes every session outside a chosen set (for example, only
-sessions affected by a closed room may move).
+Repair is a run with a reference solution (normally the current draft), `stability` in tier 1
+and the warm start of §6, and optionally a scope that pins every session outside a chosen set
+(for example, only sessions affected by a closed room may move). A pin keeps a session's
+start (and room, when given) but not its presence: if a pinned placement cannot coexist with
+the rest, the session is reported unscheduled rather than making the run infeasible. A pin
+that is no longer valid on its own (its start or room left the domain) stops the run with an
+explanation before solving.

@@ -48,7 +48,7 @@ def options_for(
     *,
     slots: list[int] | None = None,
 ) -> list[Option]:
-    """Every start slot × suitable room, evaluated against the rest of the timetable."""
+    """Every combination of start slot and suitable room, evaluated against the rest."""
     p = evaluator.p
     session = p.sessions[s]
     context = evaluator.move_context(placements, s)
