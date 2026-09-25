@@ -8,8 +8,7 @@ from typing import Annotated, Any, ClassVar, Literal
 
 from pydantic import Field, field_validator
 
-from optiedt.api.schemas.common import Code, LongText, Name, Out, Schema
-from optiedt.api.schemas.reference import Patch
+from optiedt.api.schemas.common import Code, LongText, Name, Out, Patch, Schema
 
 Weekday = Annotated[int, Field(ge=0, le=6)]
 

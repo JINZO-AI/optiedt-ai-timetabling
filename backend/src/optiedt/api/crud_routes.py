@@ -11,7 +11,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from optiedt.api.deps import DbSession, PrincipalDep
-from optiedt.api.schemas.reference import Patch
+from optiedt.api.schemas.common import Patch
 from optiedt.security.permissions import Permission
 from optiedt.services import resources
 from optiedt.services.crud import get_or_404

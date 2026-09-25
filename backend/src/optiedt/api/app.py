@@ -7,7 +7,16 @@ from fastapi import APIRouter, FastAPI
 from optiedt import __version__
 from optiedt.api.middleware import RequestContextMiddleware
 from optiedt.api.problems import install_problem_handlers
-from optiedt.api.routers import audit, auth, health, reference, terms, users
+from optiedt.api.routers import (
+    audit,
+    auth,
+    health,
+    reference,
+    scheduling,
+    solutions,
+    terms,
+    users,
+)
 from optiedt.config import Settings, get_settings
 from optiedt.logging_setup import configure_logging
 
@@ -40,4 +49,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 
 def _domain_routers() -> list[APIRouter]:
-    return [users.router, audit.router, *reference.routers, terms.router, terms.catalog_router]
+    return [
+        users.router,
+        audit.router,
+        *reference.routers,
+        terms.router,
+        terms.catalog_router,
+        scheduling.router,
+        solutions.router,
+    ]

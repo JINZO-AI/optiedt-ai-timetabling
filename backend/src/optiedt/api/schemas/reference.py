@@ -5,32 +5,14 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Annotated, ClassVar, Literal
+from typing import Annotated, Literal
 
 from pydantic import EmailStr, Field, model_validator
 
-from optiedt.api.schemas.common import Code, LongText, Name, Out, Schema
+from optiedt.api.schemas.common import Code, LongText, Name, Out, Patch, Schema
 
 Color = Annotated[str, Field(pattern=r"^#[0-9a-fA-F]{6}$")]
 Locale = Literal["en", "fr", "ar"]
-
-
-class Patch(Schema):
-    """Partial update. Only fields present in the request change; ``null`` clears a field
-    only where the field is optional."""
-
-    version: int
-    required_fields: ClassVar[frozenset[str]] = frozenset()
-
-    @model_validator(mode="after")
-    def _no_null_for_required(self) -> Patch:
-        for name in self.required_fields & self.model_fields_set:
-            if getattr(self, name) is None:
-                raise ValueError(f"{name} cannot be empty")
-        return self
-
-    def changes(self) -> dict[str, object]:
-        return self.model_dump(exclude_unset=True, exclude={"version"})
 
 
 # ── institution ────────────────────────────────────────────────────────

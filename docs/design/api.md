@@ -34,8 +34,8 @@ states the conventions and the resource map.
 | Terms | `/terms`, `/terms/{id}`, `/terms/{id}/time-grid`, `/terms/{id}/timing-variants` |
 | Term data | `/terms/{id}/groups`, `/terms/{id}/activities`, `/terms/{id}/availability/{kind}/{resource_id}`, `/terms/{id}/rules`, `/terms/{id}/objective-profiles`, `/terms/{id}/copy-from` |
 | Validation | `GET /terms/{id}/validation` (data report + pre-checks) |
-| Scenarios and runs | `/terms/{id}/scenarios`, `POST /scenarios/{id}/runs`, `/runs/{id}`, `/runs/{id}/events`, `POST /runs/{id}/cancel`, `/runs/{id}/log` |
-| Solutions | `/terms/{id}/solutions`, `/solutions/{id}`, `/solutions/{id}/timetable`, `/solutions/{id}/evaluation`, `POST /solutions/{id}/moves` (`dry_run` for preview), `/solutions/{id}/suggestions`, `/solutions/{id}/locks`, `/solutions/{id}/changes`, `POST /solutions/{id}/duplicate`, `POST /solutions/{id}/rebase`, `POST /solutions/{id}/submit`, `POST /solutions/{id}/approve`, `POST /solutions/{id}/return`, `POST /solutions/{id}/publish`, `POST /solutions/{id}/reoptimize`, `POST /solutions/{id}/relaxation`, `GET /solutions/compare` |
+| Scenarios and runs | `/terms/{id}/scenarios`, `/scenarios/{id}`, `POST /scenarios/{id}/archive`, `POST /scenarios/{id}/runs` (idempotent, `202`), `/terms/{id}/runs`, `/runs/{id}`, `/runs/{id}/events?after=`, `POST /runs/{id}/cancel`, `/runs/{id}/log`, `/runs/{id}/diagnosis` |
+| Solutions | `/terms/{id}/solutions`, `/solutions/{id}`, `/solutions/{id}/timetable`, `/solutions/{id}/evaluation`, `POST /solutions/{id}/moves` (`dry_run` for preview), `/solutions/{id}/suggestions`, `/solutions/{id}/unscheduled/{session_id}` (why a session is not placed), `/solutions/{id}/locks`, `/solutions/{id}/changes`, `POST /solutions/{id}/duplicate`, `POST /solutions/{id}/rebase`, `POST /solutions/{id}/submit`, `POST /solutions/{id}/approve`, `POST /solutions/{id}/return`, `POST /solutions/{id}/publish`, `POST /solutions/{id}/reoptimize`, `POST /solutions/{id}/relaxation`, `GET /solutions/compare` |
 | Publications | `/terms/{id}/publications`, `/publications/{id}`, `/publications/{id}/timetable`, `/publications/{id}/diff`, `POST /publications/{id}/restore`, `/publications/{id}/exceptions`, `POST /publications/{id}/disruptions` |
 | Portal | `GET /portal/timetable` (the caller's own published timetable, dated), `GET/PUT /portal/availability` (instructors), `/portal/feed-token` |
 | Public (if enabled) | `/public/terms`, `/public/timetable` |
@@ -61,3 +61,18 @@ instructor, room, course, day) is a filter on the same data:
   "violations": [...]
 }
 ```
+
+## Runs
+
+A run request copies everything the worker needs besides the snapshot into the run's
+configuration: the profiles with their tiers and weights, pinned placements (locked sessions
+and, for a scenario limited to some departments, the other departments' sessions as in the
+base timetable), sessions that must stay out, the stability reference and the warm-start
+hint. The run is therefore reproducible after its base timetable is edited. A scenario can
+have one queued or running run at a time (`409 run_active` otherwise).
+
+`progress` on a run holds the latest event from the solver (`phase`, `profile`, `tier`,
+`objective`, `bound`, `elapsed`), refreshed at most once a second; `/runs/{id}/events` returns
+the full history after a given event id for incremental polling. A finished optimization
+run's `result` names the candidate timetable created per profile with the solver's tier
+outcomes; every candidate is evaluated independently and carries `solver_agrees`.
