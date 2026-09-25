@@ -201,6 +201,34 @@ def test_full_repair_is_never_worse_than_moving_only_affected_sessions() -> None
         assert restricted.profiles[0].placements.get(s) == placement
 
 
+@pytest.mark.parametrize("after", [0.0, 0.05, 0.3, 0.8])
+def test_cancellation_at_any_moment_keeps_the_process_alive(after: float) -> None:
+    # Stopping CP-SAT from a solution callback aborted the process when the stop landed on
+    # the solution loaded from a complete hint; the engine only stops from its watcher.
+    b = SnapshotBuilder()
+    _department(b)
+    problem = b.problem()
+    deadline = time.monotonic() + after
+    result = solve(
+        problem,
+        ("balanced", "student_centred"),
+        seconds=30,
+        should_stop=lambda: time.monotonic() > deadline,
+    )
+    assert result.cancelled
+    assert evaluate(problem, result.base).violations == []
+
+
+def test_cancellation_before_the_first_solve_returns_an_empty_cancelled_result() -> None:
+    b = SnapshotBuilder()
+    _department(b)
+    result = solve(b.problem(), seconds=30, should_stop=lambda: True)
+    assert result.cancelled
+    assert result.tier0.value is None
+    assert result.base == {}
+    assert result.profiles == []
+
+
 def test_cancellation_stops_promptly() -> None:
     b = SnapshotBuilder()
     _department(b)

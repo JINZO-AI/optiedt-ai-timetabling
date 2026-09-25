@@ -30,6 +30,23 @@ TIER0_SHARE = 0.3
 LOG_LINES = 400
 MIN_PROFILE_SECONDS = 1.0
 MIN_TIER_SECONDS = 0.5
+# In reproducible (interleaved) search every batch waits for its slowest task, and the first
+# task of an LP-based worker on a faculty-sized model takes many deterministic seconds. The
+# reproducible portfolio therefore keeps the cheap full-problem workers and the neighbourhood
+# (LNS) workers only; measured on a 195-session instance it reaches a third of the objective
+# value the default portfolio reaches in the same deterministic time (ADR 0018).
+REPRODUCIBLE_IGNORED_SUBSOLVERS = (
+    "default_lp",
+    "fixed",
+    "max_lp",
+    "max_lp_sym",
+    "quick_restart",
+    "reduced_costs",
+    "lb_tree_search",
+    "probing*",
+    "objective_lb_search*",
+)
+REPRODUCIBLE_BATCH_SIZE = 4
 
 
 class EngineError(RuntimeError):
@@ -38,12 +55,15 @@ class EngineError(RuntimeError):
 
 @dataclass(frozen=True, slots=True)
 class SolveSettings:
-    mode: str = "reproducible"
+    mode: str = "fastest"
+    """``fastest`` races the workers against the clock; ``reproducible`` gives the same
+    timetable for the same snapshot, settings and seed on any machine (ADR 0018)."""
     time_limit_seconds: float = 60.0
     workers: int = 0
     seed: int = 1
-    deterministic_per_second: float = 1.0
-    """Deterministic time units granted per requested second in reproducible mode."""
+    deterministic_per_second: float = 0.3
+    """Deterministic time granted per requested second in reproducible mode: about one
+    wall-clock second each on a four-core machine (measured, ADR 0018)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,10 +119,17 @@ class EngineResult:
 
 
 class _Progress(cp_model.CpSolverSolutionCallback):
-    def __init__(self, emit: Callable[[float, float], None], should_stop: Callable[[], bool]):
+    """Reports improving solutions, at most twice a second.
+
+    It never stops the search itself: OR-Tools 9.15 aborts the process
+    (``solution->size() == postsolve_mapping.size()``) when ``stop_search`` is called from
+    the callback of a solution found while loading a complete hint. Cancellation goes
+    through the watcher thread in ``Engine._solve`` instead.
+    """
+
+    def __init__(self, emit: Callable[[float, float], None]):
         super().__init__()
         self._emit = emit
-        self._should_stop = should_stop
         self._last = 0.0
 
     def on_solution_callback(self) -> None:
@@ -110,8 +137,6 @@ class _Progress(cp_model.CpSolverSolutionCallback):
         if now - self._last >= 0.5:
             self._last = now
             self._emit(self.objective_value, self.best_objective_bound)
-        if self._should_stop():
-            self.stop_search()
 
 
 class Engine:
@@ -161,9 +186,15 @@ class Engine:
         profile: str | None,
         tier: int,
     ) -> tuple[TierOutcome, dict[int, Placement]]:
+        started = time.monotonic()
         model = builder.model
         model.minimize(objective)
-        builder.add_hint(incumbent)
+        values, completion_time = builder.assignment(incumbent)
+        self._deterministic_spent += completion_time
+        if values is not None:
+            builder.add_full_hint(values)
+        else:
+            builder.add_hint(incumbent)
         solver = cp_model.CpSolver()
         params = solver.parameters
         params.num_workers = self.settings.workers
@@ -173,6 +204,8 @@ class Engine:
         if self.deterministic:
             params.max_deterministic_time = seconds * self.settings.deterministic_per_second
             params.interleave_search = True
+            params.interleave_batch_size = REPRODUCIBLE_BATCH_SIZE
+            params.ignore_subsolvers.extend(REPRODUCIBLE_IGNORED_SUBSOLVERS)
             params.max_time_in_seconds = max(5.0, seconds * 3)
         else:
             params.max_time_in_seconds = seconds
@@ -194,9 +227,8 @@ class Engine:
 
         watcher = threading.Thread(target=watch, daemon=True)
         watcher.start()
-        started = time.monotonic()
         try:
-            status = solver.solve(model, _Progress(emit, self.should_stop))
+            status = solver.solve(model, _Progress(emit))
         finally:
             stop.set()
             watcher.join()
@@ -252,9 +284,12 @@ class Engine:
 
         total = self.settings.time_limit_seconds
         tier0_objective = base.tier_expression(ObjectiveConfig({}), 0)
+        incumbent: dict[int, Placement] = {}
         if tier0_objective is None or isinstance(tier0_objective, int):
             tier0 = TierOutcome(0, "OPTIMAL", int(tier0_objective or 0), 0.0, 0.0, 0.0)
-            incumbent: dict[int, Placement] = {}
+        elif self.should_stop():
+            self.cancelled = True
+            tier0 = TierOutcome(0, "UNKNOWN", None, None, 0.0, 0.0)
         else:
             tier0, incumbent = self._solve(
                 base,
@@ -265,12 +300,13 @@ class Engine:
                 None,
                 0,
             )
-            if tier0.value is None:
+            if tier0.value is not None:
+                base.model.add(tier0_objective <= tier0.value)
+            elif not self.cancelled:
                 raise EngineError(
                     "No timetable was found within the time limit, not even a partial one. "
                     "Increase the time limit or check the validation report."
                 )
-            base.model.add(tier0_objective <= tier0.value)
         base.model.clear_hints()  # type: ignore[no-untyped-call]
 
         profiles: list[ProfileOutcome] = []
@@ -302,19 +338,18 @@ class Engine:
     ) -> ProfileOutcome:
         builder = base.fork()
         builder.reference = spec.config.reference
-        tiers = [
-            (tier, expr)
-            for tier in range(1, MAX_TIER + 1)
-            if (expr := builder.tier_expression(spec.config, tier)) is not None
-            and not isinstance(expr, int)
-        ]
+        # A tier's terms are built when it is solved, so earlier tiers search a smaller model.
+        tiers = [tier for tier in range(1, MAX_TIER + 1) if builder.has_terms(spec.config, tier)]
         placements = dict(incumbent)
         outcomes: list[TierOutcome] = []
         profile_started = self._spent()
-        for position, (tier, expr) in enumerate(tiers):
+        for position, tier in enumerate(tiers):
             if self.cancelled or self.should_stop():
                 self.cancelled = True
                 break
+            expr = builder.tier_expression(spec.config, tier)
+            if expr is None or isinstance(expr, int):
+                continue
             left = budget - (self._spent() - profile_started)
             share = max(MIN_TIER_SECONDS, left / (len(tiers) - position))
             outcome, placements = self._solve(

@@ -793,6 +793,12 @@ class ScheduleModel:
 
     # ── tiers, hints, results ─────────────────────────────────────────
 
+    def has_terms(self, config: ObjectiveConfig, tier: int) -> bool:
+        """Whether any objective or soft rule is assigned to ``tier`` (without building it)."""
+        return any(
+            objective_tier == tier for objective_tier, _ in config.objectives.values()
+        ) or any(rule.enforcement == "soft" and rule.tier == tier for rule in self.p.rules)
+
     def tier_expression(self, config: ObjectiveConfig, tier: int) -> LinearExpr | None:
         if tier == 0:
             return self.objective(UNSCHEDULED)
@@ -822,7 +828,49 @@ class ScheduleModel:
                 result[s] = placement
         return result
 
+    def assignment(
+        self, placements: dict[int, Placement], seconds: float = 10.0
+    ) -> tuple[list[int] | None, float]:
+        """The value of every model variable in the timetable ``placements``, and the
+        deterministic time spent finding it.
+
+        Decisions follow from the placements and every auxiliary variable from the decisions
+        (they are exact), so this is a propagation, not a search. Returns None when the
+        placements break a constraint of the model.
+        """
+        model = self.model.clone()
+        model.clear_objective()  # type: ignore[no-untyped-call]
+        model.clear_hints()  # type: ignore[no-untyped-call]
+        fixed = self.canonical(placements)
+        for session in self.p.sessions:
+            s = session.index
+            present = self.present[s]
+            if present is None:
+                continue
+            placement = fixed.get(s)
+            if placement is None or placement.slot not in self.x[s]:
+                model.add(present == 0)
+                continue
+            model.add(self.x[s][placement.slot] == 1)
+            if placement.room is not None and placement.room in self.y[s]:
+                model.add(self.y[s][placement.room] == 1)
+        solver = cp_model.CpSolver()
+        solver.parameters.num_workers = 1
+        solver.parameters.max_time_in_seconds = seconds
+        status = solver.solve(model)
+        if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+            return None, solver.deterministic_time
+        return list(solver.response_proto.solution), solver.deterministic_time
+
+    def add_full_hint(self, values: list[int]) -> None:
+        """Hints every variable, typically with the previous solution's values."""
+        self.model.clear_hints()  # type: ignore[no-untyped-call]
+        hint = self.model.proto.solution_hint
+        hint.vars.extend(range(len(values)))
+        hint.values.extend(values)
+
     def add_hint(self, placements: dict[int, Placement]) -> None:
+        """Hints the decision variables only; the solver has to complete the rest."""
         m = self.model
         m.clear_hints()  # type: ignore[no-untyped-call]
         hint = self.canonical(placements)

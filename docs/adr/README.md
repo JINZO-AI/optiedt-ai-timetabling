@@ -23,4 +23,4 @@ supersedes the old one.
 | [0015](0015-frontend-stack.md) | React SPA, own design system, i18n with right-to-left support | Accepted |
 | [0016](0016-server-side-documents.md) | Server-side PDF (WeasyPrint), XLSX, and iCalendar feeds | Accepted |
 | [0017](0017-weekly-recurring-model.md) | Weekly-recurring timetables; no alternating-week patterns in v1 | Accepted |
-| [0018](0018-reproducible-solving-modes.md) | Two solving modes: reproducible and fastest | Accepted |
+| [0018](0018-reproducible-solving-modes.md) | Two solving modes: fastest (default) and reproducible | Accepted (revised) |

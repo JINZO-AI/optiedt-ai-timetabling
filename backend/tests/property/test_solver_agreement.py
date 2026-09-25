@@ -75,8 +75,7 @@ def test_fixed_timetables_have_exactly_the_evaluators_values(
     reference = construct(context, seed + 1)
     codes = sorted(set(OBJECTIVES) - {"stability"})
     objectives = {
-        code: (data.draw(st.integers(1, MAX_TIER)), data.draw(st.integers(1, 3)))
-        for code in codes
+        code: (data.draw(st.integers(1, MAX_TIER)), data.draw(st.integers(1, 3))) for code in codes
     }
     objectives["stability"] = (data.draw(st.integers(1, MAX_TIER)), 1)
     config = ObjectiveConfig(objectives, reference)
@@ -106,10 +105,10 @@ def test_engine_timetables_are_valid_and_report_true_values(problem: Problem) ->
         evaluation = evaluate(problem, outcome.placements, outcome.code)
         assert evaluation.violations == [], [v.message for v in evaluation.violations][:3]
         assert evaluation.tiers[0] <= (result.tier0.value or 0)
-        solved = [tier for tier in outcome.tiers if tier.value is not None]
+        solved = [(tier.tier, tier.value) for tier in outcome.tiers if tier.value is not None]
         # A finished tier bounds the later searches, which may still improve it.
-        for tier in solved:
-            assert evaluation.tiers[tier.tier] <= tier.value, (outcome.code, tier)
+        for tier, value in solved:
+            assert evaluation.tiers[tier] <= value, (outcome.code, tier, value)
         if solved:
-            last = solved[-1]
-            assert evaluation.tiers[last.tier] == last.value, (outcome.code, last)
+            tier, value = solved[-1]
+            assert evaluation.tiers[tier] == value, (outcome.code, tier, value)
