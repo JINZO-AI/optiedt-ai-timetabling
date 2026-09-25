@@ -347,3 +347,100 @@ class ExplanationOut(Out):
     obstacles: list[ObstacleOut]
     room_problems: dict[str, int]
     summary: str
+
+
+# ── editing ────────────────────────────────────────────────────────────
+
+
+class MoveIn(Schema):
+    session_id: uuid.UUID
+    day: Annotated[int, Field(ge=0, le=6)] | None
+    """``null`` (with ``period``) takes the session out of the timetable."""
+    period: Annotated[int, Field(ge=0, le=47)] | None
+    room_id: uuid.UUID | None = None
+
+
+class MovesIn(Schema):
+    version: int
+    moves: Annotated[list[MoveIn], Field(min_length=1, max_length=50)]
+    reason: LongText | None = None
+    force: bool = False
+    """Apply even if hard requirements break (the draft cannot be submitted until fixed)."""
+    dry_run: bool = False
+
+
+class MovePreviewOut(Out):
+    valid: bool
+    introduced: list[ViolationOut]
+    resolved: list[ViolationOut]
+    tiers_before: list[int]
+    tiers_after: list[int]
+    objective_deltas: dict[str, int]
+    rule_deltas: dict[str, int]
+    hard_violations_after: int
+    complete_after: bool
+
+
+class MovesOut(Out):
+    applied: bool
+    preview: MovePreviewOut
+    solution: SolutionOut | None
+
+
+class PlaceOut(Out):
+    day: int
+    period: int
+    room_id: str | None
+
+
+class ValidOptionOut(PlaceOut):
+    is_current: bool
+    tier_deltas: list[int]
+    objective_deltas: dict[str, int]
+
+
+class BlockedOptionOut(PlaceOut):
+    violations: list[ViolationOut]
+
+
+class SuggestionsOut(Out):
+    session_id: str
+    current: PlaceOut | None
+    valid: list[ValidOptionOut]
+    blocked: list[BlockedOptionOut]
+    valid_count: int
+    blocked_count: int
+
+
+class LocksIn(Schema):
+    version: int
+    session_ids: Annotated[list[uuid.UUID], Field(min_length=1, max_length=2000)]
+    locked: bool
+    reason: LongText | None = None
+
+
+class ChangeLogOut(Out):
+    seq: int
+    occurred_at: datetime
+    actor_id: uuid.UUID | None
+    actor_label: str
+    kind: str
+    session_id: uuid.UUID | None
+    before: dict[str, Any] | None
+    after: dict[str, Any] | None
+    summary: str
+    reason: str | None
+
+
+class DuplicateIn(Schema):
+    name: Name | None = None
+
+
+class WorkflowIn(Schema):
+    version: int
+    note: LongText | None = None
+
+
+class ReturnIn(Schema):
+    version: int
+    note: Annotated[str, Field(min_length=1, max_length=4000)]

@@ -11,6 +11,7 @@ from optiedt.api.routers import (
     audit,
     auth,
     health,
+    publications,
     reference,
     scheduling,
     solutions,
@@ -57,4 +58,5 @@ def _domain_routers() -> list[APIRouter]:
         terms.catalog_router,
         scheduling.router,
         solutions.router,
+        publications.router,
     ]

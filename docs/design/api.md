@@ -36,7 +36,7 @@ states the conventions and the resource map.
 | Validation | `GET /terms/{id}/validation` (data report + pre-checks) |
 | Scenarios and runs | `/terms/{id}/scenarios`, `/scenarios/{id}`, `POST /scenarios/{id}/archive`, `POST /scenarios/{id}/runs` (idempotent, `202`), `/terms/{id}/runs`, `/runs/{id}`, `/runs/{id}/events?after=`, `POST /runs/{id}/cancel`, `/runs/{id}/log`, `/runs/{id}/diagnosis` |
 | Solutions | `/terms/{id}/solutions`, `/solutions/{id}`, `/solutions/{id}/timetable`, `/solutions/{id}/evaluation`, `POST /solutions/{id}/moves` (`dry_run` for preview), `/solutions/{id}/suggestions`, `/solutions/{id}/unscheduled/{session_id}` (why a session is not placed), `/solutions/{id}/locks`, `/solutions/{id}/changes`, `POST /solutions/{id}/duplicate`, `POST /solutions/{id}/rebase`, `POST /solutions/{id}/submit`, `POST /solutions/{id}/approve`, `POST /solutions/{id}/return`, `POST /solutions/{id}/publish`, `POST /solutions/{id}/reoptimize`, `POST /solutions/{id}/relaxation`, `GET /solutions/compare` |
-| Publications | `/terms/{id}/publications`, `/publications/{id}`, `/publications/{id}/timetable`, `/publications/{id}/diff`, `POST /publications/{id}/restore`, `/publications/{id}/exceptions`, `POST /publications/{id}/disruptions` |
+| Publications | `/terms/{id}/publications`, `/publications/{id}`, `/publications/{id}/timetable` (weekly pattern), `/publications/{id}/occurrences?from=&to=&group_id=&instructor_id=&room_id=` (dated, exceptions applied), `/publications/{id}/diff?against=`, `POST /publications/{id}/restore`, `GET/POST /publications/{id}/exceptions`, `DELETE /exceptions/{id}` (revoke), `POST /publications/{id}/disruptions` (plan, changes nothing), `POST /publications/{id}/disruptions/apply` |
 | Portal | `GET /portal/timetable` (the caller's own published timetable, dated), `GET/PUT /portal/availability` (instructors), `/portal/feed-token` |
 | Public (if enabled) | `/public/terms`, `/public/timetable` |
 | Imports | `POST /imports` (multipart upload), `/imports/{id}`, `PUT /imports/{id}/mapping`, `POST /imports/{id}/commit`, `DELETE /imports/{id}` |
@@ -76,3 +76,21 @@ have one queued or running run at a time (`409 run_active` otherwise).
 the full history after a given event id for incremental polling. A finished optimization
 run's `result` names the candidate timetable created per profile with the solver's tier
 outcomes; every candidate is evaluated independently and carries `solver_agrees`.
+
+## Editing and publishing
+
+`POST /solutions/{id}/moves` takes the solution `version` and a list of moves applied
+together (`day`/`period` `null` takes a session out). With `dry_run` it only reports the
+violations the moves would introduce or resolve and the change of every objective, rule and
+tier. Without it, moves that introduce hard violations are refused with `409 move_invalid`
+(the preview is in `details`) unless `force` is set; a forced draft cannot be submitted until
+the violations are resolved. Locked sessions must be unlocked first (`409 locked`). Every
+applied move and lock change is a numbered entry in `/solutions/{id}/changes` with before,
+after, author, reason and affected resources, and bumps the solution `version`.
+
+Only `draft` solutions are editable; `duplicate` makes an editable copy of any timetable and
+records it as derived from the publication it came from. `submit` → `approve` (or `return`
+with a note) → `publish` follow the approval rule of `docs/product/requirements.md` §2;
+`publish` refuses a draft whose base publication is no longer current (`409 rebase_needed`)
+or that no longer fits the term's current data (`409 data_changed`); `rebase` creates a new
+draft on the current data and publication that keeps the draft's own changes.
