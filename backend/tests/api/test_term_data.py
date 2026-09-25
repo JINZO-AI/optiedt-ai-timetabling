@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import uuid
 from datetime import date, timedelta
+from typing import Any
 
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -10,19 +12,19 @@ from tests import factories
 API = "/api/v1"
 
 
-def _officer(client: TestClient, db: Session, department_id=None) -> None:  # type: ignore[no-untyped-def]
+def _officer(client: TestClient, db: Session, department_id: uuid.UUID | None = None) -> None:
     factories.user(db, "officer", [("scheduling_officer", department_id)])
     factories.login(client, "officer")
 
 
-def _grid(client: TestClient, term_id: object) -> dict[str, object]:
+def _grid(client: TestClient, term_id: object) -> dict[str, Any]:
     response = client.get(f"{API}/terms/{term_id}/time-grid")
     assert response.status_code == 200
     result: dict[str, object] = response.json()
     return result
 
 
-def _group(client: TestClient, term_id: object, **body: object) -> dict[str, object]:
+def _group(client: TestClient, term_id: object, **body: object) -> dict[str, Any]:
     response = client.post(f"{API}/terms/{term_id}/groups", json=body)
     assert response.status_code == 201, response.text
     result: dict[str, object] = response.json()
@@ -50,7 +52,7 @@ def test_term_creation_seeds_objective_profiles(client: TestClient, db: Session)
     assert response.status_code == 201, response.text
     term = response.json()
     grid = _grid(client, term["id"])
-    assert [p["joins_next"] for p in grid["periods"]] == [True, False]  # type: ignore[union-attr, index]
+    assert [p["joins_next"] for p in grid["periods"]] == [True, False]
     profiles = client.get(f"{API}/terms/{term['id']}/objective-profiles").json()
     assert {p["code"] for p in profiles} == {
         "balanced",
@@ -93,8 +95,8 @@ def test_time_grid_update_keeps_period_identity_and_prunes_cells(
         f"{API}/terms/{term.id}/availability/instructor/{teacher.id}",
         json={
             "cells": [
-                {"weekday": 4, "period_id": periods[0]["id"], "state": "unavailable"},  # type: ignore[index]
-                {"weekday": 0, "period_id": periods[3]["id"], "state": "undesirable"},  # type: ignore[index]
+                {"weekday": 4, "period_id": periods[0]["id"], "state": "unavailable"},
+                {"weekday": 0, "period_id": periods[3]["id"], "state": "undesirable"},
             ]
         },
     )
@@ -108,7 +110,7 @@ def test_time_grid_update_keeps_period_identity_and_prunes_cells(
             "end_time": p["end_time"],
             "joins_next": p["joins_next"],
         }
-        for p in periods[:3]  # type: ignore[index]
+        for p in periods[:3]
     ]
     response = client.put(
         f"{API}/terms/{term.id}/time-grid",
@@ -146,10 +148,10 @@ def test_removing_a_period_with_fixed_placements_is_refused(
         f"{API}/terms/{term.id}/activities",
         json={
             "course_id": str(inst.courses["CS201"].id),
-            "activity_type_id": str(inst.lecture.id),  # type: ignore[union-attr]
+            "activity_type_id": str(inst.lecture.id),
             "group_ids": [group["id"]],
             "instructor_ids": [str(inst.instructors["T100"].id)],
-            "fixed": [{"occurrence": 1, "weekday": 0, "period_id": periods[3]["id"]}],  # type: ignore[index]
+            "fixed": [{"occurrence": 1, "weekday": 0, "period_id": periods[3]["id"]}],
         },
     )
     assert activity.status_code == 201, activity.text
@@ -167,7 +169,7 @@ def test_removing_a_period_with_fixed_placements_is_refused(
                     "start_time": p["start_time"],
                     "end_time": p["end_time"],
                 }
-                for p in periods[:3]  # type: ignore[index]
+                for p in periods[:3]
             ],
         },
     )
@@ -185,7 +187,7 @@ def test_group_tree_with_partitions(client: TestClient, db: Session) -> None:
         code="L2-CS",
         name="L2 CS",
         size=90,
-        programme_id=str(inst.programme.id),  # type: ignore[union-attr]
+        programme_id=str(inst.programme.id),
     )
     for code in ("G1", "G2", "G3"):
         _group(
@@ -231,12 +233,12 @@ def test_activity_validation_names_each_problem(client: TestClient, db: Session)
         f"{API}/terms/{term.id}/activities",
         json={
             "course_id": str(inst.courses["CS201"].id),
-            "activity_type_id": str(inst.tutorial.id),  # type: ignore[union-attr]
+            "activity_type_id": str(inst.tutorial.id),
             "group_ids": [foreign["id"]],
             "sessions_per_week": 3,
             "delivery_mode": "online",
             "room_type_id": str(inst.classroom.id),
-            "fixed": [{"occurrence": 4, "weekday": 5, "period_id": periods[0]["id"]}],  # type: ignore[index]
+            "fixed": [{"occurrence": 4, "weekday": 5, "period_id": periods[0]["id"]}],
         },
     )
     assert response.status_code == 422
@@ -259,7 +261,7 @@ def test_activity_links_update_and_version(client: TestClient, db: Session) -> N
         f"{API}/terms/{term.id}/activities",
         json={
             "course_id": str(inst.courses["CS202"].id),
-            "activity_type_id": str(inst.tutorial.id),  # type: ignore[union-attr]
+            "activity_type_id": str(inst.tutorial.id),
             "group_ids": [group["id"]],
             "instructor_ids": [str(inst.instructors["T100"].id)],
             "duration": 2,
@@ -299,14 +301,14 @@ def test_scoped_officer_cannot_touch_other_departments(client: TestClient, db: S
     factories.login(client, "cs.officer")
     group = client.post(
         f"{API}/terms/{term.id}/groups",
-        json={"code": "L1", "name": "L1", "size": 10, "programme_id": str(inst.programme.id)},  # type: ignore[union-attr]
+        json={"code": "L1", "name": "L1", "size": 10, "programme_id": str(inst.programme.id)},
     )
     assert group.status_code == 201, group.text
     denied = client.post(
         f"{API}/terms/{term.id}/activities",
         json={
             "course_id": str(inst.courses["MA201"].id),
-            "activity_type_id": str(inst.lecture.id),  # type: ignore[union-attr]
+            "activity_type_id": str(inst.lecture.id),
             "group_ids": [group.json()["id"]],
         },
     )
@@ -322,13 +324,13 @@ def test_instructor_declares_own_availability_only_while_open(
     closed_term = factories.term(db, code="2025-S2", open_until=date.today() - timedelta(days=1))
     factories.user(db, "leila", [("instructor", None)], instructor_id=teacher.id)
     factories.login(client, "leila")
-    period = _grid(client, open_term.id)["periods"][0]["id"]  # type: ignore[index]
+    period = _grid(client, open_term.id)["periods"][0]["id"]
     cells = {"cells": [{"weekday": 1, "period_id": period, "state": "preferred"}]}
     ok = client.put(f"{API}/terms/{open_term.id}/availability/instructor/{teacher.id}", json=cells)
     assert ok.status_code == 200, ok.text
     assert ok.json()["source"] == "self"
 
-    closed_period = _grid(client, closed_term.id)["periods"][0]["id"]  # type: ignore[index]
+    closed_period = _grid(client, closed_term.id)["periods"][0]["id"]
     closed = client.put(
         f"{API}/terms/{closed_term.id}/availability/instructor/{teacher.id}",
         json={"cells": [{"weekday": 1, "period_id": closed_period, "state": "preferred"}]},
@@ -345,7 +347,7 @@ def test_room_availability_accepts_only_unavailable(client: TestClient, db: Sess
     inst = factories.institution(db)
     term = factories.term(db)
     _officer(client, db)
-    period = _grid(client, term.id)["periods"][0]["id"]  # type: ignore[index]
+    period = _grid(client, term.id)["periods"][0]["id"]
     response = client.put(
         f"{API}/terms/{term.id}/availability/room/{inst.rooms['A-101'].id}",
         json={"cells": [{"weekday": 0, "period_id": period, "state": "preferred"}]},
@@ -413,12 +415,12 @@ def test_copy_term_structure(client: TestClient, db: Session) -> None:
     _officer(client, db)
     cohort = _group(client, source.id, code="L2", name="L2", size=60)
     sub = _group(client, source.id, code="L2-G1", name="G1", size=30, parent_id=cohort["id"])
-    period = _grid(client, source.id)["periods"][1]["id"]  # type: ignore[index]
+    period = _grid(client, source.id)["periods"][1]["id"]
     activity = client.post(
         f"{API}/terms/{source.id}/activities",
         json={
             "course_id": str(inst.courses["CS201"].id),
-            "activity_type_id": str(inst.tutorial.id),  # type: ignore[union-attr]
+            "activity_type_id": str(inst.tutorial.id),
             "group_ids": [sub["id"]],
             "instructor_ids": [str(inst.instructors["T101"].id)],
             "fixed": [{"occurrence": 1, "weekday": 2, "period_id": period}],
@@ -428,7 +430,7 @@ def test_copy_term_structure(client: TestClient, db: Session) -> None:
         f"{API}/terms/{source.id}/activities",
         json={
             "course_id": str(inst.courses["CS201"].id),
-            "activity_type_id": str(inst.lecture.id),  # type: ignore[union-attr]
+            "activity_type_id": str(inst.lecture.id),
             "group_ids": [cohort["id"]],
             "instructor_ids": [str(inst.instructors["T100"].id)],
         },
@@ -460,6 +462,6 @@ def test_copy_term_structure(client: TestClient, db: Session) -> None:
     assert response.status_code == 200, response.text
     assert response.json()["copied"] == {"groups": 2, "activities": 2, "rules": 1}
     copied = [a for a in client.get(f"{API}/terms/{target.id}/activities").json() if a["fixed"]]
-    target_period = _grid(client, target.id)["periods"][1]["id"]  # type: ignore[index]
+    target_period = _grid(client, target.id)["periods"][1]["id"]
     assert copied[0]["fixed"][0]["period_id"] == target_period
     assert copied[0]["group_ids"] != [sub["id"]]

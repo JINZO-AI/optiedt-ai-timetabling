@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import uuid
+from typing import Any
+
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -10,12 +13,12 @@ from tests import factories
 API = "/api/v1"
 
 
-def _as(client: TestClient, db: Session, role: str, department_id=None) -> None:  # type: ignore[no-untyped-def]
+def _as(client: TestClient, db: Session, role: str, department_id: uuid.UUID | None = None) -> None:
     factories.user(db, f"{role.replace('_', '.')}.user", [(role, department_id)])
     factories.login(client, f"{role.replace('_', '.')}.user")
 
 
-def _create(client: TestClient, path: str, body: dict[str, object]) -> dict[str, object]:
+def _create(client: TestClient, path: str, body: dict[str, object]) -> dict[str, Any]:
     response = client.post(f"{API}/{path}", json=body)
     assert response.status_code == 201, response.text
     result: dict[str, object] = response.json()
@@ -47,14 +50,14 @@ def test_room_lifecycle_with_features(client: TestClient, db: Session) -> None:
             "feature_ids": [projector["id"]],
         },
     )
-    assert [f["code"] for f in room["features"]] == ["PROJECTOR"]  # type: ignore[index, union-attr]
+    assert [f["code"] for f in room["features"]] == ["PROJECTOR"]
 
     patched = client.patch(
         f"{API}/rooms/{room['id']}", json={"version": room["version"], "feature_ids": []}
     )
     assert patched.status_code == 200, patched.text
     assert patched.json()["features"] == []
-    assert patched.json()["version"] == room["version"] + 1  # type: ignore[operator]
+    assert patched.json()["version"] == room["version"] + 1
 
     listed = client.get(f"{API}/rooms", params={"min_capacity": 30, "q": "B-2"}).json()
     assert listed["total"] == 1

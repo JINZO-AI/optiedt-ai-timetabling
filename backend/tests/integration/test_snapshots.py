@@ -25,7 +25,7 @@ def _populate(db: Session) -> tuple[factories.Institution, Term]:
         db,
         admin,
         term.id,
-        {"code": "L2-CS", "name": "L2 CS", "size": 60, "programme_id": inst.programme.id},  # type: ignore[union-attr]
+        {"code": "L2-CS", "name": "L2 CS", "size": 60, "programme_id": inst.programme.id},
     )
     g1 = group_service.create_group(
         db,
@@ -57,7 +57,7 @@ def _populate(db: Session) -> tuple[factories.Institution, Term]:
         term.id,
         {
             "course_id": inst.courses["CS201"].id,
-            "activity_type_id": inst.lecture.id,  # type: ignore[union-attr]
+            "activity_type_id": inst.lecture.id,
             "group_ids": [cohort.id],
             "instructor_ids": [inst.instructors["T100"].id],
             "sessions_per_week": 2,
@@ -69,7 +69,7 @@ def _populate(db: Session) -> tuple[factories.Institution, Term]:
         term.id,
         {
             "course_id": inst.courses["CS201"].id,
-            "activity_type_id": inst.tutorial.id,  # type: ignore[union-attr]
+            "activity_type_id": inst.tutorial.id,
             "group_ids": [g1.id],
             "instructor_ids": [inst.instructors["T101"].id],
             "duration": 2,

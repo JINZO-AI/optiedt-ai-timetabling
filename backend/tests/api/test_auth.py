@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -84,8 +85,8 @@ def test_idle_session_expires(client: TestClient, db: Session) -> None:
 
 
 def test_password_change_enforces_policy_and_revokes_other_sessions(
-    client: TestClient, db: Session, app
-) -> None:  # type: ignore[no-untyped-def]
+    client: TestClient, db: Session, app: FastAPI
+) -> None:
     factories.user(db, "amira.haddad")
     other = TestClient(app)
     factories.login(other, "amira.haddad")

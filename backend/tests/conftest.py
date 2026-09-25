@@ -1,8 +1,9 @@
 """Test harness.
 
-Tests run against a real PostgreSQL database (``OPTIEDT_TEST_DATABASE_URL``). The schema is
-built once per session with the application's own migrations. Each test runs inside an outer
-transaction that is rolled back afterwards; application commits become savepoint releases.
+Tests run against a real PostgreSQL database (``OPTIEDT_TEST_DATABASE_URL``); each
+pytest-xdist worker gets its own database next to it. The schema is built once per session
+with the application's own migrations. Each test runs inside an outer transaction that is
+rolled back afterwards; application commits become savepoint releases.
 """
 
 from __future__ import annotations
@@ -12,8 +13,9 @@ from collections.abc import Iterator
 
 import pytest
 from argon2 import PasswordHasher
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, make_url, text
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.orm import Session
 
@@ -32,11 +34,31 @@ TEST_DATABASE_URL = os.environ.get(
 passwords._hasher = PasswordHasher(time_cost=1, memory_cost=1024, parallelism=1)
 
 
+def _database_url() -> str:
+    """The test database of this process: one per pytest-xdist worker."""
+    worker = os.environ.get("PYTEST_XDIST_WORKER")
+    if not worker:
+        return TEST_DATABASE_URL
+    url = make_url(TEST_DATABASE_URL)
+    name = f"{url.database}_{worker}"
+    admin = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    try:
+        with admin.connect() as conn:
+            exists = conn.scalar(
+                text("SELECT 1 FROM pg_database WHERE datname = :name"), {"name": name}
+            )
+            if not exists:
+                conn.execute(text(f'CREATE DATABASE "{name}"'))
+    finally:
+        admin.dispose()
+    return url.set(database=name).render_as_string(hide_password=False)
+
+
 @pytest.fixture(scope="session")
 def settings() -> Settings:
     return Settings(
         environment="test",
-        database_url=TEST_DATABASE_URL,
+        database_url=_database_url(),
         log_format="console",
         log_level="WARNING",
     )
@@ -77,7 +99,7 @@ def db(connection: Connection) -> Iterator[Session]:
 
 
 @pytest.fixture
-def app(settings: Settings, db: Session):  # type: ignore[no-untyped-def]
+def app(settings: Settings, db: Session) -> FastAPI:
     application = create_app(settings)
 
     def _db() -> Iterator[Session]:
@@ -89,6 +111,6 @@ def app(settings: Settings, db: Session):  # type: ignore[no-untyped-def]
 
 
 @pytest.fixture
-def client(app) -> Iterator[TestClient]:  # type: ignore[no-untyped-def]
+def client(app: FastAPI) -> Iterator[TestClient]:
     with TestClient(app) as test_client:
         yield test_client

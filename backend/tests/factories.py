@@ -90,13 +90,13 @@ class Institution:
     lecture_hall: RoomType
     classroom: RoomType
     lab: RoomType
+    lecture: ActivityType
+    tutorial: ActivityType
+    practical: ActivityType
+    programme: Programme
     rooms: dict[str, Room] = field(default_factory=dict)
     instructors: dict[str, Instructor] = field(default_factory=dict)
     courses: dict[str, Course] = field(default_factory=dict)
-    lecture: ActivityType | None = None
-    tutorial: ActivityType | None = None
-    practical: ActivityType | None = None
-    programme: Programme | None = None
 
 
 def institution(db: Session) -> Institution:
@@ -111,7 +111,24 @@ def institution(db: Session) -> Institution:
     lab = RoomType(code="COMPUTER_LAB", name="Computer lab")
     db.add_all([building, lecture_hall, classroom, lab])
     db.flush()
-    result = Institution(cs, math, campus, building, lecture_hall, classroom, lab)
+    lecture = ActivityType(code="LEC", name="Lecture", default_room_type_id=lecture_hall.id)
+    tutorial = ActivityType(code="TUT", name="Tutorial", default_room_type_id=classroom.id)
+    practical = ActivityType(code="LAB", name="Lab", default_room_type_id=lab.id)
+    programme = Programme(code="BSC-CS", name="BSc Computer Science", department_id=cs.id)
+    db.add_all([lecture, tutorial, practical, programme])
+    result = Institution(
+        cs,
+        math,
+        campus,
+        building,
+        lecture_hall,
+        classroom,
+        lab,
+        lecture=lecture,
+        tutorial=tutorial,
+        practical=practical,
+        programme=programme,
+    )
     for code, capacity, room_type in (
         ("A-AMPHI", 180, lecture_hall),
         ("A-101", 40, classroom),
@@ -139,11 +156,6 @@ def institution(db: Session) -> Institution:
         course = Course(code=code, title=title, department_id=dept.id)
         db.add(course)
         result.courses[code] = course
-    result.lecture = ActivityType(code="LEC", name="Lecture", default_room_type_id=lecture_hall.id)
-    result.tutorial = ActivityType(code="TUT", name="Tutorial", default_room_type_id=classroom.id)
-    result.practical = ActivityType(code="LAB", name="Lab", default_room_type_id=lab.id)
-    result.programme = Programme(code="BSC-CS", name="BSc Computer Science", department_id=cs.id)
-    db.add_all([result.lecture, result.tutorial, result.practical, result.programme])
     db.flush()
     return result
 
