@@ -28,9 +28,7 @@ class AuditEvent(Base):
     entity_type: Mapped[str] = mapped_column(String(48))
     entity_id: Mapped[str | None] = mapped_column(String(64))
     term_id: Mapped[uuid.UUID | None] = mapped_column(index=True)
-    department_ids: Mapped[list[uuid.UUID]] = mapped_column(
-        ARRAY(UUID(as_uuid=True)), default=list
-    )
+    department_ids: Mapped[list[uuid.UUID]] = mapped_column(ARRAY(UUID(as_uuid=True)), default=list)
     summary: Mapped[str] = mapped_column(Text)
     changes: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     reason: Mapped[str | None] = mapped_column(Text)

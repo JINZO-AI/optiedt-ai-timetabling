@@ -2,6 +2,7 @@
 
 from optiedt.models.academic import ActivityType, CalendarEvent, Course, Instructor, Programme
 from optiedt.models.audit import AuditEvent
+from optiedt.models.idempotency import IdempotencyRecord
 from optiedt.models.identity import (
     CalendarFeedToken,
     LoginThrottle,
@@ -10,7 +11,6 @@ from optiedt.models.identity import (
     User,
     UserSession,
 )
-from optiedt.models.idempotency import IdempotencyRecord
 from optiedt.models.imports import ImportBatch
 from optiedt.models.organization import (
     Building,

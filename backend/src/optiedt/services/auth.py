@@ -139,9 +139,7 @@ def resolve_session(
     if now - session.last_seen_at > TOUCH_INTERVAL:
         # A plain UPDATE: touching the session must not bump the user's version or collide
         # with concurrent edits of the same session row.
-        db.execute(
-            update(UserSession).where(UserSession.id == session.id).values(last_seen_at=now)
-        )
+        db.execute(update(UserSession).where(UserSession.id == session.id).values(last_seen_at=now))
     return user, session
 
 
@@ -158,7 +156,8 @@ def logout(db: Session, session: UserSession, principal: Principal) -> None:
 
 
 def department_parents(db: Session) -> dict[uuid.UUID, uuid.UUID | None]:
-    return {dept: parent for dept, parent in db.execute(select(Department.id, Department.parent_id))}
+    rows = db.execute(select(Department.id, Department.parent_id)).all()
+    return {row[0]: row[1] for row in rows}
 
 
 def build_principal(db: Session, user: User) -> Principal:

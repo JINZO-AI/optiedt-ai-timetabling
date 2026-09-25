@@ -56,12 +56,8 @@ class User(UuidPk, Timestamps, Versioned, Base):
 class RoleAssignment(UuidPk, Base):
     __tablename__ = "role_assignments"
     __table_args__ = (
-        UniqueConstraint(
-            "user_id", "role", "department_id", postgresql_nulls_not_distinct=True
-        ),
-        CheckConstraint(
-            "role IN (" + ", ".join(f"'{r}'" for r in ROLES) + ")", name="known_role"
-        ),
+        UniqueConstraint("user_id", "role", "department_id", postgresql_nulls_not_distinct=True),
+        CheckConstraint("role IN (" + ", ".join(f"'{r}'" for r in ROLES) + ")", name="known_role"),
         CheckConstraint(
             "department_id IS NULL OR role NOT IN ('system_admin', 'institution_admin')",
             name="admin_roles_unscoped",

@@ -29,7 +29,7 @@ TEST_DATABASE_URL = os.environ.get(
 )
 
 # Production Argon2 parameters cost ~80 ms per hash; tests create many accounts.
-passwords._hasher = PasswordHasher(time_cost=1, memory_cost=1024, parallelism=1)  # noqa: SLF001
+passwords._hasher = PasswordHasher(time_cost=1, memory_cost=1024, parallelism=1)
 
 
 @pytest.fixture(scope="session")

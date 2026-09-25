@@ -57,10 +57,12 @@ select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF", "S", "C4", "PT", "RE
 ignore = [
     "S101",   # assert is the pytest idiom; production code does not rely on it
     "RUF012", # SQLAlchemy/Pydantic class attributes are not mutable defaults
+    "N818",   # NotFound, Conflict… read better than NotFoundError at raise sites
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S105", "S106", "S311"]
+"src/optiedt/db/migrations/**" = ["E501"]
 "src/optiedt/benchmarks/**" = ["S311"]
 
 [tool.mypy]

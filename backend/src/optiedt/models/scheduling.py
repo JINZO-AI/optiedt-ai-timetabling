@@ -222,9 +222,7 @@ class SolutionChange(Base):
     )
     seq: Mapped[int] = mapped_column(Integer)
     occurred_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    actor_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL")
-    )
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     actor_label: Mapped[str] = mapped_column(String(160))
     kind: Mapped[str] = mapped_column(String(24))
     session_id: Mapped[uuid.UUID | None]
@@ -257,9 +255,7 @@ class Publication(UuidPk, Base):
 
     term_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("terms.id", ondelete="CASCADE"))
     version_no: Mapped[int] = mapped_column(Integer)
-    solution_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("solutions.id", ondelete="RESTRICT")
-    )
+    solution_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("solutions.id", ondelete="RESTRICT"))
     snapshot_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("problem_snapshots.id", ondelete="RESTRICT")
     )

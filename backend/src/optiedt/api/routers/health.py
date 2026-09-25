@@ -44,19 +44,16 @@ def ready(db: DbSession, response: Response) -> dict[str, object]:
 
 
 def refresh_gauges(db: DbSession) -> None:
-    counts: dict[str, int] = {
-        status: count
-        for status, count in db.execute(
-            select(SolverRun.status, func.count()).group_by(SolverRun.status)
-        )
-    }
+    counts: dict[str, int] = dict(
+        db.execute(select(SolverRun.status, func.count()).group_by(SolverRun.status)).all()
+    )
     for status in ("queued", "running", "succeeded", "failed", "cancelled"):
         SOLVER_RUNS.labels(status).set(counts.get(status, 0))
     threshold = datetime.now(UTC) - timedelta(minutes=1)
     alive = db.scalar(
-        select(func.count()).select_from(WorkerHeartbeat).where(
-            WorkerHeartbeat.last_seen_at > threshold
-        )
+        select(func.count())
+        .select_from(WorkerHeartbeat)
+        .where(WorkerHeartbeat.last_seen_at > threshold)
     )
     WORKERS_ALIVE.set(alive or 0)
 

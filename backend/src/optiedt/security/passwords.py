@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 
@@ -53,10 +55,8 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, password_hash: str | None) -> bool:
     """Constant work whether or not the account exists."""
     if password_hash is None:
-        try:
+        with contextlib.suppress(VerificationError):
             _hasher.verify(_DUMMY_HASH, password)
-        except VerificationError:
-            pass
         return False
     try:
         return _hasher.verify(password_hash, password)

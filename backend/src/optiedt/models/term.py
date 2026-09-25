@@ -176,7 +176,8 @@ activity_groups = Table(
         ["term_id", "activity_id"], ["activities.term_id", "activities.id"], ondelete="CASCADE"
     ),
     ForeignKeyConstraint(
-        ["term_id", "group_id"], ["student_groups.term_id", "student_groups.id"],
+        ["term_id", "group_id"],
+        ["student_groups.term_id", "student_groups.id"],
         ondelete="RESTRICT",
     ),
 )
