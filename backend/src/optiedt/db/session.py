@@ -1,30 +1,40 @@
-"""Engine and session factory.
-
-**Built lazily, on first use.** Importing this module must not open a socket:
-`optiedt.api.deps` is imported by every test that touches the API, and most of
-them inject an in-memory store and never reach a database. An engine created at
-import time would make those tests depend on PostgreSQL being up in order to
-not use it.
-
-One engine per process, one session per unit of work. `pool_pre_ping` is set
-because a development database is routinely stopped and restarted underneath a
-running API (`docker compose down`), and the failure without it is a stale
-pooled connection surfacing as an error on an unrelated request minutes later.
-"""
+"""Engine and session factories."""
 
 from __future__ import annotations
 
-from functools import cache
+from collections.abc import Iterator
+from functools import lru_cache
 
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-
-@cache
-def get_engine(database_url: str) -> Engine:
-    return create_engine(database_url, pool_pre_ping=True, future=True)
+from optiedt.config import get_settings
 
 
-@cache
-def get_session_factory(database_url: str) -> sessionmaker[Session]:
-    return sessionmaker(bind=get_engine(database_url), expire_on_commit=False, future=True)
+@lru_cache(maxsize=4)
+def get_engine(url: str | None = None) -> Engine:
+    settings = get_settings()
+    return create_engine(
+        url or settings.database_url,
+        pool_size=settings.database_pool_size,
+        max_overflow=settings.database_pool_size,
+        pool_pre_ping=True,
+        pool_recycle=1800,
+    )
+
+
+@lru_cache(maxsize=4)
+def get_session_factory(url: str | None = None) -> sessionmaker[Session]:
+    return sessionmaker(bind=get_engine(url), expire_on_commit=False, autoflush=True)
+
+
+def session_scope() -> Iterator[Session]:
+    """Request-scoped session. Callers commit explicitly; anything uncommitted is rolled back."""
+    session = get_session_factory()()
+    try:
+        yield session
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()

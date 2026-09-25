@@ -1,5 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "https://optiedt-ai-timetabling.onrender.com/api/:path*" }
-  ]
-}

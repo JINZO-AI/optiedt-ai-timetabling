@@ -1,5 +1,8 @@
-"""OptiEDT - AI-assisted generation, ranking and explanation of university timetables.
+"""OptiEDT — academic scheduling and optimization platform."""
 
-Layer boundaries are enforced by ../../.importlinter. Read docs/architecture.md
-before changing anything structural.
-"""
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("optiedt")
+except PackageNotFoundError:  # running from a source tree without installation
+    __version__ = "0.0.0+source"

@@ -1,44 +1,44 @@
 [project]
 name = "optiedt"
-version = "0.1.0"
-description = "AI-assisted generation, ranking and explanation of university timetables"
-requires-python = ">=3.12"
+version = "1.0.0"
+description = "Academic scheduling and optimization platform"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = { text = "Proprietary" }
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
-    "sqlalchemy>=2.0",
-    "alembic>=1.14",
+    "email-validator>=2.2",
+    "sqlalchemy>=2.0.36",
     "psycopg[binary]>=3.2",
-    "ortools>=9.11",
-    "numpy>=2.1",
-    "scikit-learn>=1.5",       # increment 2 only: weight fitting (ADR-002)
-    "httpx>=0.27",             # assistant adapter; no provider SDK on purpose
-    "python-jose[cryptography]>=3.3",
-    # bcrypt directly, NOT passlib. passlib 1.7.4 (2020, unmaintained) is broken
-    # against bcrypt 5: it reads `bcrypt.__about__`, removed in 5.0, and its
-    # hash() raises "password cannot be longer than 72 bytes" on any input.
-    # Measured 2026-08-04 on passlib 1.7.4 + bcrypt 5.0.0 - hashing did not work
-    # at all. Pinning bcrypt backwards to keep an unmaintained wrapper is the
-    # wrong direction; the direct API is four lines.
-    "bcrypt>=4.0",
-    # Required by the OAuth2 password flow: OAuth2PasswordRequestForm reads
-    # form-encoded credentials, and FastAPI refuses to build the route
-    # without a multipart parser.
-    "python-multipart>=0.0.9",
+    "alembic>=1.14",
+    "ortools==9.15.6755",
+    "argon2-cffi>=23.1",
+    "python-multipart>=0.0.12",
+    "openpyxl>=3.1",
+    "jinja2>=3.1",
+    "weasyprint>=63",
+    "icalendar>=6.0",
+    "prometheus-client>=0.21",
+    "httpx>=0.27",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3",
-    "pytest-asyncio>=0.24",
-    "hypothesis>=6.115",       # the four analysis-layer properties
-    "import-linter>=2.1",      # invariant 1 — see .importlinter
-    "ruff>=0.7",
+    "pytest-xdist>=3.6",
+    "hypothesis>=6.115",
+    "ruff>=0.8",
     "mypy>=1.13",
-    "types-python-jose>=3.3",   # mypy strict: jose ships no inline types
+    "import-linter>=2.1",
+    "pip-audit>=2.7",
+    "types-openpyxl>=3.1",
 ]
+
+[project.scripts]
+optiedt = "optiedt.cli:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -53,35 +53,37 @@ target-version = "py312"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF", "S", "C4", "PT", "RET", "TID"]
+ignore = [
+    "S101",   # assert is the pytest idiom; production code does not rely on it
+    "RUF012", # SQLAlchemy/Pydantic class attributes are not mutable defaults
+]
 
 [tool.ruff.lint.per-file-ignores]
-# Scaffold: interface definitions have no bodies yet.
-"src/optiedt/**/__init__.py" = ["F401"]
-
-# The assistant is the one package whose STRINGS are read by a user. Its
-# computed forms and its prompts are French prose displayed on screen, so they
-# use French typography - the apostrophe ’, the multiplication sign ×, the
-# minus sign −. RUF001-003 flag those as "ambiguous unicode", which is the
-# right default for code that is not meant to be read as prose and the wrong
-# one here: replacing ’ with ' would make the application's own French worse
-# to satisfy a rule about identifiers. The frontend already renders the same
-# characters (features/comparison/ComparisonScreen.tsx).
-"src/optiedt/assistant/*.py" = ["RUF001", "RUF002", "RUF003"]
-"tests/unit/test_assistant*.py" = ["RUF001", "RUF002", "RUF003"]
-"tests/acceptance/test_fr2*.py" = ["RUF001", "RUF002", "RUF003"]
+"tests/**" = ["S105", "S106", "S311"]
+"src/optiedt/benchmarks/**" = ["S311"]
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
-packages = ["optiedt"]
 mypy_path = "src"
+packages = ["optiedt"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["ortools.*", "weasyprint.*", "icalendar.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+addopts = "-ra --strict-markers"
 markers = [
-    "solver: requires the CP-SAT solver; must fix a seed and a deterministic budget (ADR-011)",
-    "acceptance: verifies a requirement against its acceptance criterion",
-    "database: requires a live PostgreSQL; run `docker compose up -d` first",
+    "solver: exercises CP-SAT (slower)",
+    "slow: long-running (benchmark-sized) tests",
+]
+filterwarnings = [
+    "error::sqlalchemy.exc.SAWarning",
+    "error::sqlalchemy.exc.SADeprecationWarning",
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
 ]
