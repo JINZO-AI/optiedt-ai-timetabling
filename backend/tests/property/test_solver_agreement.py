@@ -15,6 +15,7 @@ from hypothesis import strategies as st
 from ortools.sat.python import cp_model
 
 from optiedt.evaluation.evaluator import Evaluator
+from optiedt.evaluation.explain import explain
 from optiedt.problem.catalog import MAX_TIER, OBJECTIVES
 from optiedt.problem.model import Problem
 from optiedt.problem.solution import ObjectiveConfig, Placement
@@ -101,6 +102,13 @@ def test_engine_timetables_are_valid_and_report_true_values(problem: Problem) ->
     base = evaluate(problem, result.base)
     assert base.violations == [], [v.message for v in base.violations][:3]
     assert base.unscheduled_periods == result.tier0.value
+    if result.tier0.proven_optimal:
+        # Proven optimal: no unscheduled session fits anywhere with the rest left in place.
+        evaluator = Evaluator(problem, ObjectiveConfig({}))
+        for s in base.unscheduled:
+            assert explain(evaluator, result.base, s).free == (), problem.describe_session(
+                problem.sessions[s]
+            )
     for outcome in result.profiles:
         evaluation = evaluate(problem, outcome.placements, outcome.code)
         assert evaluation.violations == [], [v.message for v in evaluation.violations][:3]

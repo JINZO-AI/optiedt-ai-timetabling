@@ -149,7 +149,9 @@ that the minimum and the maximum of every tier coincide with the evaluator's val
    every reference placement that is still valid; it then places the other sessions in order
    of tightest domain, each at the first start and smallest room that clash with nothing
    placed so far. The result is the hint.
-4. **Tier 0**: minimize unscheduled periods.
+4. **Tier 0**: minimize unscheduled periods. If sessions stay unscheduled and their
+   activities had rooms skipped as far too large (§2), those activities get every compatible
+   room and tier 0 is solved again from the incumbent (a large room beats no room).
 5. **For each selected profile**, tiers 1…k in order: minimize the tier's weighted sum subject
    to every earlier tier ≤ its best value; hint the incumbent.
 6. **Validate** each result with the evaluator; compare the solver's tier values with the
@@ -176,21 +178,52 @@ same way on every machine; fastest mode uses wall-clock time (ADR 0018).
 | Hard rule unsatisfiable by load (max days × periods/day < load) | Yes | "Dr. Ben Ali: at most 2 days × 4 periods, needs 10 periods" |
 | Utilization above 90 % of a pool | No (warning) | "Lecture halls: 94 % of open periods needed" |
 
-## 8. Explanations and suggestions
+## 8. Explanations, suggestions and diagnosis
 
-For a session `s` and a target (slot `t`, room `r`), the evaluator lists every reason the
-placement is invalid given the other assignments: slot closed or out of domain (which rule),
-instructor busy (with which session), student atom busy (which group, which session), room
-occupied or unavailable, room incompatible (type, features, capacity), hard rule violated.
-For valid targets it reports the change of every objective. Suggestions rank all valid
-targets by the lexicographic objective change and show the best invalid ones with their
-blocking sessions.
+**Suggestions.** For a session `s` and a target (slot `t`, room `r`), the evaluator lists
+every reason the placement is invalid given the other assignments: slot closed or out of
+domain (which rule), instructor busy (with which session), student atom busy (which group,
+which session), room occupied or unavailable, room incompatible (type, features, capacity),
+hard rule violated. For valid targets it reports the change of every objective. Suggestions
+rank all valid targets by the lexicographic objective change and show the best invalid ones
+with their blocking sessions.
 
-For an incomplete result, a **relaxation run** can be requested: selected hard requirements
-become elastic with costs (instructor/group unavailability 10 per period, closed slots 50,
-room type 20, capacity shortfall 5 per seat, fixed placements 30, hard rules 10 per unit,
-different-days 10) and total relaxation cost is minimized with every session placed. The
-result lists the data changes that together admit a complete timetable.
+**Explanation of an unscheduled session** (`evaluation.explain`, evaluator only). Every start
+window the session could physically use (it fits in the day without running across a break)
+is checked with the rest of the timetable in place. A window is ruled out by time
+requirements (closed slot, unavailability of an instructor, students or the activity, a hard
+slot rule, a fixed time), by people (the instructor or the students have another session, an
+occurrence is already on that day, a hard rule would break) or, when none of those apply, by
+rooms (every suitable room is taken or closed). The explanation counts the windows each
+obstacle rules out, names the sessions involved, lists places where the session fits now if
+any, and, when no room suits the session at all, counts the rooms failing each requirement.
+Invariant, checked by property tests: when tier 0 is proven optimal, no unscheduled session
+fits anywhere with the rest of the timetable in place.
+
+**Relaxation diagnosis** (`solver.relaxation`). For an incomplete result, a relaxation run
+places every session it can while pricing the data changes it relies on:
+
+| Relaxation | Cost |
+|---|---|
+| Open a closed slot | 50 per period |
+| Instructor, student group or activity available at a slot it is not | 10 per period |
+| Hard avoid / earliest-start / latest-end rule allowing a slot | 10 per period |
+| Fixed occurrence placed elsewhere (time or room) | 30 |
+| Room of another type, lacking a feature, outside the required campus or building, or outside the allowed list | 20 each |
+| Room with too few seats | 5 per missing seat |
+| Room more than `ratio ×` the seats needed (skipped by the search) | 1 |
+| Extra occurrence of a different-days activity on a day | 10 |
+| Any other hard rule | 10 per violation unit |
+
+Physics is never relaxed: conflicts, room double-booking, room closures, the length of the
+day and breaks. Rooms less than half the size needed are not considered, and each session
+keeps its fifteen cheapest incompatible rooms. The run first minimizes unscheduled periods
+(what no relaxation fixes: an instructor or group with more teaching than time), then the
+total relaxation cost. The result lists each change with its cost, the sessions relying on
+it, the slots concerned and an English sentence; interfaces build localized text from the
+structured fields. Property tests check that the changes are exactly the requirements the
+evaluator finds broken in the relaxed timetable, that physics is never broken and that the
+costs add up to the optimized total.
 
 ## 9. Repair
 

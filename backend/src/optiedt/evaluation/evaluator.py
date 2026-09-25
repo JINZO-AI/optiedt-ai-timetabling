@@ -191,9 +191,13 @@ class Evaluator:
         found: list[Violation] = []
 
         def add(
-            code: str, message: str, slots: Iterable[int] = (), rule: str | None = None
+            code: str,
+            message: str,
+            slots: Iterable[int] = (),
+            rule: str | None = None,
+            subject: int | None = None,
         ) -> None:
-            found.append(Violation(code, f"{label}: {message}", (s,), tuple(slots), rule))
+            found.append(Violation(code, f"{label}: {message}", (s,), tuple(slots), rule, subject))
 
         period = p.period_of(placement.slot)
         if (
@@ -218,6 +222,7 @@ class Evaluator:
                     "instructor_unavailable",
                     f"{p.instructors[i].name} is unavailable at {p.slot_label(clash[0])}.",
                     clash,
+                    subject=i,
                 )
         for group in self.unavailable_groups:
             if any(self.overlap.share_students(group.index, g) for g in session.groups):
@@ -227,10 +232,16 @@ class Evaluator:
                         "students_unavailable",
                         f"students of {group.code} are unavailable at {p.slot_label(clash[0])}.",
                         clash,
+                        subject=group.index,
                     )
         clash = [t for t in covered if t in activity.unavailable]
         if clash:
-            add("activity_unavailable", f"not allowed at {p.slot_label(clash[0])}.", clash)
+            add(
+                "activity_unavailable",
+                f"not allowed at {p.slot_label(clash[0])}.",
+                clash,
+                subject=activity.index,
+            )
         if session.fixed_slot is not None and placement.slot != session.fixed_slot:
             add("fixed_moved", f"is fixed at {p.slot_label(session.fixed_slot)}.")
         for rule in self.slot_rules:
@@ -265,8 +276,14 @@ class Evaluator:
         activity = p.activities[session.activity]
         found: list[Violation] = []
 
+        room_index = placement.room
+        if room_index is not None and not 0 <= room_index < len(p.rooms):
+            room_index = None
+
         def add(code: str, message: str, slots: Iterable[int] = ()) -> None:
-            found.append(Violation(code, f"{label}: {message}", (s,), tuple(slots)))
+            found.append(
+                Violation(code, f"{label}: {message}", (s,), tuple(slots), subject=room_index)
+            )
 
         if activity.online:
             if placement.room is not None:
@@ -341,13 +358,15 @@ class Evaluator:
     ) -> Violation:
         p = self.p
         sa, sb = p.sessions[a], p.sessions[b]
+        subject = None
         if code == "instructor_conflict":
-            names = ", ".join(
-                p.instructors[i].name for i in sorted(set(sa.instructors) & set(sb.instructors))
-            )
+            shared = sorted(set(sa.instructors) & set(sb.instructors))
+            names = ", ".join(p.instructors[i].name for i in shared)
             detail = f"{names} would teach both"
+            subject = shared[0]
         elif code == "room_conflict" and room is not None:
             detail = f"{p.rooms[room].code} would host both"
+            subject = room
         else:
             detail = "the same students would attend both"
         return Violation(
@@ -356,6 +375,7 @@ class Evaluator:
             f"{p.slot_label(min(slots))}: {detail}.",
             (a, b),
             tuple(sorted(slots)),
+            subject=subject,
         )
 
     def _different_days(self, placements: Mapping[int, Placement]) -> list[Violation]:
@@ -832,10 +852,10 @@ class MoveContext:
 
 
 def _dedupe(violations: list[Violation]) -> list[Violation]:
-    seen: set[tuple[str, tuple[int, ...], str]] = set()
+    seen: set[tuple[str, tuple[int, ...], str, str | None]] = set()
     result = []
     for violation in violations:
-        key = (violation.code, violation.sessions, violation.message)
+        key = (violation.code, violation.sessions, violation.message, violation.rule_id)
         if key not in seen:
             seen.add(key)
             result.append(violation)

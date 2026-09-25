@@ -17,6 +17,9 @@ class Violation:
     sessions: tuple[int, ...]
     slots: tuple[int, ...] = ()
     rule_id: str | None = None
+    subject: int | None = None
+    """Index of the instructor, group, activity or room the violation is about, when there
+    is one (per ``code``)."""
 
 
 @dataclass

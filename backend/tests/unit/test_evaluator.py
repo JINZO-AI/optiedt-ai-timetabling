@@ -322,3 +322,17 @@ def test_diff_ignores_occurrence_swaps() -> None:
     assert [(c.kind, c.before, c.after) for c in changes] == [
         ("moved", Placement(4, a), Placement(9, c))
     ]
+
+
+def test_rules_sharing_a_name_are_reported_separately() -> None:
+    b = SnapshotBuilder(days=2)
+    b.room("R", 40)
+    group = b.group("G", 30)
+    b.activity("A", groups=[group], sessions=2)
+    first = b.rule("max_days_per_week", params={"limit": 1}, groups=[group])
+    second = b.rule("max_days_per_week", params={"limit": 1}, groups=[group])
+    problem = b.problem()
+    evaluation = Evaluator(problem, ObjectiveConfig({})).evaluate(
+        {0: Placement(problem.slot(0, 0), 0), 1: Placement(problem.slot(1, 0), 0)}
+    )
+    assert {v.rule_id for v in evaluation.violations} == {first, second}

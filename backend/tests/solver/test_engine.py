@@ -256,3 +256,23 @@ def test_pins_are_kept_and_invalid_pins_are_reported() -> None:
     assert result.profiles[0].placements[0] == pinned[0]
     with pytest.raises(PinError, match="cannot stay"):
         solve(problem, seconds=2, pins={0: Placement(problem.slot(4, 3), None)})
+
+
+def test_a_room_far_too_large_is_used_rather_than_leaving_a_session_out() -> None:
+    # The search skips rooms more than four times larger than needed, unless that would
+    # leave a session unscheduled.
+    b = SnapshotBuilder(days=1, periods=(("08:00", "09:00"),))
+    b.room("SMALL", 20)
+    b.room("AMPHI", 200)
+    b.activity("A", groups=[b.group("G1", 20)])
+    b.activity("B", groups=[b.group("G2", 20)])
+    problem = b.problem()
+    result = solve(problem, seconds=3)
+    assert result.tier0.value == 0
+    assert result.model_stats["widened_activities"] >= 1
+    rooms = {
+        problem.rooms[p.room].code
+        for p in result.profiles[0].placements.values()
+        if p.room is not None
+    }
+    assert rooms == {"SMALL", "AMPHI"}

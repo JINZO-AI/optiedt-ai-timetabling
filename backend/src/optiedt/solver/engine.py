@@ -9,11 +9,12 @@ machine (ADR 0018).
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 import threading
 import time
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 
 from ortools.sat.python import cp_model
@@ -22,11 +23,12 @@ from optiedt.problem.catalog import MAX_TIER
 from optiedt.problem.solution import ObjectiveConfig, Placement
 from optiedt.solver.domains import Context
 from optiedt.solver.heuristic import construct
-from optiedt.solver.model import ScheduleModel
+from optiedt.solver.model import LinearExpr, ScheduleModel
 
 logger = logging.getLogger(__name__)
 
 TIER0_SHARE = 0.3
+WIDEN_SHARE = 0.1
 LOG_LINES = 400
 MIN_PROFILE_SECONDS = 1.0
 MIN_TIER_SECONDS = 0.5
@@ -139,25 +141,27 @@ class _Progress(cp_model.CpSolverSolutionCallback):
             self._emit(self.objective_value, self.best_objective_bound)
 
 
-class Engine:
+@dataclass
+class Solve:
+    """What one search produced."""
+
+    outcome: TierOutcome
+    placements: dict[int, Placement]
+    measured: dict[str, int]
+    """Values of the expressions passed as ``measure``, when the search found a solution."""
+
+
+class Runner:
+    """Runs one CP-SAT search at a time: warm start, parameters, progress, cancellation,
+    budget accounting and the solver log."""
+
     def __init__(
         self,
-        context: Context,
-        profiles: list[ProfileSpec],
         settings: SolveSettings,
-        *,
-        pins: dict[int, Placement] | None = None,
-        reference: dict[int, Placement] | None = None,
-        hint: dict[int, Placement] | None = None,
         on_progress: Callable[[ProgressEvent], None] | None = None,
         should_stop: Callable[[], bool] | None = None,
     ) -> None:
-        self.context = context
-        self.profiles = profiles
         self.settings = settings
-        self.pins = pins or {}
-        self.reference = reference
-        self.hint = hint
         self.on_progress = on_progress or (lambda event: None)
         self.should_stop = should_stop or (lambda: False)
         self.log: deque[str] = deque(maxlen=LOG_LINES)
@@ -165,18 +169,34 @@ class Engine:
         self.cancelled = False
         self.deterministic = settings.mode == "reproducible"
         self.reproducible = self.deterministic
-        self._started = 0.0
+        self.started = time.monotonic()
         self._deterministic_spent = 0.0
 
-    def _spent(self) -> float:
+    def spent(self) -> float:
         """Budget used so far, in requested seconds."""
         if self.deterministic:
             return self._deterministic_spent / self.settings.deterministic_per_second
-        return time.monotonic() - self._started
+        return time.monotonic() - self.started
 
-    # ── one solve ─────────────────────────────────────────────────────
+    def stop_requested(self) -> bool:
+        if not self.cancelled and self.should_stop():
+            self.cancelled = True
+        return self.cancelled
 
-    def _solve(
+    def elapsed(self) -> float:
+        return time.monotonic() - self.started
+
+    def event(
+        self,
+        phase: str,
+        profile: str | None = None,
+        tier: int | None = None,
+        objective: float | None = None,
+        bound: float | None = None,
+    ) -> None:
+        self.on_progress(ProgressEvent(phase, profile, tier, objective, bound, self.elapsed()))
+
+    def solve(
         self,
         builder: ScheduleModel,
         objective: cp_model.LinearExprT,
@@ -185,7 +205,8 @@ class Engine:
         phase: str,
         profile: str | None,
         tier: int,
-    ) -> tuple[TierOutcome, dict[int, Placement]]:
+        measure: Mapping[str, LinearExpr] | None = None,
+    ) -> Solve:
         started = time.monotonic()
         model = builder.model
         model.minimize(objective)
@@ -212,9 +233,7 @@ class Engine:
         solver.log_callback = self.log.append
 
         def emit(value: float, bound: float) -> None:
-            self.on_progress(
-                ProgressEvent(phase, profile, tier, value, bound, time.monotonic() - self._started)
-            )
+            self.event(phase, profile, tier, value, bound)
 
         stop = threading.Event()
 
@@ -250,7 +269,8 @@ class Engine:
                 solver.deterministic_time,
             )
             emit(solver.objective_value, solver.best_objective_bound)
-            return outcome, builder.extract(solver)
+            measured = {key: int(solver.value(expr)) for key, expr in (measure or {}).items()}
+            return Solve(outcome, builder.extract(solver), measured)
         if status == cp_model.INFEASIBLE:
             # The incumbent satisfies every constraint of this model, so this cannot happen
             # unless the model is inconsistent; keep the incumbent and say so.
@@ -259,12 +279,34 @@ class Engine:
                 f"{phase}: the solver reported this tier infeasible; the previous timetable "
                 "was kept for it."
             )
-        return TierOutcome(tier, name, None, None, elapsed, solver.deterministic_time), incumbent
+        outcome = TierOutcome(tier, name, None, None, elapsed, solver.deterministic_time)
+        return Solve(outcome, incumbent, {})
 
-    # ── the whole run ─────────────────────────────────────────────────
+
+class Engine:
+    def __init__(
+        self,
+        context: Context,
+        profiles: list[ProfileSpec],
+        settings: SolveSettings,
+        *,
+        pins: dict[int, Placement] | None = None,
+        reference: dict[int, Placement] | None = None,
+        hint: dict[int, Placement] | None = None,
+        on_progress: Callable[[ProgressEvent], None] | None = None,
+        should_stop: Callable[[], bool] | None = None,
+    ) -> None:
+        self.context = context
+        self.profiles = profiles
+        self.settings = settings
+        self.pins = pins or {}
+        self.reference = reference
+        self.hint = hint
+        self.runner = Runner(settings, on_progress, should_stop)
 
     def run(self) -> EngineResult:
-        self._started = time.monotonic()
+        runner = self.runner
+        runner.started = time.monotonic()
         base = ScheduleModel(self.context, pins=self.pins, reference=self.reference)
         stats = {
             "variables": len(base.model.proto.variables),
@@ -278,20 +320,17 @@ class Engine:
             else construct(self.context, self.settings.seed, self.pins, keep=self.reference)
         )
         stats["hint_placed"] = len(hint)
-        self.on_progress(
-            ProgressEvent("model_built", None, None, None, None, time.monotonic() - self._started)
-        )
+        runner.event("model_built")
 
         total = self.settings.time_limit_seconds
         tier0_objective = base.tier_expression(ObjectiveConfig({}), 0)
         incumbent: dict[int, Placement] = {}
         if tier0_objective is None or isinstance(tier0_objective, int):
             tier0 = TierOutcome(0, "OPTIMAL", int(tier0_objective or 0), 0.0, 0.0, 0.0)
-        elif self.should_stop():
-            self.cancelled = True
+        elif runner.stop_requested():
             tier0 = TierOutcome(0, "UNKNOWN", None, None, 0.0, 0.0)
         else:
-            tier0, incumbent = self._solve(
+            first = runner.solve(
                 base,
                 tier0_objective,
                 hint,
@@ -300,33 +339,54 @@ class Engine:
                 None,
                 0,
             )
-            if tier0.value is not None:
+            tier0, incumbent = first.outcome, first.placements
+            widened = _widened(self.context, incumbent) if tier0.value else None
+            if widened is not None and not runner.stop_requested():
+                # Rooms far larger than needed were left out of the search; for activities
+                # left unscheduled a large room is better than no room.
+                context, activities = widened
+                stats["widened_activities"] = activities
+                base = ScheduleModel(context, pins=self.pins, reference=self.reference)
+                tier0_objective = base.tier_expression(ObjectiveConfig({}), 0)
+                if tier0_objective is not None and not isinstance(tier0_objective, int):
+                    retry = runner.solve(
+                        base,
+                        tier0_objective,
+                        incumbent,
+                        max(MIN_TIER_SECONDS, total * WIDEN_SHARE),
+                        "unscheduled",
+                        None,
+                        0,
+                    )
+                    if retry.outcome.value is not None:
+                        tier0, incumbent = retry.outcome, retry.placements
+            if tier0.value is None:
+                if not runner.cancelled:
+                    raise EngineError(
+                        "No timetable was found within the time limit, not even a partial one. "
+                        "Increase the time limit or check the validation report."
+                    )
+            elif tier0_objective is not None and not isinstance(tier0_objective, int):
                 base.model.add(tier0_objective <= tier0.value)
-            elif not self.cancelled:
-                raise EngineError(
-                    "No timetable was found within the time limit, not even a partial one. "
-                    "Increase the time limit or check the validation report."
-                )
         base.model.clear_hints()  # type: ignore[no-untyped-call]
 
         profiles: list[ProfileOutcome] = []
         for position, spec in enumerate(self.profiles):
-            if self.cancelled or self.should_stop():
-                self.cancelled = True
+            if runner.stop_requested():
                 break
             remaining = len(self.profiles) - position
-            budget = max(MIN_PROFILE_SECONDS, (total - self._spent()) / remaining)
+            budget = max(MIN_PROFILE_SECONDS, (total - runner.spent()) / remaining)
             profiles.append(self._run_profile(base, spec, incumbent, budget))
         return EngineResult(
             tier0=tier0,
             base=incumbent,
             profiles=profiles,
-            cancelled=self.cancelled,
-            reproducible=self.reproducible and not self.cancelled,
+            cancelled=runner.cancelled,
+            reproducible=runner.reproducible and not runner.cancelled,
             model_stats=stats,
-            warnings=self.warnings,
-            log_tail=list(self.log),
-            wall_seconds=time.monotonic() - self._started,
+            warnings=runner.warnings,
+            log_tail=list(runner.log),
+            wall_seconds=runner.elapsed(),
         )
 
     def _run_profile(
@@ -336,26 +396,50 @@ class Engine:
         incumbent: dict[int, Placement],
         budget: float,
     ) -> ProfileOutcome:
+        runner = self.runner
         builder = base.fork()
         builder.reference = spec.config.reference
         # A tier's terms are built when it is solved, so earlier tiers search a smaller model.
         tiers = [tier for tier in range(1, MAX_TIER + 1) if builder.has_terms(spec.config, tier)]
         placements = dict(incumbent)
         outcomes: list[TierOutcome] = []
-        profile_started = self._spent()
+        profile_started = runner.spent()
         for position, tier in enumerate(tiers):
-            if self.cancelled or self.should_stop():
-                self.cancelled = True
+            if runner.stop_requested():
                 break
             expr = builder.tier_expression(spec.config, tier)
             if expr is None or isinstance(expr, int):
                 continue
-            left = budget - (self._spent() - profile_started)
+            left = budget - (runner.spent() - profile_started)
             share = max(MIN_TIER_SECONDS, left / (len(tiers) - position))
-            outcome, placements = self._solve(
+            result = runner.solve(
                 builder, expr, placements, share, f"{spec.code}:tier{tier}", spec.code, tier
             )
-            outcomes.append(outcome)
-            if outcome.value is not None:
-                builder.model.add(expr <= outcome.value)
+            outcomes.append(result.outcome)
+            placements = result.placements
+            if result.outcome.value is not None:
+                builder.model.add(expr <= result.outcome.value)
         return ProfileOutcome(spec.code, spec.name, placements, outcomes)
+
+
+def _widened(context: Context, placements: dict[int, Placement]) -> tuple[Context, int] | None:
+    """The context with every compatible room open to activities that have an unscheduled
+    session and rooms the search skipped as far too large; None when there are none.
+
+    Whole activities are widened, so their occurrences stay interchangeable.
+    """
+    p = context.problem
+    activities = {
+        session.activity
+        for session, domain in zip(p.sessions, context.domains, strict=True)
+        if session.index not in placements and len(domain.rooms) < len(domain.compatible_rooms)
+    }
+    if not activities:
+        return None
+    domains = [
+        dataclasses.replace(domain, rooms=domain.compatible_rooms)
+        if session.activity in activities
+        else domain
+        for session, domain in zip(p.sessions, context.domains, strict=True)
+    ]
+    return dataclasses.replace(context, domains=domains), len(activities)

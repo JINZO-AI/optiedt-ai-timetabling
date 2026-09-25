@@ -67,11 +67,15 @@ class ScheduleModel:
         *,
         pins: dict[int, Placement] | None = None,
         reference: dict[int, Placement] | None = None,
+        relaxed: bool = False,
     ) -> None:
+        """``relaxed`` leaves hard rules and the different-days requirement unposted, for a
+        diagnosis that prices breaking them instead (``solver.relaxation``)."""
         self.context = context
         self.p = context.problem
         self.pins = pins or {}
         self.reference = reference
+        self.relaxed = relaxed
         self.model = cp_model.CpModel()
         self.starts: list[tuple[int, ...]] = []
         self.rooms: list[tuple[int, ...]] = []
@@ -227,7 +231,7 @@ class ScheduleModel:
                 m.add_no_overlap(intervals)
 
         for activity in p.activities:
-            if not activity.different_days:
+            if not activity.different_days or self.relaxed:
                 continue
             for day in range(p.n_days):
                 literals = self._on_day(activity.sessions, day)
@@ -243,10 +247,22 @@ class ScheduleModel:
                 )
 
     def _hard_rules(self) -> None:
+        if self.relaxed:
+            return
         for rule in self.p.rules:
             if rule.enforcement != "hard" or rule.type in SLOT_RULES:
                 continue  # hard slot rules are already part of every domain
             self._rule(rule, hard=True)
+
+    def same_day_excess(self, activity: Activity) -> LinearExpr | None:
+        """Occurrences of the activity beyond the first on each day."""
+        terms: list[LinearExpr] = []
+        for day in range(self.p.n_days):
+            literals = self._on_day(activity.sessions, day)
+            if len(literals) > 1:
+                upper = min(len(literals), len(activity.sessions))
+                terms.append(self._excess(sum(literals), 1, upper, "sde"))
+        return sum(terms) if terms else None
 
     # ── building blocks ───────────────────────────────────────────────
 
@@ -838,6 +854,23 @@ class ScheduleModel:
         (they are exact), so this is a propagation, not a search. Returns None when the
         placements break a constraint of the model.
         """
+        solver, dt = self._fixed(placements, seconds)
+        if solver is None:
+            return None, dt
+        return list(solver.response_proto.solution), dt
+
+    def measure(
+        self, placements: dict[int, Placement], expressions: dict[str, LinearExpr]
+    ) -> dict[str, int] | None:
+        """Values of model expressions in the timetable ``placements``."""
+        solver, _ = self._fixed(placements, 10.0)
+        if solver is None:
+            return None
+        return {key: int(solver.value(expr)) for key, expr in expressions.items()}
+
+    def _fixed(
+        self, placements: dict[int, Placement], seconds: float
+    ) -> tuple[cp_model.CpSolver | None, float]:
         model = self.model.clone()
         model.clear_objective()  # type: ignore[no-untyped-call]
         model.clear_hints()  # type: ignore[no-untyped-call]
@@ -860,7 +893,7 @@ class ScheduleModel:
         status = solver.solve(model)
         if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             return None, solver.deterministic_time
-        return list(solver.response_proto.solution), solver.deterministic_time
+        return solver, solver.deterministic_time
 
     def add_full_hint(self, values: list[int]) -> None:
         """Hints every variable, typically with the previous solution's values."""
