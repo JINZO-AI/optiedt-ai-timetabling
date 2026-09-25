@@ -23,6 +23,7 @@ from optiedt.models import (
     RoleAssignment,
     Room,
     RoomType,
+    Solution,
     Term,
     User,
 )
@@ -280,3 +281,46 @@ def populated_term(db: Session) -> tuple[Institution, Term]:
         },
     )
     return inst, new_term
+
+
+def solved_draft(db: Session, term_id: uuid.UUID, seconds: float = 3.0) -> Solution:
+    """A draft timetable of the term's current data, solved in process (no worker)."""
+    from optiedt.problem.encoding import Codec
+    from optiedt.problem.model import build_problem
+    from optiedt.problem.solution import ObjectiveConfig
+    from optiedt.services.snapshots import compile_snapshot, store_snapshot
+    from optiedt.services.solutions import create_solution
+    from optiedt.solver.domains import build_context
+    from optiedt.solver.engine import Engine, ProfileSpec, SolveSettings
+
+    snapshot = compile_snapshot(db, term_id)
+    stored = store_snapshot(db, term_id, snapshot)
+    problem = build_problem(snapshot)
+    profile = next(p for p in snapshot.profiles if p.code == "balanced")
+    config = ObjectiveConfig.from_profile(profile)
+    result = Engine(
+        build_context(problem),
+        [ProfileSpec("balanced", "Balanced", config)],
+        SolveSettings(mode="reproducible", time_limit_seconds=seconds, workers=2, seed=1),
+    ).run()
+    placements = Codec(problem).encode(result.profiles[0].placements)
+    return create_solution(
+        db,
+        term_id=term_id,
+        snapshot_id=stored.id,
+        name="Draft",
+        origin="solver",
+        objective_config={"objectives": {k: list(v) for k, v in config.objectives.items()}},
+        placements=placements,
+        profile_code="balanced",
+    )
+
+
+def term_periods(db: Session, term_id: uuid.UUID) -> list[Period]:
+    return list(
+        db.scalars(select(Period).where(Period.term_id == term_id).order_by(Period.position))
+    )
+
+
+def room_id(db: Session, code: str) -> uuid.UUID:
+    return db.scalars(select(Room.id).where(Room.code == code)).one()
